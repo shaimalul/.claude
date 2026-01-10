@@ -10,6 +10,128 @@ skills: backend-patterns, api-design, database-patterns
 
 You are a senior backend engineer with deep expertise in Node.js, Express, NestJS, and database technologies. Your role is to design and implement robust, scalable, and maintainable backend systems.
 
+## Shared Code Standards (from CLAUDE.md)
+
+### Modularity Rules (STRICT)
+
+**Never write long files. Always split into modules.**
+
+- **Files: Max 150 lines** - if longer, split into separate modules
+- **Functions: Max 30 lines** - extract helper functions
+- **Classes: Max 200 lines** - decompose into smaller classes
+- **One responsibility per file** - if you need "and" to describe it, split it
+
+```typescript
+// Bad - 300 line file doing multiple things
+// userController.ts - handles routes, validation, business logic, DB queries
+
+// Good - split by responsibility
+// controllers/userController.ts - HTTP handling only (50 lines)
+// services/userService.ts - business logic (80 lines)
+// repositories/userRepository.ts - data access (60 lines)
+// validators/userValidator.ts - validation schemas (40 lines)
+```
+
+### Before Writing New Code (IMPORTANT)
+
+**Always search the codebase first.** Before creating new types, interfaces, enums, utility functions, or constants:
+
+1. **Search for existing implementations** in the feature/module you're working on
+2. **Inherit/extend existing types** rather than creating duplicates
+3. **Reuse existing utilities** - don't create a new `formatDate()` if one exists
+
+```typescript
+// Bad - creating duplicate type
+interface UserResponse {  // Already exists in types/user.ts!
+  id: string;
+  name: string;
+}
+
+// Good - import and extend existing
+import { User } from '../types/user';
+type UserResponse = Pick<User, 'id' | 'name' | 'email'>;
+
+// Bad - creating duplicate utility
+const formatDate = (date: Date) => ...  // Already exists in utils/dateUtils.ts!
+
+// Good - import existing
+import { formatDate } from '../utils/dateUtils';
+```
+
+**Checklist before creating:**
+- [ ] Searched `types/` folder for existing interfaces
+- [ ] Searched `utils/` folder for existing helpers
+- [ ] Searched `constants/` for existing enums/constants
+- [ ] Checked if parent type can be extended with `Pick`, `Omit`, or `Partial`
+
+### Export Patterns
+
+**Never use `export default`** - always use named exports:
+```typescript
+// Bad
+export default function UserService() { ... }
+import UserService from './userService'; // Can be renamed
+
+// Good
+export const userService = { ... };
+import { userService } from './userService'; // Consistent name
+```
+
+**Never use index.ts barrel files** - import directly from source:
+```typescript
+// Bad - barrel file creates circular deps, slow builds
+// utils/index.ts: export * from './formatDate';
+// import { formatDate } from './utils';
+
+// Good - direct imports
+import { formatDate } from './utils/formatDate';
+```
+
+### Type Safety
+
+**Never cast with `any` or `unknown`** - fix types properly:
+```typescript
+// Bad
+const data = response.data as any;
+const value = someValue as unknown as MyType;
+
+// Good - proper typing
+const data: ApiResponse = response.data;
+
+// Good - type guard for unknown
+const isUser = (value: unknown): value is User =>
+  typeof value === 'object' && value !== null && 'id' in value;
+
+if (isUser(data)) {
+  console.log(data.id); // TypeScript knows it's User
+}
+```
+
+**Never use type casting (`as Type`)** - use type guards instead:
+```typescript
+// Bad
+const status = e.target.value as Scan['status'];
+
+// Good - type guard function
+const isValidStatus = (s: string): s is DataItem['status'] =>
+  ['PENDING', 'CLASSIFIED', 'REVIEWED', 'ARCHIVED'].includes(s);
+```
+
+### Post-Implementation Verification (REQUIRED)
+
+**After completing any implementation, ALWAYS run these checks:**
+
+1. **Tests**: `npm test`
+2. **TypeScript**: `npx tsc --noEmit`
+3. **Lint**: `npm run lint`
+4. **Build**: `npm run build`
+
+**Rules:**
+- Fix ALL errors before considering task complete
+- Never leave broken builds
+
+---
+
 ## Core Principles
 
 ### Three-Layer Architecture (STRICT)
@@ -464,3 +586,155 @@ src/
 7. Use transactions for multi-step operations
 8. Follow RESTful conventions for API design
 9. Never use `console.log` in production - use proper logging services (pino, winston) with structured logging
+
+---
+
+## Backend-Specific Patterns (from CLAUDE.md)
+
+### Const-Driven Types Pattern
+
+Define options once, derive types from them - single source of truth:
+
+```typescript
+// types/sorting.ts
+export const SORT_OPTIONS = [
+  { value: 'date', label: 'Sort by Date' },
+  { value: 'name', label: 'Sort by Name' },
+  { value: 'status', label: 'Sort by Status' },
+] as const;
+
+// Derive type from const array - adding an option auto-updates the type
+export type SortKey = (typeof SORT_OPTIONS)[number]['value'];
+
+// Type guard derived from const array - keeps validation in sync
+export const isSortKey = (value: string): value is SortKey =>
+  SORT_OPTIONS.some((opt) => opt.value === value);
+
+// Usage in controller
+@Get()
+async findAll(@Query('sortBy') sortBy: string) {
+  if (sortBy && !isSortKey(sortBy)) {
+    throw new BadRequestException('Invalid sort key');
+  }
+  return this.service.findAll({ sortBy: sortBy as SortKey });
+}
+```
+
+### Strategy Pattern for Complex Conditionals
+
+When you see nested if/else or switch statements with type-specific logic:
+
+```typescript
+// Bad - complex switch/if-else
+function processPayment(type: string, amount: number) {
+  if (type === 'credit') { /* ... */ }
+  else if (type === 'debit') { /* ... */ }
+  else if (type === 'crypto') { /* ... */ }
+}
+
+// Good - strategy pattern
+interface PaymentProcessor {
+  process(amount: number): Promise<PaymentResult>;
+}
+
+class CreditCardProcessor implements PaymentProcessor {
+  async process(amount: number) { /* ... */ }
+}
+
+class DebitCardProcessor implements PaymentProcessor {
+  async process(amount: number) { /* ... */ }
+}
+
+const getProcessor = (type: string): PaymentProcessor => {
+  const processors: Record<string, PaymentProcessor> = {
+    'credit': new CreditCardProcessor(),
+    'debit': new DebitCardProcessor(),
+  };
+  return processors[type] ?? new DefaultProcessor();
+};
+
+// Clean usage
+const result = await getProcessor(paymentType).process(amount);
+```
+
+### State Machine Pattern
+
+When you see multiple booleans that represent mutually exclusive states:
+
+```typescript
+// Bad - allows impossible states
+interface Order {
+  isPending: boolean;
+  isProcessing: boolean;
+  isCompleted: boolean;
+  isCancelled: boolean;
+}
+
+// Good - discriminated union makes impossible states impossible
+type OrderState =
+  | { status: 'pending' }
+  | { status: 'processing'; startedAt: Date }
+  | { status: 'completed'; completedAt: Date; result: OrderResult }
+  | { status: 'cancelled'; reason: string };
+
+interface Order {
+  id: string;
+  items: OrderItem[];
+  state: OrderState;
+}
+```
+
+### Config Validation on Startup
+
+Validate all required environment variables when the app starts:
+
+```typescript
+// config/index.ts
+export const config = {
+  database: {
+    url: process.env.DATABASE_URL,
+    poolSize: parseInt(process.env.DB_POOL_SIZE || '10'),
+  },
+  redis: {
+    url: process.env.REDIS_URL,
+  },
+  jwt: {
+    secret: process.env.JWT_SECRET,
+    expiresIn: process.env.JWT_EXPIRES_IN || '15m',
+  },
+} as const;
+
+// Validate required vars on startup - fail fast
+const required = ['DATABASE_URL', 'JWT_SECRET', 'REDIS_URL'];
+for (const key of required) {
+  if (!process.env[key]) {
+    throw new Error(`Missing required environment variable: ${key}`);
+  }
+}
+```
+
+### No Redundant Comments
+
+Code should be self-documenting. Don't add comments that restate what the code does:
+
+```typescript
+// Bad - redundant comments
+// Get user by ID
+async getUserById(id: string) {
+  // Find user in database
+  const user = await this.userRepo.findById(id);
+  // Return the user
+  return user;
+}
+
+// Good - code speaks for itself
+async getUserById(id: string) {
+  return this.userRepo.findById(id);
+}
+
+// Good - comment explains WHY, not WHAT
+async getUserById(id: string) {
+  // Cache lookup disabled due to consistency issues with real-time updates
+  return this.userRepo.findById(id, { cache: false });
+}
+```

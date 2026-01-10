@@ -2288,3 +2288,295 @@ export function fetchUser(id: string) {
 ```
 
 Add comprehensive JSDoc comments to all public exports. These will appear in IDE tooltips and can be extracted to generate documentation.
+
+---
+
+## Shared Code Standards (from CLAUDE.md)
+
+These standards apply across ALL code - frontend and backend.
+
+### Modularity Rules (STRICT)
+
+**Never write long files. Always split into modules.**
+
+- **Files: Max 150 lines** - if longer, split into separate modules
+- **Functions: Max 30 lines** - extract helper functions
+- **Classes: Max 200 lines** - decompose into smaller classes
+- **One responsibility per file** - if you need "and" to describe it, split it
+
+```typescript
+// Bad - 300 line file doing multiple things
+// userController.ts - handles routes, validation, business logic, DB queries
+
+// Good - split by responsibility
+// controllers/userController.ts - HTTP handling only (50 lines)
+// services/userService.ts - business logic (80 lines)
+// repositories/userRepository.ts - data access (60 lines)
+// validators/userValidator.ts - validation schemas (40 lines)
+```
+
+### Before Writing New Code (IMPORTANT)
+
+**Always search the codebase first.** Before creating new types, interfaces, enums, utility functions, or constants:
+
+1. **Search for existing implementations** in the feature/module you're working on
+2. **Inherit/extend existing types** rather than creating duplicates
+3. **Reuse existing utilities** - don't create a new `formatDate()` if one exists
+
+```typescript
+// Bad - creating duplicate type
+interface UserResponse {  // Already exists in types/user.ts!
+  id: string;
+  name: string;
+}
+
+// Good - import and extend existing
+import { User } from '../types/user';
+type UserResponse = Pick<User, 'id' | 'name' | 'email'>;
+
+// Bad - creating duplicate utility
+const formatDate = (date: Date) => ...  // Already exists in utils/dateUtils.ts!
+
+// Good - import existing
+import { formatDate } from '../utils/dateUtils';
+```
+
+**Checklist before creating:**
+- [ ] Searched `types/` folder for existing interfaces
+- [ ] Searched `utils/` folder for existing helpers
+- [ ] Searched `constants/` for existing enums/constants
+- [ ] Checked if parent type can be extended with `Pick`, `Omit`, or `Partial`
+
+### Export Patterns
+
+**Never use `export default`** - always use named exports for better refactoring and IDE support:
+```typescript
+// Bad - export default
+export default function UserService() { ... }
+import UserService from './userService'; // Can be renamed on import, hard to track
+
+// Good - named export
+export const userService = { ... };
+import { userService } from './userService'; // Consistent name everywhere
+```
+
+**Never use index.ts barrel files** - import directly from source files:
+```typescript
+// Bad - barrel file (index.ts)
+// utils/index.ts
+export * from './formatDate';
+export * from './validateEmail';
+// Then: import { formatDate } from './utils';
+
+// Good - direct imports
+import { formatDate } from './utils/formatDate';
+import { validateEmail } from './utils/validateEmail';
+```
+Why: Barrel files cause circular dependencies, slow builds, and make dead code elimination harder.
+
+### Type Safety
+
+**Never cast with `any` or `unknown`** - fix types properly or use type guards:
+```typescript
+// Bad - casting to any/unknown
+const data = response.data as any;
+const value = someValue as unknown as MyType;
+
+// Good - proper typing
+const data: ApiResponse = response.data;
+
+// Good - type guard for unknown
+const isUser = (value: unknown): value is User =>
+  typeof value === 'object' && value !== null && 'id' in value;
+
+if (isUser(data)) {
+  console.log(data.id); // TypeScript knows it's User
+}
+```
+
+**Never use type casting (`as Type`)** - fix the types properly instead:
+```typescript
+// Bad - using casting
+const value = someValue as string;
+const status = e.target.value as Scan['status'];
+
+// Good - use type guards, generics, or proper typing
+const value: string = someValue; // Let TypeScript infer or error
+
+// Good - use type guard functions
+const isValidStatus = (s: string): s is DataItem['status'] =>
+  ['PENDING', 'CLASSIFIED', 'REVIEWED', 'ARCHIVED'].includes(s);
+
+// Good - use generics with constraints
+function parseValue<T>(input: unknown): T | null { ... }
+```
+
+### Post-Implementation Verification (REQUIRED)
+
+**After completing any implementation, ALWAYS run these checks in order:**
+
+1. **Tests** (if available in the repo)
+   ```bash
+   npm test
+   # or: npm run test, yarn test, pnpm test
+   ```
+
+2. **TypeScript Check**
+   ```bash
+   npx tsc --noEmit
+   # or: npm run typecheck, npm run ts:check
+   ```
+
+3. **Lint**
+   ```bash
+   npm run lint
+   # or: npm run lint:fix to auto-fix issues
+   ```
+
+4. **Build**
+   ```bash
+   npm run build
+   ```
+
+**Rules:**
+- Fix ALL errors before considering the task complete
+- If tests fail, fix them before moving on
+- If TypeScript errors exist, resolve type issues
+- If lint errors occur, fix or explain why they're acceptable
+- Build must succeed - never leave broken builds
+
+---
+
+## Frontend-Specific Additions (from CLAUDE.md)
+
+### Memoization (useMemo/useCallback)
+
+**Default: Don't use memoization.** Only add it when:
+1. You've profiled and measured an actual performance problem
+2. The computation is genuinely expensive (1000+ items, complex algorithms)
+3. It's required for correctness (stable reference for useEffect deps)
+
+```typescript
+// Bad - premature optimization
+const stats = useMemo(() => ({
+  total: items.length,  // O(1)
+  active: items.filter(x => x.active).length  // O(n) where n=8
+}), [items]);
+
+// Good - just compute it
+const stats = {
+  total: items.length,
+  active: items.filter(x => x.active).length
+};
+
+// Good - genuinely expensive (measured problem)
+const processed = useMemo(() =>
+  largeDataset.map(expensiveTransform).sort(complexComparator),
+  [largeDataset]  // 10,000+ items
+);
+```
+
+**Why avoid premature memoization:**
+- Adds cognitive overhead (dependency arrays, stale closure bugs)
+- useMemo itself has overhead (comparison, caching)
+- React re-renders are fast - don't optimize what isn't slow
+- Makes code harder to read and maintain
+
+### React Query Keys Pattern
+
+**Use constants for React Query keys** - prevents typos and enables refactoring:
+```typescript
+// Bad - raw strings scattered across files
+queryKey: ['dataItems', filters]
+queryClient.invalidateQueries({ queryKey: ['dataItems'] });
+
+// Good - centralized constants
+export const QUERY_KEYS = { DATA_ITEMS: 'dataItems', USER: 'user' } as const;
+queryKey: [QUERY_KEYS.DATA_ITEMS, filters]
+queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.DATA_ITEMS] });
+```
+
+### Storage Service Pattern
+
+**Extract localStorage/sessionStorage to service:**
+```typescript
+// services/storageService.ts
+export const storageService = {
+  get: <T>(key: string): T | null => {
+    try {
+      const item = localStorage.getItem(key);
+      return item ? JSON.parse(item) : null;
+    } catch { return null; }
+  },
+  set: <T>(key: string, value: T): boolean => {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+      return true;
+    } catch (e) {
+      if (e instanceof DOMException && e.name === 'QuotaExceededError') {
+        console.warn('Storage quota exceeded');
+        return false;
+      }
+      throw e;
+    }
+  },
+  remove: (key: string) => localStorage.removeItem(key),
+};
+```
+
+### Strategy Pattern for Complex Conditionals
+
+When you see nested if/else or switch statements with item-type-specific logic:
+```typescript
+interface ItemUpdater {
+  update(item: Item): void;
+}
+
+class NormalItemUpdater implements ItemUpdater {
+  update(item: Item) { /* ... */ }
+}
+
+class SpecialItemUpdater implements ItemUpdater {
+  update(item: Item) { /* ... */ }
+}
+
+const getUpdater = (type: string): ItemUpdater => {
+  const updaters: Record<string, ItemUpdater> = {
+    'special': new SpecialItemUpdater(),
+  };
+  return updaters[type] ?? new NormalItemUpdater();
+};
+
+// Clean usage
+items.forEach(item => getUpdater(item.type).update(item));
+```
+
+### Never Use console.log in Production
+
+**Use proper logging services or remove before commit:**
+```typescript
+// Bad - console.log left in production code
+console.log('user data:', userData);
+console.log('API response:', response);
+
+// Good - use a proper logging service
+import { logger } from './services/logger';
+logger.info('Processing request', { userId: userData.id });
+logger.debug('API response received', { status: response.status });
+
+// Good - for temporary debugging, use clear markers and remove before PR
+// TODO: REMOVE BEFORE MERGE
+console.log('DEBUG:', someValue);
+```
+Why: console.log statements clutter production logs, may expose sensitive data, and indicate incomplete code.
+
+### Avoid Deprecated APIs
+
+Use modern alternatives:
+```typescript
+// Bad - DOMException.code is deprecated
+if (e instanceof DOMException && (e.code === 22 || e.name === 'QuotaExceededError'))
+
+// Good - use e.name only
+if (e instanceof DOMException && e.name === 'QuotaExceededError')
+```
