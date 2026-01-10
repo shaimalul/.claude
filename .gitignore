@@ -1,0 +1,19 @@
+# Folders
+cache/
+debug/
+file-history/
+ide/
+plans/
+plugins/
+projects/
+session-env/
+shell-snapshots/
+statsig/
+telemetry/
+todos/
+
+# Files
+history.jsonl
+stats-cache.json
+.DS_Store
+
