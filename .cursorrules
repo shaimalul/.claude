@@ -1,0 +1,7 @@
+# Git Commit Messages
+
+When generating commit messages, follow Conventional Commits specification:
+- Use prefixes: feat:, fix:, docs:, chore:, refactor:, test:, perf:, ci:, style:
+- Keep the entire message under 60 characters
+- Use lowercase for the type prefix
+- Use imperative mood (e.g., "add" not "added")
