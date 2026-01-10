@@ -840,6 +840,40 @@ When refactoring, always consider: "Can this be unit tested?"
 - Components with Context DI → Easy to test with mock providers
 - Components with direct fetch/localStorage → Hard to test (refactor!)
 
+## Post-Implementation Verification (REQUIRED)
+
+**After completing any implementation, ALWAYS run these checks in order:**
+
+1. **Tests** (if available in the repo)
+   ```bash
+   npm test
+   # or: npm run test, yarn test, pnpm test
+   ```
+
+2. **TypeScript Check**
+   ```bash
+   npx tsc --noEmit
+   # or: npm run typecheck, npm run ts:check
+   ```
+
+3. **Lint**
+   ```bash
+   npm run lint
+   # or: npm run lint:fix to auto-fix issues
+   ```
+
+4. **Build**
+   ```bash
+   npm run build
+   ```
+
+**Rules:**
+- Fix ALL errors before considering the task complete
+- If tests fail, fix them before moving on
+- If TypeScript errors exist, resolve type issues
+- If lint errors occur, fix or explain why they're acceptable
+- Build must succeed - never leave broken builds
+
 ## Interview Communication
 
 - Think out loud while refactoring

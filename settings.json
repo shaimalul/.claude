@@ -8,14 +8,8 @@
       "mcp__playwright__*",
       "Read(**)",
       "Write(**)",
-      "Bash(source:*)",
-      "Bash(nvm install:*)",
-      "Bash(nvm use:*)",
-      "Bash(npm install)",
-      "Bash(npm run lint:*)",
-      "Bash(find:*)",
-      "WebSearch(**)",
-      "Write(**)"
+      "Bash(**)",
+      "WebSearch(**)"
     ],
     "deny": ["Bash(git:*)"],
     "defaultMode": "bypassPermissions"
