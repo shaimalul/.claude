@@ -31,7 +31,7 @@ I analyze your instruction keywords to determine the category:
 | Category | Keywords | Target Files |
 |----------|----------|--------------|
 | TypeScript | type, interface, enum, any, unknown, casting, generic | CLAUDE.md, typescript-types skill, zc-typescript-conventions.mdc |
-| Frontend | react, component, hook, useState, jsx, tsx, prop | CLAUDE.md, frontend-conventions agent, react-component skill |
+| Frontend | react, component, hook, useState, jsx, tsx, prop | CLAUDE.md, frontend-principal agent, react-component skill |
 | Backend | express, nestjs, controller, service, repository, api, http | CLAUDE.md, backend-principal agent, backend-patterns skill |
 | Security | auth, jwt, password, injection, xss, csrf, owasp | CLAUDE.md, security-principal agent, security-patterns skill |
 | DevOps | docker, kubernetes, terraform, ci, cd, pipeline | CLAUDE.md, devops-principal agent, relevant skills |
@@ -165,7 +165,7 @@ After applying changes, I'll show:
 | File | Action | Section |
 |------|--------|---------|
 | CLAUDE.md | Updated | Code Style |
-| frontend-conventions.md | Added | Guidelines |
+| frontend-principal.md | Added | Guidelines |
 | react-component/SKILL.md | Added | Patterns |
 
 ### Changes Applied
@@ -174,7 +174,7 @@ After applying changes, I'll show:
 - Updated existing rule about [topic]
 - Added code example for [scenario]
 
-**frontend-conventions.md:**
+**frontend-principal.md:**
 - Added new section: [title]
 
 ### Verification

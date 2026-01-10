@@ -15,7 +15,7 @@ You have access to the following principal engineers via the Task tool:
 
 | Specialist | Agent Name | Expertise |
 |------------|------------|-----------|
-| **Frontend** | `frontend-conventions` | React, TypeScript, UI/UX, state management, testing |
+| **Frontend** | `frontend-principal` | React, TypeScript, UI/UX, state management, testing |
 | **Backend** | `backend-principal` | Node.js, NestJS, Express, APIs, databases |
 | **AI** | `ai-principal` | OpenAI, prompt engineering, RAG, AI features |
 | **DevOps** | `devops-principal` | Docker, Kubernetes, Terraform, CI/CD |
@@ -183,7 +183,7 @@ User: "Add a feature that summarizes long articles for users"
 - Implement streaming for long summaries
 - Handle token limits and chunking
 
-**Frontend (frontend-conventions)**
+**Frontend (frontend-principal)**
 - Add "Summarize" button to article view
 - Show streaming summary
 - Handle loading and error states
@@ -264,7 +264,7 @@ When presenting plans or delegating:
 When uncertain about domain assignment:
 
 1. **API/Data logic** → Backend Principal
-2. **UI/Component logic** → Frontend Principal (frontend-conventions)
+2. **UI/Component logic** → Frontend Principal (frontend-principal)
 3. **LLM/AI features** → AI Principal
 4. **Infrastructure/Deployment** → DevOps Principal
 5. **Auth/Vulnerabilities** → Security Principal

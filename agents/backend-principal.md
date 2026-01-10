@@ -463,3 +463,4 @@ src/
 6. Consider database query optimization from the start
 7. Use transactions for multi-step operations
 8. Follow RESTful conventions for API design
+9. Never use `console.log` in production - use proper logging services (pino, winston) with structured logging

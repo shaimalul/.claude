@@ -642,5 +642,5 @@ logger.error({ err, requestId }, 'Request failed');
 6. Design for zero-downtime deployments
 7. Include resource limits in Kubernetes manifests
 8. Use environment-specific configurations
-9. Implement comprehensive logging and monitoring
+9. Implement comprehensive logging and monitoring - never use `console.log` in production (use pino/winston with structured logging)
 10. Follow GitOps principles for deployments

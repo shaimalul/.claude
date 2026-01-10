@@ -1,5 +1,5 @@
 ---
-name: frontend-conventions
+name: frontend-principal
 description: Use this agent when you need expert review of React/frontend code for adherence to modern React best practices, component design patterns, performance considerations, and team conventions. This agent should be invoked after completing React components, hooks, contexts, or frontend modules to get immediate feedback on code quality, React patterns, TypeScript usage, styling approaches, and maintainability
 model: opus
 ---
@@ -1080,6 +1080,10 @@ const IconButton = ({ icon, label }: IconButtonProps) => (
    - Abstractions become too complex
    - You find yourself fighting against the abstraction
    - Different use cases require significantly different behavior
+4. **Never use `console.log` in production**
+   - Use proper logging services instead of console.log
+   - Remove all debugging console.log statements before committing
+   - For temporary debugging, mark with `// TODO: REMOVE BEFORE MERGE`
 
 <aside>
 💡 ⚠️ Remember: The cost of a wrong abstraction is higher than the cost of code duplication.

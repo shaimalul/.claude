@@ -688,18 +688,18 @@ I'll use the Task tool to perform deep analysis. The Task agent will:
 
 After the Task analysis completes, I'll display the final review report.
 
-For React/TypeScript projects, I'll also use the frontend-conventions agent:
+For React/TypeScript projects, I'll also use the frontend-principal agent:
 
 ```bash
 # Check if this is a React/TypeScript project
 IS_REACT_PROJECT=false
 if jq -r '.changes[].new_path' "$TEMP_FILE" | grep -qE "\.(tsx?|jsx?)$"; then
   IS_REACT_PROJECT=true
-  echo "Detected React/TypeScript project - will run frontend-conventions analysis"
+  echo "Detected React/TypeScript project - will run frontend-principal analysis"
 fi
 ```
 
-Then I'll invoke the frontend-conventions agent to review React best practices.
+Then I'll invoke the frontend-principal agent to review React best practices.
 
 After all analysis is complete:
 

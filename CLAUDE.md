@@ -729,6 +729,22 @@ const [state, setState] = useState<State>({ status: 'idle' });
   // Good - use e.name only
   if (e instanceof DOMException && e.name === 'QuotaExceededError')
   ```
+- **Never use `console.log` in production code** - use proper logging services or remove before commit:
+  ```typescript
+  // Bad - console.log left in production code
+  console.log('user data:', userData);
+  console.log('API response:', response);
+
+  // Good - use a proper logging service
+  import { logger } from './services/logger';
+  logger.info('Processing request', { userId: userData.id });
+  logger.debug('API response received', { status: response.status });
+
+  // Good - for temporary debugging, use clear markers and remove before PR
+  // TODO: REMOVE BEFORE MERGE
+  console.log('DEBUG:', someValue);
+  ```
+  Why: console.log statements clutter production logs, may expose sensitive data, and indicate incomplete code.
 - Don't add redundant comments that restate the filename or obvious code:
   ```css
   /* Bad - filename already says this */
@@ -1099,7 +1115,7 @@ This codebase uses a team of specialized AI agents for principal-engineer level 
 ### Available Specialists
 | Command | Agent | Expertise |
 |---------|-------|-----------|
-| `/principal frontend` | frontend-conventions | React, TypeScript, components |
+| `/principal frontend` | frontend-principal | React, TypeScript, components |
 | `/principal backend` | backend-principal | Node.js, NestJS, APIs |
 | `/principal ai` | ai-principal | OpenAI, prompts, RAG |
 | `/principal devops` | devops-principal | Docker, K8s, Terraform |

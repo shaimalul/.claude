@@ -15,7 +15,7 @@ You are connecting the user with a specialist principal engineer based on their 
 
 | Domain | Agent | Expertise |
 |--------|-------|-----------|
-| frontend | frontend-conventions | React, TypeScript, components, state management |
+| frontend | frontend-principal | React, TypeScript, components, state management |
 | backend | backend-principal | Node.js, NestJS, APIs, databases |
 | ai | ai-principal | OpenAI, prompts, RAG, AI features |
 | devops | devops-principal | Docker, K8s, Terraform, CI/CD |
