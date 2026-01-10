@@ -11,6 +11,9 @@ shell-snapshots/
 statsig/
 telemetry/
 todos/
+gitlab-review-assets/
+gitlab-fix-comments/
+gitlab-review/
 
 # Files
 history.jsonl
