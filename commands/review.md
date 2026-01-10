@@ -2,12 +2,6 @@
 
 I'll review your code for potential issues.
 
-Let me create a checkpoint before detailed analysis:
-```bash
-git add -A  
-git commit -m "Pre-review checkpoint" || echo "No changes to commit"
-```
-
 I'll use specialized sub-agents for comprehensive analysis:
 - **Security sub-agent**: Credential exposure, input validation, vulnerabilities
 - **Performance sub-agent**: Bottlenecks, memory issues, optimization opportunities  
@@ -28,17 +22,17 @@ For each issue, I'll:
 - Provide specific remediation steps
 - Prioritize by severity and effort
 
-After review, I'll ask: "Create GitHub issues for critical findings?"
-- Yes: I'll create prioritized issues with detailed descriptions
-- Todos only: I'll maintain local tracking for resolution
-- Summary: I'll provide actionable report
+After review, I'll provide:
+- Prioritized list of findings with detailed descriptions
+- Local todo tracking for resolution
+- Actionable summary report
 
 **Important**: I will NEVER:
-- Add "Co-authored-by" or any Claude signatures to commits
-- Add "Created by Claude" or any AI attribution to issues
+- Add "Co-authored-by" or any Claude signatures
+- Add "Created by Claude" or any AI attribution
 - Include "Generated with Claude Code" in any output
-- Modify git config or repository settings
+- Modify repository settings
 - Add any AI/assistant signatures or watermarks
-- Use emojis in commits, PRs, issues, or git-related content
+- Use emojis in documentation
 
 This focuses on real problems that impact your application's reliability and maintainability.

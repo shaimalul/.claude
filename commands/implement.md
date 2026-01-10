@@ -122,7 +122,7 @@ I'll implement features incrementally:
 **Progress Tracking:**
 - Update `implement/plan.md` as I complete each item
 - Mark checkpoints in `implement/state.json`
-- Create meaningful git commits at logical points
+- Save progress at logical points
 
 ## Phase 5: Quality Assurance
 
@@ -253,7 +253,7 @@ When you return and run `/implement` or `/implement resume`:
 - Skip source or project analysis
 - Bypass session file creation
 - Begin coding before showing the plan
-- Use emojis in commits, PRs, or git-related content
+- Use emojis in documentation
 
 ## Phase 6: Implementation Validation
 

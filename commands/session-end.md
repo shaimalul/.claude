@@ -4,7 +4,7 @@ I'll summarize this coding session and update the memory system with our accompl
 
 Let me analyze what we accomplished by:
 1. Reviewing files created/modified during our session
-2. Checking git changes and commit history
+2. Checking recent changes and modifications
 3. Summarizing completed work and pending items
 
 I'll update the appropriate CLAUDE.md file with:
@@ -35,8 +35,8 @@ I'll update the appropriate CLAUDE.md file with:
 **Important**: I will NEVER:
 - Add "Co-authored-by" or any Claude signatures
 - Include "Generated with Claude Code" or similar messages
-- Modify git config or user credentials
-- Add any AI/assistant attribution to the commit
-- Use emojis in commits, PRs, or git-related content
+- Modify user credentials
+- Add any AI/assistant attribution
+- Use emojis in documentation
 
 I'll preserve this summary in your memory system, ensuring continuity for future sessions and seamless handoffs to team members. This integrates with Claude Code CLI's native memory management for persistent context.

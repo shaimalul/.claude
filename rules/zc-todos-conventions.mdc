@@ -1,0 +1,122 @@
+---
+description: Defines the structure and format for AI-generated todos files
+globs: **/*.md
+alwaysApply: false
+name: todos_conventions
+---
+# TODOS File Conventions
+
+<rule>
+actions:
+  - type: information
+    message: |
+      ## Todos File Structure
+      
+      When creating or updating a todos file, follow this structure:
+      
+      ```markdown
+      # {TICKET_ID}: {TICKET_TITLE}
+      
+      ## Figma Designs
+      
+      When the ticket includes Figma links (REQUIRED steps):
+      - [ ] Review Figma designs using `mcp_figma_getDesign` tool
+      - [ ] Download ALL key assets using `mcp_figma_downloadImages` tool
+      - [ ] **REQUIRED**: Store all design assets in `api-plans/assets/{TICKET_ID}/` directory
+      - [ ] Reference specific node IDs and states in implementation tasks
+      - [ ] Ensure implementation exactly matches Figma specifications
+      
+      ## Commit 1: {DESCRIPTIVE TITLE}
+      
+      - [ ] Task 1 description
+      - [ ] Task 2 description
+        ```typescript
+        // Example code if needed
+        ```
+      - [ ] Task 3 description
+      - [ ] Update tests in `tests/path/to/relevant_file.test.ts`:
+        - Follow `zc-testing-conventions.mdc` rule
+        - Ensure test coverage for changes
+      
+      ## Commit 2: {DESCRIPTIVE TITLE}
+      
+      - [ ] Task 1 description
+      - [ ] Task 2 description
+      - [ ] Task 3 description
+      - [ ] Update tests in `tests/path/to/relevant_file.test.ts`
+      ```
+      
+      ## Definition of Done for Tasks
+      
+      A task is considered complete ONLY when:
+      
+      1. The source code changes have been implemented correctly
+      2. The corresponding test files have been updated:
+         - For source file at `src/path/to/file.ts`, test file at `tests/path/to/file.test.ts` must be updated
+         - Tests must follow the `zc-testing-conventions.mdc` rule
+         - New functionality must be covered by tests
+      3. All test execution requirements are met:
+         - All tests related to the current task have been executed
+         - All tests pass successfully
+         - Test results have been documented in the completion checklist
+      4. All code quality requirements are met:
+         - Linting checks have been run on all modified code
+         - All linting errors or warnings have been resolved
+         - Linting status has been documented in the completion checklist
+      5. The task is marked as complete in the todos file with the checkbox checked `[x]`
+      6. Test updates are documented in the todos file
+      7. User feedback has been received and incorporated:
+         - Always wait for explicit user feedback before considering a task done
+         - Treat user feedback as a code review that may require additional changes
+         - Do not move to the next task until current changes are approved
+      
+      ## Task Completion Checklist
+      
+      Before marking any task as complete, document the following:
+      
+      ```
+      ## Task Completion Checklist
+      
+      - [x] Implementation meets all functional requirements
+      - [x] Tests run: [command used]
+        - Result: All tests passing (X passed, 0 failed)
+      - [x] Linting checks: [command used]
+        - Result: No linting errors/warnings
+      - [x] Documentation updated (if applicable)
+      ```
+      
+      ## Creating Task Items
+      
+      When creating task items:
+      
+      1. Break down implementation into small, focused tasks
+      2. Include explicit test update tasks for each file modified
+      3. Include code snippets where helpful
+      4. Define clear boundaries between tasks
+      5. Always include test updates as part of the task's Definition of Done
+
+examples:
+
+- input: |
+  Create a todos file for ticket ID-12345
+  output: |
+  # ID-12345: Feature Title
+  
+  ## Figma Designs
+  - [ ] Review Figma designs at https://www.figma.com/file/example/design using `mcp_figma_getDesign`
+  - [ ] Download ALL UI components using `mcp_figma_downloadImages` tool
+  - [ ] **REQUIRED**: Store all design assets in `api-plans/assets/ID-12345/` directory
+  - [ ] Reference specific node IDs in implementation tasks
+  - [ ] Ensure implementation exactly matches Figma specifications
+  
+  ## Commit 1: Update user authentication
+  - [ ] Add new authentication provider to AuthService
+  - [ ] Update UserService to use new provider
+  - [ ] Update tests in tests/services/user.service.test.ts:
+    - Follow `zc-testing-conventions.mdc` rule
+    - Add test cases for new auth flow
+  ## Commit 2: Add UI components
+  - [ ] Create new login form component
+  - [ ] Add routing for authentication pages
+  - [ ] Update tests in tests/components/login-form.test.ts
+  - [ ] Update tests in tests/components/login-form.test.ts

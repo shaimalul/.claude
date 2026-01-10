@@ -340,23 +340,22 @@ When you run ANY of these: `/refactor finish`, `/refactor enhance`, `/refactor v
 ## Safety Guarantees
 
 **Protection Measures:**
-- Git checkpoints before changes
-- Incremental commits at logical points
+- Save state before changes
+- Incremental updates at logical points
 - Test validation after each step
 - Clear rollback strategy
 
 **Important:** I will NEVER:
 - Add AI attribution or signatures
-- Modify git configuration
+- Modify system configuration
 - Break working functionality
 - Make changes without validation
-- Use emojis in commits, PRs, or git-related content
+- Use emojis in documentation
 
 ## Command Integration
 
 When appropriate, I may suggest using other commands:
 - `/test` - After major refactoring to verify functionality
-- `/commit` - At logical checkpoints in the refactoring process
 
 ## Execution Guarantee
 

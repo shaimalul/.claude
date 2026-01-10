@@ -846,3 +846,234 @@ When refactoring, always consider: "Can this be unit tested?"
 - Explain WHY you're making each change
 - Frame decisions around: testability, maintainability, team scalability
 - For civic data domain: frame around data integrity ("This needs to be testable because sentiment classification accuracy is critical for citizen feedback")
+
+---
+
+## Backend Standards (Node.js/Express/NestJS)
+
+### Three-Layer Architecture (STRICT)
+```
+Controller Layer → Service Layer → Repository Layer
+     (HTTP)         (Business)        (Data)
+```
+
+**Rules:**
+- Controllers ONLY handle HTTP request/response
+- Services contain ALL business logic
+- Repositories handle ALL database operations
+- Never skip layers (Controller → Repository is WRONG)
+
+### NestJS Module Pattern
+```typescript
+@Module({
+  imports: [TypeOrmModule.forFeature([User])],
+  controllers: [UsersController],
+  providers: [UsersService, UsersRepository],
+  exports: [UsersService], // Only export services
+})
+export class UsersModule {}
+```
+
+### Express Middleware Pattern
+```typescript
+// Wrap async handlers
+export const asyncHandler = (fn: RequestHandler) =>
+  (req: Request, res: Response, next: NextFunction) =>
+    Promise.resolve(fn(req, res, next)).catch(next);
+
+// Centralized error handling
+export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
+  const status = err.statusCode || StatusCodes.INTERNAL_SERVER_ERROR;
+  res.status(status).json({ status: 'error', message: err.message });
+};
+```
+
+### Validation with Zod
+```typescript
+import { z } from 'zod';
+
+export const createUserSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(8),
+});
+
+export type CreateUserDto = z.infer<typeof createUserSchema>;
+```
+
+---
+
+## AI/ML Integration Standards
+
+### OpenAI Service Pattern
+```typescript
+import OpenAI from 'openai';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+  timeout: 30000,
+  maxRetries: 3,
+});
+
+// Always handle errors
+async function safeChat(messages: Message[]): Promise<string> {
+  try {
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages,
+    });
+    return response.choices[0]?.message?.content ?? '';
+  } catch (error) {
+    if (error instanceof OpenAI.APIError) {
+      // Handle specific error codes
+    }
+    throw error;
+  }
+}
+```
+
+### Streaming Responses
+```typescript
+async function* streamChat(messages: Message[]): AsyncGenerator<string> {
+  const stream = await openai.chat.completions.create({
+    model: 'gpt-4o',
+    messages,
+    stream: true,
+  });
+
+  for await (const chunk of stream) {
+    const content = chunk.choices[0]?.delta?.content;
+    if (content) yield content;
+  }
+}
+```
+
+### Prompt Engineering
+- Clear role and context in system prompt
+- Few-shot examples for complex tasks
+- Chain of thought for reasoning
+- JSON mode for structured output
+- Token management for cost control
+
+---
+
+## DevOps Standards
+
+### Docker Multi-Stage Build
+```dockerfile
+# Stage 1: Dependencies
+FROM node:20-alpine AS deps
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production
+
+# Stage 2: Build
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+# Stage 3: Production
+FROM node:20-alpine AS runner
+WORKDIR /app
+RUN addgroup -g 1001 -S nodejs && adduser -S nodeuser -u 1001
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=builder /app/dist ./dist
+USER nodeuser
+EXPOSE 3000
+HEALTHCHECK --interval=30s --timeout=3s CMD wget -q --spider http://localhost:3000/health || exit 1
+CMD ["node", "dist/main.js"]
+```
+
+### Kubernetes Requirements
+- Resource limits on all containers
+- Liveness and readiness probes
+- Rolling update strategy
+- Secrets for sensitive data
+- ConfigMaps for configuration
+
+### Terraform Standards
+- Remote state with locking
+- Modular structure
+- Environment separation
+- Variable validation
+- Encryption enabled
+
+### CI/CD Requirements
+- Test stage before build
+- Caching for dependencies
+- Environment protection rules
+- Manual approval for production
+- Docker layer caching
+
+---
+
+## Security Standards
+
+### OWASP Top 10 Checklist
+- [ ] Injection prevention (parameterized queries)
+- [ ] Strong authentication (bcrypt, JWT)
+- [ ] Sensitive data encryption
+- [ ] Access control on every request
+- [ ] Security headers configured
+- [ ] XSS prevention (output sanitization)
+- [ ] CSRF protection
+- [ ] Dependency scanning
+- [ ] Security logging
+- [ ] Rate limiting
+
+### Input Validation (ALWAYS)
+```typescript
+// Validate ALL user inputs server-side
+const result = schema.safeParse(input);
+if (!result.success) {
+  throw new ValidationError(result.error);
+}
+```
+
+### Secrets Management
+```typescript
+// NEVER hardcode secrets
+const API_KEY = process.env.API_KEY;
+if (!API_KEY) throw new Error('API_KEY required');
+```
+
+### Security Headers
+```typescript
+import helmet from 'helmet';
+app.use(helmet());
+```
+
+### Rate Limiting
+```typescript
+import rateLimit from 'express-rate-limit';
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+});
+app.use('/api/', limiter);
+```
+
+---
+
+## Principal Engineering Team
+
+This codebase uses a team of specialized AI agents for principal-engineer level development:
+
+### Available Specialists
+| Command | Agent | Expertise |
+|---------|-------|-----------|
+| `/principal frontend` | frontend-conventions | React, TypeScript, components |
+| `/principal backend` | backend-principal | Node.js, NestJS, APIs |
+| `/principal ai` | ai-principal | OpenAI, prompts, RAG |
+| `/principal devops` | devops-principal | Docker, K8s, Terraform |
+| `/principal security` | security-principal | OWASP, auth, vulnerabilities |
+
+### Key Commands
+- `/plan-feature [description]` - Plan a feature with the mastermind
+- `/build-feature` - Execute the planned feature
+- `/architect [topic]` - Get architecture guidance
+- `/quality-gate` - Run comprehensive quality checks
+- `/standup` - Get status report

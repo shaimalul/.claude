@@ -1,0 +1,555 @@
+---
+description: Defines standards for creating consistent Storybook stories in the Common UI library
+globs: **/*.stories.tsx
+alwaysApply: true
+name: storybook_conventions
+---
+# Storybook Conventions
+
+<rule>
+actions:
+  - type: information
+    message: |
+      ## Storybook Conventions
+      
+      ### Ground Rules
+      
+      - Every component should have a Storybook stories file for visual testing
+      - Stories should be placed in the same directory as the component
+      - Stories must follow our consistent structure for optimal documentation
+      - **Every story should include interaction tests using play functions**
+      - **All stories must use the StorybookPage component wrapper**
+      - **All interaction tests must be verified with `npm run test-storybook` before moving to the next step`**
+      - **All story code must pass linting with `npm run lint` before moving to the next step**
+      - **Fix any failing tests or linting issues before proceeding to the next step**
+      
+      ### Using Internal Components in Stories
+      
+      When creating Storybook stories and examples:
+      
+      - **Always prioritize using our internal component library** for any UI elements in your stories
+      - Check the `src/index.ts` file to discover available components that can be imported directly
+      - Use ZCD components (e.g., `ZCDButton`, `ZCDInput`) instead of native HTML elements or third-party components
+      - This ensures visual consistency and properly demonstrates component integration
+      - For layout and container elements in stories, use our internal components like `ZCDFlex`, `ZCDCard`, etc.
+      
+      ```tsx
+      // Good: Using internal components in stories
+      import { ZCDButton, ZCDFlex } from '@zencity/common-ui';
+      
+      export const WithActions: Story = {
+        ...Template,
+        render: (args) => (
+          <StorybookPage title="Example">
+            <ZCDFlex direction="column" gap="md">
+              <YourComponent {...args} />
+              <ZCDButton text="Action Button" onClick={() => console.log('Clicked')} />
+            </ZCDFlex>
+          </StorybookPage>
+        ),
+      };
+      
+      // Avoid: Using native HTML or custom elements in stories
+      export const WithActions: Story = {
+        ...Template,
+        render: (args) => (
+          <StorybookPage title="Example">
+            <div className="flex-container">
+              <YourComponent {...args} />
+              <button onClick={() => console.log('Clicked')}>Action Button</button>
+            </div>
+          </StorybookPage>
+        ),
+      };
+      ```
+      
+      ### Storybook Story Structure
+      
+      All story files should follow this consistent structure:
+      
+      1. **Imports and Meta Configuration**:
+         ```typescript
+         import { Meta, StoryObj } from '@storybook/react';
+         import { expect, within, userEvent } from '@storybook/test';
+         import React from 'react';
+         import { StorybookPage } from '../StorybookComponents/StorybookPage/StorybookPage';
+         import { ComponentName } from './ComponentName';
+         
+         const meta: Meta<typeof ComponentName> = {
+           title: "DOMAIN/ComponentName", // DOMAIN can be ATOMS, MOLECULES, or ORGANISMS
+           component: ComponentName,
+           argTypes: {
+             // Detailed prop definitions
+           },
+         };
+         
+         export default meta;
+         ```
+
+      ### Story Title Formatting
+
+      The title of a story should follow the format `DOMAIN/COMPONENT_NAME` where:
+      
+      - **DOMAIN**: Must be one of the following values: INTERNAL, ATOMS, MOLECULES, ORGANISMS, UTILS, HOOKS
+      - **COMPONENT_NAME**: For components with the ZCD prefix (e.g., ZCDButton, ZCDCheckbox), **omit the ZCD prefix** in the title
+      
+      ```typescript
+      // For a component named ZCDCheckbox:
+      const meta: Meta<typeof ZCDCheckbox> = {
+        title: "ATOMS/Checkbox", // Correct: ZCD prefix is omitted
+        component: ZCDCheckbox,
+        // ...
+      };
+      
+      // For a component named ZCDDialog:
+      const meta: Meta<typeof ZCDDialog> = {
+        title: "MOLECULES/Dialog", // Correct: ZCD prefix is omitted
+        component: ZCDDialog,
+        // ...
+      };
+      ```
+      
+      2. **Comprehensive Props Documentation**:
+         For each prop, include:
+         - Default value
+         - Appropriate control type
+         - Detailed description including dependencies with other props
+         - Type information and default value in table summary
+         - Required flag if applicable
+      
+         ```typescript
+         argTypes: {
+           label: {
+             defaultValue: 'Default Label',
+             control: 'text',
+             description: 'Label for the component. Will be displayed only if value is not empty.',
+             table: {
+               type: { summary: 'string' },
+               defaultValue: { summary: 'undefined' },
+             },
+             required: true,
+           },
+           valueLabel: {
+             defaultValue: 'Label',
+             control: { type: 'text' },
+             description: 'Label for the selected filter, e.g. "Status". Will be displayed only if `value` is not empty.',
+             table: {
+               type: { summary: 'string' },
+               defaultValue: { summary: 'undefined' },
+             },
+             required: true,
+           },
+           // Document all props
+         }
+         ```
+      
+      3. **Story Type and Template**:
+         ```typescript
+         type Story = StoryObj<typeof ComponentName>;
+         
+         // Base template for all stories
+         const Template: Story = {
+           render: (args) => (
+             <StorybookPage title="Button" description="Standard button component with multiple variants and sizes">
+               <ComponentName {...args} />
+             </StorybookPage>
+           ),
+         };
+         ```
+      
+      4. **Default Story with Comprehensive Args and Required Interactions**:
+         ```typescript
+         export const Default: Story = {
+           ...Template,
+           args: {
+             label: 'Default Label',
+             onChange: (value) => console.log('Value changed:', value),
+             // Include reasonable defaults for all required props
+           },
+           play: async ({ canvasElement, args }) => {
+             const canvas = within(canvasElement);
+             
+             // Initial tests
+             const component = canvas.getByRole('button');
+             await expect(component).toBeInTheDocument();
+             
+             // Interaction tests if applicable
+             await userEvent.click(component);
+             
+             // Verify state changes or event handling
+             // Test event handlers or state changes as appropriate
+           },
+         };
+         ```
+      
+      5. **Multiple Variations with Interaction Tests**:
+         Always include multiple stories to showcase different variants and states:
+         ```typescript
+         export const Secondary: Story = {
+           ...Template,
+           args: {
+             label: 'Secondary Label',
+             variant: 'secondary',
+             // Props specific to this variant
+           },
+           play: async ({ canvasElement }) => {
+             const canvas = within(canvasElement);
+             
+             // Verify component renders correctly
+             const component = canvas.getByRole('button');
+             await expect(component).toBeInTheDocument();
+             
+             // Test interactions specific to this variant
+           },
+         };
+         
+         export const Disabled: Story = {
+           ...Template,
+           args: {
+             label: 'Disabled State',
+             disabled: true,
+             // Props specific to this state
+           },
+           play: async ({ canvasElement }) => {
+             const canvas = within(canvasElement);
+             
+             // Verify disabled state
+             const component = canvas.getByRole('button');
+             await expect(component).toBeDisabled();
+             
+             // Attempt interaction to confirm disabled behavior
+             await userEvent.click(component);
+             // Verify no state change occurred
+           },
+         };
+         ```
+      
+      6. **Interactive Examples with Comprehensive Play Functions**:
+         Include comprehensive interaction tests for interactive components:
+         ```typescript
+         export const Interactive: Story = {
+           ...Template,
+           args: {
+             label: 'Interactive Demo',
+             value: '',
+             onChange: (value) => console.log('Value changed:', value),
+           },
+           play: async ({ canvasElement }) => {
+             const canvas = within(canvasElement);
+             
+             // Initial state tests
+             const input = canvas.getByRole('textbox');
+             await expect(input).toHaveValue('');
+             
+             // Interaction tests
+             await userEvent.type(input, 'New value');
+             await expect(input).toHaveValue('New value');
+             
+             // Additional interactions like clicks, focus, keyboard navigation
+             const clearButton = canvas.getByLabelText('Clear');
+             await userEvent.click(clearButton);
+             await expect(input).toHaveValue('');
+           },
+         };
+         ```
+      
+      ### Testing Guidelines
+      
+      1. **Basic Functionality**:
+         - Test component rendering
+         - Verify default props
+         - Check accessibility attributes
+      
+      2. **Interactive Features**:
+         - Test user interactions
+         - Verify state changes
+         - Check event handlers
+      
+      3. **Edge Cases**:
+         - Test with empty/invalid data
+         - Verify overflow handling
+         - Test with special characters
+      
+      4. **Accessibility**:
+         - Test keyboard navigation
+         - Verify ARIA attributes
+         - Check color contrast
+      
+      5. **Verification Process**:
+         - **Before committing or submitting PR, ALWAYS verify:**
+           - Run `npm run lint` to ensure code meets all linting requirements
+           - Run `npm run test-storybook` to verify all interaction tests pass
+         - Fix ANY failing tests or linting issues before proceeding
+         - This verification is MANDATORY for all story changes and additions
+         - Include these verification steps in your PR checklist
+         - Document any intentional lint exceptions with clear explanations
+      
+      ### StorybookPage Usage
+      
+      The StorybookPage component is **required** for all stories and provides consistent layout and styling. Always utilize the following props appropriately:
+      
+      - **title**: Always set to the component name (required)
+      - **subtitle**: Use for additional context about the specific story variant
+      - **description**: Provide a concise description of the component's purpose and usage
+      - **isInternalComponent**: Set to true for internal components not meant for external use
+      - **contentBackground**: Change the background color if needed for better visibility
+      - **disablePadding**: Use when component needs to render without default padding
+      
+      ```typescript
+      <StorybookPage
+        title="ZCDSearchBar"
+        description="A search input component with clear functionality"
+        contentBackground="zcd-gray-20"
+      >
+        <ZCDSearchBar {...args} />
+      </StorybookPage>
+      ```
+      
+      ### Best Practices
+      
+      1. **Always use the StorybookPage component** to wrap all stories with appropriate title and description
+      2. **Every story must include interaction tests** using play functions
+      3. **Verify all tests pass with `npm run test-storybook`** before proceeding with development
+      4. **Run `npm run lint` to ensure code complies with linting standards** and fix any issues
+      5. **Include detailed descriptions** for all props, including any dependencies
+      6. **Document prop dependencies clearly** in descriptions
+      7. **Create multiple story variations** to showcase different component states
+      8. **Test interactive features** including keyboard navigation and state changes
+      9. **Verify accessibility attributes** in your tests
+      10. **Group related props** in the argTypes definition
+      11. **Provide meaningful default values** for controls
+      12. **Test edge cases** and special scenarios
+
+examples:
+  - input: |
+      How should I create a Storybook story for my ZCDButton component?
+    output: |
+      Here's how to create a comprehensive Storybook story for your ZCDButton component:
+      
+      ```typescript
+      import { Meta, StoryObj } from '@storybook/react';
+      import { expect, within, userEvent } from '@storybook/test';
+      import React from 'react';
+      import { StorybookPage } from '../StorybookComponents/StorybookPage/StorybookPage';
+      import { ZCDButton } from './ZCDButton';
+      
+      const meta: Meta<typeof ZCDButton> = {
+        title: "ATOMS/Button",
+        component: ZCDButton,
+        argTypes: {
+          children: {
+            control: 'text',
+            description: 'Button content',
+            table: {
+              type: { summary: 'ReactNode' },
+              defaultValue: { summary: 'undefined' },
+            },
+            required: true,
+          },
+          variant: {
+            control: 'select',
+            options: ['primary', 'secondary', 'tertiary', 'ghost'],
+            description: 'Visual style of the button',
+            table: {
+              type: { summary: 'string' },
+              defaultValue: { summary: 'primary' },
+            },
+          },
+          size: {
+            control: 'select',
+            options: ['small', 'medium', 'large'],
+            description: 'Size of the button',
+            table: {
+              type: { summary: 'string' },
+              defaultValue: { summary: 'medium' },
+            },
+          },
+          disabled: {
+            control: 'boolean',
+            description: 'Whether the button is disabled',
+            table: {
+              type: { summary: 'boolean' },
+              defaultValue: { summary: 'false' },
+            },
+          },
+          onClick: {
+            description: 'Function called when button is clicked',
+            table: {
+              type: { summary: '() => void' },
+              defaultValue: { summary: 'undefined' },
+            },
+          },
+          className: {
+            control: 'text',
+            description: 'Additional CSS class for the root element',
+            table: {
+              type: { summary: 'string' },
+              defaultValue: { summary: 'undefined' },
+            },
+          },
+        },
+      };
+      
+      export default meta;
+      
+      type Story = StoryObj<typeof ZCDButton>;
+      
+      const Template: Story = {
+        render: (args) => (
+          <StorybookPage title="Button" description="Standard button component with multiple variants and sizes">
+            <ZCDButton {...args} />
+          </StorybookPage>
+        ),
+      };
+      
+      export const Primary: Story = {
+        ...Template,
+        args: {
+          children: 'Primary Button',
+          variant: 'primary',
+          size: 'medium',
+          onClick: () => console.log('Button clicked'),
+        },
+        play: async ({ canvasElement }) => {
+          const canvas = within(canvasElement);
+          
+          // Initial state
+          const button = canvas.getByRole('button');
+          await expect(button).toHaveTextContent('Primary Button');
+          
+          // Click interaction
+          await userEvent.click(button);
+        },
+      };
+      
+      export const Secondary: Story = {
+        ...Template,
+        args: {
+          children: 'Secondary Button',
+          variant: 'secondary',
+          size: 'medium',
+        },
+        play: async ({ canvasElement }) => {
+          const canvas = within(canvasElement);
+          
+          // Initial state verification
+          const button = canvas.getByRole('button');
+          await expect(button).toHaveTextContent('Secondary Button');
+          
+          // Test interaction
+          await userEvent.click(button);
+        },
+      };
+      
+      export const Small: Story = {
+        ...Template,
+        args: {
+          children: 'Small Button',
+          variant: 'primary',
+          size: 'small',
+        },
+        play: async ({ canvasElement }) => {
+          const canvas = within(canvasElement);
+          const button = canvas.getByRole('button');
+          await expect(button).toHaveTextContent('Small Button');
+        },
+      };
+      
+      export const Large: Story = {
+        ...Template,
+        args: {
+          children: 'Large Button',
+          variant: 'primary',
+          size: 'large',
+        },
+        play: async ({ canvasElement }) => {
+          const canvas = within(canvasElement);
+          const button = canvas.getByRole('button');
+          await expect(button).toHaveTextContent('Large Button');
+        },
+      };
+      
+      export const Disabled: Story = {
+        ...Template,
+        args: {
+          children: 'Disabled Button',
+          variant: 'primary',
+          disabled: true,
+        },
+        play: async ({ canvasElement }) => {
+          const canvas = within(canvasElement);
+          
+          // Verify disabled state
+          const button = canvas.getByRole('button');
+          await expect(button).toBeDisabled();
+          
+          // Verify no interaction
+          await userEvent.click(button);
+          // No action should happen
+        },
+      };
+      
+      export const WithKeyboardNavigation: Story = {
+        ...Template,
+        args: {
+          children: 'Keyboard Navigation',
+          variant: 'primary',
+        },
+        play: async ({ canvasElement }) => {
+          const canvas = within(canvasElement);
+          
+          // Focus the button with keyboard
+          await userEvent.tab();
+          const button = canvas.getByRole('button');
+          await expect(button).toHaveFocus();
+          
+          // Activate with keyboard
+          await userEvent.keyboard('{Enter}');
+          // Verify activation if applicable
+        },
+      };
+      ```
+      
+      This story includes:
+      - ✅ Comprehensive argTypes documentation
+      - ✅ Multiple variants and states
+      - ✅ Interactive tests with play functions for every story
+      - ✅ Keyboard accessibility testing
+      - ✅ StorybookPage wrapper with title and description
+      - ✅ Clear naming and organization
+
+  - input: |
+      What verification steps should I follow when creating a Storybook component?
+    output: |
+      When creating a Storybook component, you MUST follow these verification steps:
+      
+      1. **Run linting checks:**
+         ```bash
+         npm run lint
+         ```
+         Fix any linting issues before proceeding.
+      
+      2. **Run storybook tests:**
+         ```bash
+         npm run test-storybook
+         ```
+         Ensure all interaction tests pass successfully.
+      
+      3. **Fix any failures:**
+         - For lint errors: Adjust your code to follow the project's linting rules
+         - For test failures: Debug and fix your component or test scenarios
+      
+      These verification steps are MANDATORY before submitting your PR. This ensures:
+      - Consistent code quality
+      - Working interaction tests
+      - Properly functioning components
+      
+      Document any intentional lint exceptions with clear explanations if they can't be avoided.
+
+metadata:
+  priority: medium
+  version: 1.0
+</rule> 
+</rule> 
+</rule> 
+</rule> 

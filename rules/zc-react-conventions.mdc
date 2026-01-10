@@ -1,0 +1,807 @@
+---
+description: Defines standards for React component structure, state management, and performance optimizations
+globs: **/*.jsx,**/*.tsx,**/components/**/*.ts
+alwaysApply: true
+name: react_conventions
+---
+# React Conventions
+
+This rule defines the standard React conventions for Zencity frontend projects.
+
+<rule>
+actions:
+  - type: information
+    message: |
+
+## React Conventions
+
+### Component Organization
+
+When creating a component, aim for reusability and maintainability. If a component becomes too complex, it might need to be broken down into smaller, more manageable components.
+**Do:**
+
+- Separate a large component into smaller ones if it performs several distinct tasks.
+
+```tsx
+// Good
+function UserProfile() {
+  return (
+    <div>
+      <ProfileHeader />
+      <ProfileBody />
+    </div>
+  );
+}
+```
+
+**Don't:**
+
+- Avoid writing a very long component that accomplishes multiple things.
+
+```tsx
+// Avoid
+function UserProfile() {
+  return (
+    <div>
+      {/* Lots of code for the profile header */}
+      {/* Lots of code for the profile body */}
+    </div>
+  );
+}
+```
+
+Our aim should be to create components that are cohesive and adhere to the Single Responsibility Principle (SRP). A component should ideally do one thing and do it well.
+**Do:**
+
+- Break down components that are doing too much.
+
+```tsx
+// Good
+function UserProfile() {
+  return (
+    <div>
+      <UserDetails />
+      <UserPosts />
+    </div>
+  );
+}
+```
+
+**Don't:**
+
+- Avoid creating components that handle too many responsibilities.
+
+```tsx
+// Avoid
+function UserProfile() {
+  // User details logic
+  // User posts logic
+}
+```
+
+**Do**:
+
+- Split UI and logic by using separate components (Presentational and Container Components)
+
+```jsx
+// Presentational component - focus on rendering the UI
+function Form({ formData, onInputChange, onSubmit }) {
+  return (
+    <form onSubmit={onSubmit}>
+      <input name="name" value={formData.name} onChange={onInputChange} />
+      <input name="email" value={formData.email} onChange={onInputChange} />
+      <button type="submit">Submit</button>
+    </form>
+  );
+}
+
+// Container component - handle state and data concerns
+function FormContainer() {
+  const [formData, setFormData] = useState({ name: '', email: '' });
+
+  const handleInputChange = e => setFormData({ ...formData, [e.target.name]: e.target.value });
+
+  const handleSubmit = e => {
+    e.preventDefault();
+    console.log('Submitted:', formData);
+  };
+
+  return <Form formData={formData} onInputChange={handleInputChange} onSubmit={handleSubmit} />;
+}
+```
+
+**Don't**:
+
+- Combine UI and logic into a single, monolithic component.
+
+```jsx
+function Form() {
+  const [formData, setFormData] = useState({ name: '', email: '' });
+
+  const handleInputChange = e => setFormData({ ...formData, [e.target.name]: e.target.value });
+
+  const handleSubmit = e => {
+    e.preventDefault();
+    console.log('Submitted:', formData);
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input name="name" value={formData.name} onChange={handleInputChange} />
+      <input name="email" value={formData.email} onChange={handleInputChange} />
+      <button type="submit">Submit</button>
+    </form>
+  );
+}
+```
+
+### Event Handlers: 'onClick' vs 'handleClick'
+
+- When passing an event handler as a prop to a child component, the prop should be named using the prefix `on`, followed by the event or action (e.g., `onClick`, `onSubmit`).
+- When defining an event handler within the component itself, the function should be named using the prefix `handle`, followed by the event or action (e.g., `handleClick`, `handleSubmit`).
+  This approach provides clear differentiation between event handlers passed as props and those defined within the component. It also helps improve readability and maintain consistency across the codebase.
+  **Do:**
+
+```jsx
+// Parent Component
+function ParentComponent() {
+  const handleClick = () => {
+    console.log('Button clicked!');
+  };
+
+  return <ChildComponent onClick={handleClick} />;
+}
+
+// Child Component
+function ChildComponent({ onClick }) {
+  return <button onClick={onClick}>Click Me</button>;
+}
+```
+
+**Don't:**
+
+```jsx
+// Parent Component
+function ParentComponent() {
+  const onClickButton = () => {
+    console.log('Button clicked!');
+  };
+
+  return <ChildComponent handleClick={onClickButton} />;
+}
+
+// Child Component
+function ChildComponent({ handleClick }) {
+  return <button onClick={handleClick}>Click Me</button>;
+}
+```
+
+### State Management and context usage
+
+**Do:**
+
+- Use **`useContext`** when the same state is required in at least three different components ([following the WET rule - Write Everything Twice](https://kentcdodds.com/blog/aha-programming)). This promotes code reuse and minimizes prop drilling.
+- Split the context into a Provider and a custom hook for better organization and usage.
+- Create separate, focused contexts for different parts of your application state.
+  **Don't:**
+- Don't use **`useContext`** for state that's local to a component. If state is only being used in a single component or just two.
+- Don't create one large context and spread it all over the app. This can lead to unnecessary re-renders and make your application harder to maintain.
+  This approach encourages thoughtful use of context and helps prevent unnecessary application-wide state sharing, which could lead to harder-to-maintain code and potential performance issues. By creating multiple, focused contexts, you can ensure that components only re-render when the specific state they depend on changes.
+
+### Context Implementation Best Practices
+
+1. **Split into Provider and Custom Hook:**
+   Create a separate Provider component and a custom hook for each context. This separation improves code organization and reusability.
+   Example Provider:
+
+```tsx
+export const AspectsContext = createContext<AspectsContextProps | undefined>(undefined);
+
+export const AspectsProvider = ({ children }: { children: React.ReactNode }) => {
+  const [state, dispatch] = useReducer(aspectsReducer, initialState);
+
+  const fetchAspects = async (params?: AspectsParams) => {
+    // Implementation details...
+  };
+
+  const value: AspectsContextProps = { ...state, dispatch, fetchAspects };
+
+  return <AspectsContext.Provider value={value}>{children}</AspectsContext.Provider>;
+};
+```
+
+Example Custom Hook:
+
+```tsx
+export const useAspects = () => {
+  const context = useContext(AspectsContext);
+
+  if (!context) {
+    throw new Error('useAspects must be used within an AspectsProvider');
+  }
+
+  return context;
+};
+```
+
+2. **Error Handling in Custom Hook:**
+   Include error handling in the custom hook to ensure the context is used correctly within a provider. This helps catch errors early in development.
+3. **Testing Considerations:**
+   When testing components that use context, try to design them in a way that doesn't require wrapping with a context provider. If this isn't possible, create a test wrapper that provides the necessary context.
+
+### Performance Considerations
+
+### useMemo & useCallback
+
+Avoid premature optimization. Specifically, don't use `useMemo` or `useCallback` unless profiling proves it necessary.
+**Do:**
+
+- Only use `useMemo` and `useCallback` when necessary.
+
+```tsx
+// Good
+const memoizedValue = useMemo(() => computeExpensiveValue(a, b), [a, b]);
+```
+
+**Don't:**
+
+- Don't use `useMemo` or `useCallback` without a proven performance need.
+
+```tsx
+// Avoid
+const memoizedValue = useMemo(() => computeValue(a, b), [a, b]); // where computeValue is not an expensive operation
+```
+
+Remember, these hooks come with their own overhead, so only use them when necessary.
+**Rule of thumb**, only use **`useMemo`** when:
+
+1. The computation is noticeably slowing down your renders.
+2. The same computation is likely to be done across multiple renders with the same inputs.
+3. You have profiled your app with the React DevTools Profiler or another benchmarking tool and have determined that optimizing this specific computation improves performance.
+
+### Keys in Lists
+
+React uses the ﻿key prop in lists to identify which items have changed, are added, or are removed. Keys should be stable, predictable, and unique for components in a collection. Using functions that generate a new key on every render, like ﻿uuid(), is not advisable.
+**Do:**
+
+- Use identifiers that are unique and stable across re-renders for your keys.
+
+```tsx
+// Good
+const userList = users.map(user => <tr key={user.id}>{user.name}</tr>);
+```
+
+**Don't:**
+
+- Avoid using ﻿`uuid()` or similar functions that generate a unique ID each time they're called as keys. This makes React believe that every element is always new, leading to unnecessary re-renders and negatively affecting performance.
+
+```tsx
+// Avoid
+<tr key={uuid()}>{user.name}</tr>
+```
+
+Using random values obtained from calls to ﻿`uuid()` as keys disrupts React's diffing algorithm leading to unnecessary unmounting/mounting of components which negatively impacts performance and may cause issues with component state.
+
+### Misuse useEffect
+
+**Do:**
+Perform manipulation directly on props and store the result in a variable if the manipulated value does not affect render.
+
+```tsx
+function MyComponent({ propValue }) {
+  const manipulatedValue = manipulate(propValue);
+
+  return <div>{manipulatedValue}</div>;
+}
+```
+
+**Avoid:**
+Avoid copying props into local state and synchronizing in `useEffect` if not necessary, as it may lead to extra unnecessary renders.
+
+```tsx
+function MyComponent({ propValue }) {
+  const [manipulatedValue, setManipulatedValue] = useState();
+
+  useEffect(() => {
+    setManipulatedValue(manipulate(propValue));
+  }, [propValue]);
+
+  return <div>{manipulatedValue}</div>;
+}
+```
+
+The avoid example above shows a scenario where the `propValue` prop is manipulated and then stored in a local state using `useEffect`. This pattern might be necessary in some cases, but it's often an indication that you're duplicating the "source of truth". This can lead to bugs because it increases the chances of the state and prop going out of sync. The component re-renders more often than necessary, which can lead to performance issues.
+In the "do" example, the `propValue` prop is directly manipulated and used in the component. The component only re-renders when `propValue` itself changes, and there's no duplication of state.
+
+### Avoid returning an empty fragment when no rendering is needed
+
+**Do:**
+Explicitly return **`null`** when no rendering is needed, signaling to React that you don't want to render anything. This approach is optimal because React won't attempt to render or update any part of the component subtree when **`null`** is returned.
+
+```tsx
+function MyComponent({ options }) {
+  return options.length > 0 ? <OptionsList options={options} /> : null;
+}
+```
+
+**Avoid:**
+Avoid returning an empty fragment (**`<></>`**) when no content needs to be rendered. Even though it results in no visible content, an empty React Fragment still creates an object and requires processing time, albeit minimal.
+
+```tsx
+function MyComponent({ options }) {
+  return options.length > 0 ? <OptionsList options={options} /> : <></>;
+}
+```
+
+This example shows how to properly avoid rendering when it's not necessary in your component. It demonstrates that returning **`null`** is the preferred method as it avoids unnecessary processing and clearly communicates the intent not to render anything.
+
+### Avoid multiple conditions in a single statement
+
+**Do:**
+Extract complex conditions into well-named variables. This makes your code cleaner and easier to understand.
+**Avoid:**
+Avoid using multiple conditions in a single if statement directly. It can make the code hard to read and understand, especially when dealing with optional chaining and indexing objects.
+
+```tsx
+function MyComponent({ selectedSurveyGroup, cyclesDataBySurveyGroup }) {
+  const selectedGroupId = selectedSurveyGroup?.id;
+  const hasCyclesData =
+    selectedGroupId && cyclesDataBySurveyGroup && cyclesDataBySurveyGroup[selectedGroupId];
+
+  if (!hasCyclesData) {
+    return;
+  }
+
+  // ...
+}
+```
+
+```tsx
+function MyComponent({ selectedSurveyGroup, cyclesDataBySurveyGroup }) {
+  if (
+    !selectedSurveyGroup?.id ||
+    !cyclesDataBySurveyGroup ||
+    !cyclesDataBySurveyGroup[selectedSurveyGroup.id]
+  ) {
+    return;
+  }
+
+  // ...
+}
+```
+
+In the "Do" example, we clearly define what the conditions mean by extracting them into the **`hasCyclesData`** variable. This makes the code much more readable, as other developers can quickly understand what the if statement is checking without needing to decipher the conditions themselves.
+
+### useState vs useReducer
+
+State and reducers in React are used to manage component state. `useState` is a simpler hook that's ideal for managing single values or objects with a small number of properties. `useReducer`, on the other hand, is more suited to complex state objects that contain multiple properties, or when the next state depends on the previous one.
+Choosing between `useState` and `useReducer` can often come down to personal or team preference, and either can be used effectively in most situations. However, here are some general guidelines that you might find helpful:
+
+### `useState`
+
+**Do:**
+Use `useState` when dealing with simple state updates.
+
+```tsx
+const [count, setCount] = useState(0);
+
+const increment = () => {
+  setCount(count + 1);
+};
+```
+
+**Avoid:**
+Avoid using `useState` when dealing with complex state objects or when the next state depends on the previous one.
+
+```tsx
+// Avoid: This can lead to state inconsistencies.
+const [user, setUser] = useState({ name: '', age: '' });
+
+const updateNameAndAge = (newName, newAge) => {
+  setUser({ ...user, name: newName });
+  setUser({ ...user, age: newAge });
+};
+```
+
+### `useReducer`
+
+**Do:**
+Use `useReducer` when dealing with complex state logic, or when the next state depends on the previous one. It also gives you a predictable state container, as all updates go through one function, making it easier to test and debug.
+
+```tsx
+const initialState = { name: '', age: '' };
+
+const reducer = (state, action) => {
+  switch (action.type) {
+    case 'updateName':
+      return { ...state, name: action.payload };
+    case 'updateAge':
+      return { ...state, age: action.payload };
+    default:
+      throw new Error();
+  }
+};
+
+const [state, dispatch] = useReducer(reducer, initialState);
+
+const updateNameAndAge = (newName, newAge) => {
+  dispatch({ type: 'updateName', payload: newName });
+  dispatch({ type: 'updateAge', payload: newAge });
+};
+```
+
+**Avoid:**
+Avoid using `useReducer` for simple state updates where `useState` would suffice, as it may lead to unnecessarily complex code.
+
+```tsx
+// Avoid: This is an overly complex way to increment a count.
+const initialState = { count: 0 };
+
+const reducer = (state, action) => {
+  switch (action.type) {
+    case 'increment':
+      return { ...state, count: state.count + 1 };
+    default:
+      throw new Error();
+  }
+};
+
+const [state, dispatch] = useReducer(reducer, initialState);
+
+const increment = () => {
+  dispatch({ type: 'increment' });
+};
+```
+
+In the above "avoid" example, a simple count increment doesn't benefit from the complexity of `useReducer`. Using `useState` for such a case would lead to simpler and more readable code.
+
+### Avoid Declaring Constants Inside Component
+
+**Do:**
+
+- Declare constants outside the component function.
+
+```tsx
+const translationPath = 'forms.inputFields';
+
+export const CustomInput: React.FC<Props> = function CustomInput({ redirectUrl }: Props): ReactElement {
+  ...
+};
+```
+
+**Don't:**
+
+- Don't declare constants inside the component function.
+
+```tsx
+// Avoid
+export const CustomInput: React.FC<Props> = function CustomInput({ redirectUrl }: Props): ReactElement {
+  const translationPath = 'forms.inputFields';
+  ...
+};
+```
+
+### Avoid Storing React Components in Variables
+
+By storing a React component inside a variable within another component, you cause this component to be re-created on every render of the parent component. This can lead to performance issues, especially if the child component is complex or has many children on its own.
+Remember, components define reusable pieces of UI and should live as standalone functions or classes, not as variables. It's much cleaner, easier to test, and it also benefits from JSX's syntax highlighting and error checking
+**Do:**
+
+- Use JSX directly inside your parent component's return statement.
+
+```tsx
+// Good
+function MyComponent() {
+  const userName = 'John';
+
+  return <div>Hello, {userName}</div>;
+}
+```
+
+**Don't:**
+
+- Avoid storing JSX in variables inside your component.
+
+```tsx
+// Avoid
+function MyComponent() {
+  const userName = 'John';
+  const greeting = <div>Hello, {userName}</div>;
+
+  return greeting;
+}
+```
+
+### Avoid Passing setState as Props/Argument
+
+By adhering to these guidelines, we avoid unnecessary coupling of components, making them more modular, easier to understand, and reusable. It also maintains control and understanding in the parent component of when and how their state is being altered, leading to more predictable code.
+**Do:**
+
+- Pass only necessary state values and create specific handler functions in the parent component. Use these handler functions to update state.
+
+```tsx
+// Good
+const Parent = () => {
+  const [user, setUser] = React.useState<UserInfo | undefined>(undefined);
+
+  const handleUserChange: (newUser?: UserInfo) => void = newUser => {
+    setUser(newUser);
+  };
+
+  return <Child onUserChange={handleUserChange} />;
+};
+
+type ChildProps = {
+  onUserChange?: (newUser?: UserInfo) => void;
+};
+
+const Child: React.FC<ChildProps> = ({ onUserChange }) => {
+  // Some code here...
+
+  return <button onClick={() => onUserChange(modifiedUser)}>Press me</button>;
+};
+```
+
+**Don't:**
+
+- Avoid passing ﻿setState functions directly as props. Doing so creates tight coupling between your child component and the parent, reducing the reusability, readability, and flexibility of the child component.Avoid passing ﻿setState functions directly as props as this will tightly couple your child component to the parent, which reduces the flexibility, readability and reusability of your components
+
+```tsx
+// Avoid
+const Parent = () => {
+  const [user, setUser] = React.useState<UserInfo | undefined>(undefined);
+
+  return <Child setUser={setUser} />;
+};
+
+type ChildProps = {
+  setUser: React.Dispatch<React.SetStateAction<UserInfo | undefined>>;
+};
+
+const Child: React.FC<ChildProps> = ({ setUser }) => {
+  // Some code here...
+
+  return <button onClick={() => setUser(modifiedUser)}>Press me</button>;
+};
+```
+
+### Prefer Using Common UI
+
+Always prefer to use components from our design system over creating new ones or using native HTML elements directly. This will ensure consistent behavior and styling across our repos.
+**Do:**
+
+- Use components from our design system whenever possible.
+
+```tsx
+// Good
+import { ZCDInput } from '@zencity/common-ui';
+
+function MyFormComponent() {
+  return <ZCDInput placeholder="Type here..." />;
+}
+```
+
+**Don't:**
+
+- Avoid using native HTML elements when a corresponding component exists in our design system.
+
+```tsx
+// Avoid
+function MyFormComponent() {
+  return <input placeholder="Type here..." />;
+}
+```
+
+Similarly, prefer using colors from our design system to maintain visual consistency across our application.
+**Do:**
+
+- Use colors from our design system whenever styling components.
+
+```css
+// Good
+@use '@zencity/common-u/zcd-colors';
+
+.myComponent {
+  background: zcd-colors.$zcd-blue-20;
+}
+```
+
+**Don't:**
+
+- Avoid using explicit color codes, as this can lead to inconsistencies in our design.
+
+```css
+// Avoid
+.myComponent {
+  background: #3c87cd;
+}
+```
+
+### File Structure and Component Organization
+
+**Do:**
+- Create each React component in its own dedicated file
+- Place each custom hook in its own file following the project's directory structure
+- Place helper functions in separate files unless they are extremely minimal (fewer than 5 lines of code)
+
+```tsx
+// Good: One component per file
+// UserProfile.tsx
+export function UserProfile() {
+  return <div>User Profile Component</div>;
+}
+
+// Good: Minimal helper function within component file (fewer than 5 lines)
+export function DataTable() {
+  const formatDate = (date) => new Date(date).toLocaleDateString();
+  
+  return <table>{/* Table with formatted dates */}</table>;
+}
+```
+
+**Don't:**
+- Never declare multiple components or hooks within the same file
+
+```tsx
+// Avoid: Multiple components in the same file
+export function UserProfile() {
+  return <div>User Profile Component</div>;
+}
+
+export function UserSettings() {
+  return <div>User Settings Component</div>;
+}
+```
+
+### Naming Conventions for Internationalization
+
+**Do:**
+- Use directionally-neutral terminology to support RTL languages
+- Use "start"/"end" instead of "left"/"right" in code and styling
+
+```tsx
+// Good: Using directionally-neutral terms
+<div style={{ marginStart: '10px', paddingEnd: '20px' }}>Content</div>
+
+// Good: Using logical properties in CSS
+.container {
+  margin-inline-start: 10px;
+  padding-inline-end: 20px;
+}
+```
+
+**Don't:**
+- Avoid language-specific directional terms like "left"/"right"
+
+```tsx
+// Avoid: Using language-specific directional terms
+<div style={{ marginLeft: '10px', paddingRight: '20px' }}>Content</div>
+
+// Avoid: Using directional properties in CSS
+.container {
+  margin-left: 10px;
+  padding-right: 20px;
+}
+
+// Aviod naming props or component with language-specific directional terms
+function Button({ onClick, leftIcon, rightIcon }) {
+  return <button onClick={onClick}>{leftIcon} {children} {rightIcon}</button>;
+}
+```
+
+### Design System Usage
+
+**Do:**
+- Always prioritize using components from our design system (@zencity/common-ui)
+- Search the @zencity/common-ui package index file for existing components before creating custom ones
+
+```tsx
+// Good: Using design system components
+import { ZCDButton, ZCDInput } from '@zencity/common-ui';
+
+function LoginForm() {
+  return (
+    <form>
+      <ZCDInput placeholder="Username" />
+      <ZCDButton>Log in</ZCDButton>
+    </form>
+  );
+}
+```
+
+**Don't:**
+- Avoid creating custom components when a design system component exists
+
+```tsx
+// Avoid: Creating custom button when design system component exists
+function CustomButton({ children, onClick }) {
+  return (
+    <button 
+      onClick={onClick}
+      style={{ padding: '8px 16px', borderRadius: '4px' }}
+    >
+      {children}
+    </button>
+  );
+}
+```
+
+examples:
+
+- input: |
+  How should I name my event handlers?
+  output: |
+  For event handlers:
+
+  ✅ Within a component, prefix with "handle":
+
+  ```jsx
+  function Button() {
+    const handleClick = () => {
+      console.log('Button clicked');
+    };
+
+    return <button onClick={handleClick}>Click me</button>;
+  }
+  ```
+
+  ✅ When passing as props, prefix with "on":
+
+  ```jsx
+  function Parent() {
+    const handleClick = () => {
+      console.log('Button clicked');
+    };
+
+    return <Button onClick={handleClick} />;
+  }
+
+  function Button({ onClick }) {
+    return <button onClick={onClick}>Click me</button>;
+  }
+  ```
+
+- input: |
+  When should I use Context for state management?
+  output: |
+  Use Context for state management when:
+  ✅ The same state is needed in at least three different components
+  ✅ You want to avoid prop drilling through multiple component levels
+  Best practices:
+
+  1. Create separate, focused contexts for different parts of your app state
+  2. Split into Provider and custom hook:
+
+  ```tsx
+  // Provider component
+  export const UserContext = createContext(undefined);
+
+  export const UserProvider = ({ children }) => {
+    const [user, setUser] = useState(null);
+
+    // Value to be provided
+    const value = { user, setUser };
+
+    return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
+  };
+
+  // Custom hook with error handling
+  export const useUser = () => {
+    const context = useContext(UserContext);
+
+    if (!context) {
+      throw new Error('useUser must be used within a UserProvider');
+    }
+
+    return context;
+  };
+  ```
+
+  ❌ Don't use Context for state only used in 1-2 components
+  ❌ Don't create one large context for your entire app
+
+metadata:
+priority: high
+version: 1.0
+</rule>
+

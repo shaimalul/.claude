@@ -1,0 +1,436 @@
+---
+description: Defines standards for unit tests, integration tests, and end-to-end tests
+globs: **/*.test.ts,**/*.spec.ts,**/*.e2e-spec.ts
+alwaysApply: true
+name: testing_conventions
+---
+
+# Testing Conventions
+
+This rule defines the testing conventions for Zencity projects, including component/service tests and analytics testing.
+
+<rule>
+actions:
+  - type: information
+    message: |
+  ## Testing Conventions
+  ### Go Beyond Basic Render/Instantiation Tests
+  Testing components/services goes beyond just ensuring that they render/instantiate without error. Consider tests that assert behavior, interactions, and responses to changes in inputs or state. By doing so, we can ensure that our code functions as expected in various scenarios, leading to a more robust and reliable application.
+  **Do:**
+  - Write tests that validate behavior and interactions.
+  ```tsx
+  // Good
+  describe('<MyComponent />', () => {
+    it('displays the correct text when the button is clicked', () => {
+      const { getByText } = render(<MyComponent />);
+
+      fireEvent.click(getByText('Click me'));
+
+      expect(getByText('You clicked the button')).toBeVisible();
+    });
+
+});
+
+// Good
+describe('UserService', () => {
+let userService: UserService;
+let userRepository: MockType<Repository<User>>;
+
+    beforeEach(async () => {
+      const module = await Test.createTestingModule({
+        providers: [
+          UserService,
+          {
+            provide: getRepositoryToken(User),
+            useFactory: mockRepository,
+          },
+        ],
+      }).compile();
+
+      userService = module.get(UserService);
+      userRepository = module.get(getRepositoryToken(User));
+    });
+
+    it('should find a user by id', async () => {
+      const mockUser = { id: 1, name: 'Test User' };
+      userRepository.findOne.mockReturnValue(mockUser);
+
+      const result = await userService.findById(1);
+
+      expect(result).toEqual(mockUser);
+      expect(userRepository.findOne).toHaveBeenCalledWith({ where: { id: 1 } });
+    });
+
+});
+
+````
+**Don't:**
+- Avoid writing only basic render/instantiation tests.
+```tsx
+// Avoid
+describe('<MyComponent />', () => {
+  it('renders without error', () => {
+    render(<MyComponent />);
+  });
+});
+
+// Avoid
+describe('UserService', () => {
+  let userService: UserService;
+
+  beforeEach(async () => {
+    const module = await Test.createTestingModule({
+      providers: [UserService],
+    }).compile();
+
+    userService = module.get(UserService);
+  });
+
+  it('should be defined', () => {
+    expect(userService).toBeDefined();
+  });
+});
+````
+
+### Analytics
+
+Analytics are a critical part of our product development lifecycle and require testing to prevent regressions.
+
+### Importance of Analytics
+
+Analytics provide crucial insights into how users interact with our features. They help us:
+
+- Measure feature adoption and usage patterns
+- Make data-driven product decisions
+- Validate hypotheses about user behavior
+- Identify pain points and opportunities for improvement
+
+### Implementing Analytics
+
+We use Amplitude for tracking user actions. When implementing new features, refer to the PRD for required analytics events, and **please use** [this Notion](mdc:https:/www.notion.so/User-Analytics-0d9ffb7de8db417ab6e963d0ae688a31?pvs=21) for implementation.
+
+### Why Analytics Break During Refactoring
+
+Analytics implementations are often tightly coupled to component/service structure and lifecycle. When refactoring, analytics can break in several ways:
+
+1. **Event timing issues**: Analytics events may be triggered at incorrect times if lifecycles change
+2. **Missing events**: Events might be removed entirely during refactoring
+3. **Incorrect data**: The data passed to analytics events might change or become incorrect
+4. **Duplicate events**: Multiple events might be fired when only one is expected
+
+### Common Refactoring Scenarios That Break Analytics
+
+- Changing component/service hierarchy
+- Moving logic between components/services
+- Converting class components to functional components (frontend)
+- Moving logic between controllers and services (backend)
+- Implementing code splitting or lazy loading
+- Changing state management approaches
+
+### Testing Analytics to Prevent Regression
+
+Always include tests for analytics when implementing or refactoring code.
+
+### Do:
+
+```tsx
+// Component with analytics
+const FeatureButton = () => {
+  const handleClick = () => {
+    // Feature logic
+    // Analytics should be the last thing in the function to ensure analytics are recorded only when the operation succeeds.
+    analytics.trackEvent('feature_button_clicked', { feature: 'example' });
+  };
+
+  return <button onClick={handleClick}>Use Feature</button>;
+};
+
+// Test for analytics
+describe('FeatureButton', () => {
+  it('should track click event with correct parameters', () => {
+    const analyticsSpy = jest.spyOn(analytics, 'track');
+
+    render(<FeatureButton />);
+    fireEvent.click(screen.getByText('Use Feature'));
+
+    expect(analyticsSpy).toHaveBeenCalledWith(
+      'feature_button_clicked',
+      expect.objectContaining({ feature: 'example' }),
+    );
+  });
+});
+```
+
+```typescript
+// Service with analytics
+@Injectable()
+export class UserService {
+  constructor(
+    private readonly analyticsService: AnalyticsService,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+  ) {}
+
+  async updateUserProfile(userId: number, data: UpdateProfileDto): Promise<User> {
+    // Feature logic
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    const updatedUser = await this.userRepository.save({
+      ...user,
+      ...data,
+    });
+
+    // Analytics should be the last thing in the function
+    this.analyticsService.track('user_profile_updated', {
+      userId,
+      fieldsChanged: Object.keys(data),
+    });
+
+    return updatedUser;
+  }
+}
+
+// Test for analytics
+describe('UserService', () => {
+  let userService: UserService;
+  let analyticsService: MockType<AnalyticsService>;
+  let userRepository: MockType<Repository<User>>;
+
+  beforeEach(async () => {
+    const module = await Test.createTestingModule({
+      providers: [
+        UserService,
+        {
+          provide: AnalyticsService,
+          useFactory: mockAnalyticsService,
+        },
+        {
+          provide: getRepositoryToken(User),
+          useFactory: mockRepository,
+        },
+      ],
+    }).compile();
+
+    userService = module.get(UserService);
+    analyticsService = module.get(AnalyticsService);
+    userRepository = module.get(getRepositoryToken(User));
+  });
+
+  it('should track profile update with correct parameters', async () => {
+    const mockUser = { id: 1, name: 'Old Name', email: 'test@example.com' };
+    const updateData = { name: 'New Name' };
+
+    userRepository.findOne.mockReturnValue(mockUser);
+    userRepository.save.mockReturnValue({ ...mockUser, ...updateData });
+
+    await userService.updateUserProfile(1, updateData);
+
+    expect(analyticsService.track).toHaveBeenCalledWith(
+      'user_profile_updated',
+      expect.objectContaining({
+        userId: 1,
+        fieldsChanged: ['name'],
+      }),
+    );
+  });
+});
+```
+
+### Don't:
+
+```tsx
+// Don't refactor without updating tests
+// Original component with analytics
+const FeatureButton = () => {
+  const handleClick = () => {
+    analytics.track('feature_button_clicked', { feature: 'example' });
+    // Feature logic
+  };
+
+  return <button onClick={handleClick}>Use Feature</button>;
+};
+
+// Refactored component with broken analytics
+const FeatureButton = () => {
+  return <button onClick={() => doFeatureLogic()}>Use Feature</button>;
+};
+
+// Analytics call was lost during refactoring!
+const doFeatureLogic = () => {
+  // Feature logic only, analytics call missing
+};
+```
+
+### Backend Analytics
+
+Tracking events on the backend is used for specific scenarios like email opens, service usage, or important backend operations. Contact the [Platform](mdc:https:/www.notion.so/Platform-2f2d858ef7c94f9b89b808b948773dcb?pvs=21) team for guidance on backend analytics implementation.
+
+examples:
+
+- input: |
+  How should I test my components or services?
+  output: |
+  Your tests should go beyond basic render/instantiation tests:
+
+  ### React Components:
+
+  ✅ Test component behavior and user interactions:
+
+  ```tsx
+  describe('<MyComponent />', () => {
+    it('displays the correct text when the button is clicked', () => {
+      const { getByText } = render(<MyComponent />);
+
+      fireEvent.click(getByText('Click me'));
+
+      expect(getByText('You clicked the button')).toBeVisible();
+    });
+
+    it('calls the onSubmit prop when the form is submitted', () => {
+      const handleSubmit = jest.fn();
+      const { getByTestId } = render(<MyComponent onSubmit={handleSubmit} />);
+
+      fireEvent.submit(getByTestId('form'));
+
+      expect(handleSubmit).toHaveBeenCalledTimes(1);
+    });
+  });
+  ```
+
+  ### NestJS Services:
+
+  ✅ Test service behavior and integrations:
+
+  ```typescript
+  describe('UserService', () => {
+    let userService: UserService;
+    let userRepository: MockType<Repository<User>>;
+
+    beforeEach(async () => {
+      const module = await Test.createTestingModule({
+        providers: [
+          UserService,
+          {
+            provide: getRepositoryToken(User),
+            useFactory: mockRepository,
+          },
+        ],
+      }).compile();
+
+      userService = module.get(UserService);
+      userRepository = module.get(getRepositoryToken(User));
+    });
+
+    it('should create a new user with hashed password', async () => {
+      const createUserDto = {
+        email: 'test@example.com',
+        password: 'password123',
+      };
+      const savedUser = {
+        id: 1,
+        email: 'test@example.com',
+        password: 'hashed_password',
+      };
+
+      jest.spyOn(bcrypt, 'hash').mockResolvedValue('hashed_password');
+      userRepository.save.mockReturnValue(savedUser);
+
+      const result = await userService.create(createUserDto);
+
+      expect(bcrypt.hash).toHaveBeenCalledWith('password123', 10);
+      expect(userRepository.save).toHaveBeenCalledWith({
+        email: 'test@example.com',
+        password: 'hashed_password',
+      });
+      expect(result).toEqual(savedUser);
+    });
+  });
+  ```
+
+  ❌ Don't just check if the component/service renders/instantiates:
+
+  ```tsx
+  // Avoid
+  it('renders without error', () => {
+    render(<MyComponent />);
+  });
+
+  // Avoid
+  it('should be defined', () => {
+    expect(userService).toBeDefined();
+  });
+  ```
+
+- input: |
+  How should I test analytics in my application?
+  output: |
+  When testing analytics:
+
+  ### For React components:
+
+  ✅ Create test spy on analytics and verify calls:
+
+  ```tsx
+  it('should track button click event', () => {
+    const analyticsSpy = jest.spyOn(analytics, 'track');
+
+    render(<FeatureButton />);
+    fireEvent.click(screen.getByText('Use Feature'));
+
+    expect(analyticsSpy).toHaveBeenCalledWith(
+      'feature_button_clicked',
+      expect.objectContaining({ feature: 'example' }),
+    );
+  });
+  ```
+
+  ### For NestJS services:
+
+  ✅ Test analytics service calls:
+
+  ```typescript
+  it('should track user creation event', async () => {
+    const createUserDto = { email: 'test@example.com', password: 'password123' };
+    const savedUser = { id: 1, email: 'test@example.com' };
+
+    userRepository.save.mockReturnValue(savedUser);
+
+    await userService.create(createUserDto);
+
+    expect(analyticsService.track).toHaveBeenCalledWith(
+      'user_created',
+      expect.objectContaining({
+        userId: 1,
+        email: 'test@example.com',
+      }),
+    );
+  });
+  ```
+
+  ✅ Ensure analytics calls have correct parameters:
+
+  ```typescript
+  it('should track feature usage with detailed parameters', async () => {
+    const mockData = { userId: 1, feature: 'reports', action: 'export' };
+
+    await featureService.trackUsage(mockData);
+
+    expect(analyticsService.track).toHaveBeenCalledWith(
+      'feature_used',
+      expect.objectContaining({
+        userId: 1,
+        feature: 'reports',
+        action: 'export',
+        timestamp: expect.any(Number),
+      }),
+    );
+  });
+  ```
+
+  ✅ Always update analytics tests when refactoring code
+  ❌ Don't remove analytics during refactoring
+  ❌ Don't ignore analytics in your tests
+
+metadata:
+priority: high
+version: 1.0
+</rule>

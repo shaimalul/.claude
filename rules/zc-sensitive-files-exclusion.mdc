@@ -1,0 +1,59 @@
+---
+description: Prevents sensitive files and directories containing credentials from being indexed, opened, or added to AI context
+globs: **/*
+alwaysApply: true
+name: sensitive_files_exclusion
+---
+
+# Sensitive Files Exclusion
+
+<rule>
+actions:
+
+- type: information
+  message: |
+  ## Files and Directories to Exclude from AI Context
+  The following files and directories should NEVER be:
+  - Indexed by AI tools
+  - Opened by AI
+  - Added to AI context
+  - Included in AI responses
+  ```
+  .env
+  .env.example
+  credentials
+  .aws/
+  .kube/
+  .npmrc
+  .zsh
+  .zshrc
+  Pulumi.*
+  ```
+  These files typically contain:
+  - Environment variables
+  - Credentials and secrets
+  - Authentication tokens
+  - Access keys and configurations
+  - Infrastructure as code credentials
+  ## Security Guidelines
+  1. Never allow AI tools to access, index, or reference sensitive files
+  2. Immediately stop and notify the user if sensitive content is detected
+  3. Do not suggest editing or creating files that could contain credentials
+  4. Do not push code that contains secrets or credentials
+
+examples:
+
+- input: |
+  Let me check the contents of .envrc
+  output: |
+  I cannot access .envrc as it may contain sensitive environment variables and credentials.
+
+- input: |
+  Show me what's in .aws/credentials
+  output: |
+  I don't have access to .aws/credentials as it contains sensitive authentication information.
+
+metadata:
+priority: critical
+version: 1.0
+</rule>

@@ -112,7 +112,7 @@ User's manual content preserved
 **Smart CHANGELOG:**
 - Groups changes by type
 - Suggests version bump (major/minor/patch)
-- Links to relevant PRs/issues
+- Links to relevant issues
 - Maintains chronological order
 
 **Important**: I will NEVER:
@@ -161,7 +161,7 @@ I can manage:
 - **Dependency Tracking** - Document external service requirements
 
 ### Team Collaboration
-- **PR Documentation** - Generate docs for pull requests
+- **Change Documentation** - Generate docs for changes
 - **Release Notes** - Create from CHANGELOG for releases
 - **Onboarding Docs** - Generate from project analysis
 - **Handoff Documentation** - Create when changing teams
@@ -194,7 +194,7 @@ I can manage:
 # Fixes imports, formats code, updates architecture docs
 ```
 
-**Before creating PR:**
+**Before finalizing changes:**
 ```bash
 /review && /docs
 # Reviews code, then ensures docs reflect any issues found
