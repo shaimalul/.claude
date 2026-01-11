@@ -8,8 +8,8 @@
       "mcp__playwright__*",
       "Read(**)",
       "Write(**)",
-      "Bash(**)",
-      "WebSearch(**)"
+      "Bash",
+      "WebSearch"
     ],
     "deny": ["Bash(git:*)"],
     "defaultMode": "bypassPermissions"
