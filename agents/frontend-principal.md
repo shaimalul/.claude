@@ -1674,6 +1674,110 @@ const Child: React.FC<ChildProps> = ({ setUser }) => {
 ---
 
 <aside>
+💡 Avoid Prop Explosion (10+ Props)
+
+</aside>
+
+When a component receives 10+ props, it's a sign that the component is doing too much or that related state should be grouped together. This makes components hard to use, test, and maintain.
+
+**Do:**
+
+- Group related props into custom hooks that return a single object
+- Use Context for state that's needed across multiple components
+- Use composition to let children manage their own state
+- Split large components into smaller, focused ones
+
+```tsx
+// Good - Custom hook groups related state
+const useTestCaseForm = (defaultTestSuiteId?: string) => {
+  const [testSuiteId, setTestSuiteId] = useState(defaultTestSuiteId ?? '');
+  const [name, setName] = useState('');
+  const [question, setQuestion] = useState('');
+  const [threshold, setThreshold] = useState(0.8);
+  const [expectedOutput, setExpectedOutput] = useState('');
+
+  return {
+    formState: { testSuiteId, name, question, threshold, expectedOutput },
+    handlers: {
+      onTestSuiteChange: setTestSuiteId,
+      onNameChange: setName,
+      onQuestionChange: setQuestion,
+      onThresholdChange: setThreshold,
+      onExpectedOutputChange: setExpectedOutput,
+    },
+  };
+};
+
+// Usage - clean and readable
+const { formState, handlers } = useTestCaseForm(defaultTestSuiteId);
+<TestCaseForm formState={formState} handlers={handlers} />
+```
+
+```tsx
+// Good - Context for widely shared state
+const TestCaseFormContext = createContext<TestCaseFormState | null>(null);
+
+const TestCaseFormProvider: FC<PropsWithChildren<{ defaultId?: string }>> = ({
+  defaultId,
+  children
+}) => {
+  const formState = useTestCaseForm(defaultId);
+  return (
+    <TestCaseFormContext.Provider value={formState}>
+      {children}
+    </TestCaseFormContext.Provider>
+  );
+};
+
+// Child components use context - zero prop drilling
+const TestCaseForm: FC = () => {
+  const { formState, handlers } = useTestCaseFormContext();
+  // ...
+};
+```
+
+**Don't:**
+
+- Pass 10+ individual props to a single component
+- Create "god components" that manage too much state
+- Drill props through multiple component layers
+
+```tsx
+// Avoid - prop explosion makes component unusable
+<TestCaseForm
+  testSuiteId={testSuiteId}
+  onTestSuiteChange={setTestSuiteId}
+  name={name}
+  onNameChange={setName}
+  question={question}
+  onQuestionChange={setQuestion}
+  threshold={threshold}
+  onThresholdChange={setThreshold}
+  testSuites={testSuites}
+  showTestSuiteSelect={!defaultTestSuiteId}
+  expectedOutput={expectedOutput}
+  onExpectedOutputChange={setExpectedOutput}
+  isEditing={isEditing}
+  customerIds={customerIds}
+  selectedCustomerId={selectedCustomerId}
+  onCustomerChange={setSelectedCustomerId}
+  canGenerate={canGenerate}
+  isGenerating={isGeneratingBaseline}
+  onGenerateBaseline={handleGenerateBaseline}
+  generateTooltip={generateTooltip}
+/>
+```
+
+**Refactoring Checklist:**
+1. Count the props - if 10+, refactor
+2. Group related props (form fields, handlers, config)
+3. Extract to custom hook if used in one tree
+4. Use Context if used across 3+ components
+5. Consider composition for distinct child responsibilities
+
+---
+
+<aside>
 💡 Avoid Storing React Components in Variables
 
 </aside>

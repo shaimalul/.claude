@@ -171,6 +171,56 @@ Benefits:
 - Self-documenting - callback names describe intent (onSelect vs setX)
 - Parent controls state logic - can add validation, side effects, etc.
 
+### When You See 10+ Props on a Component
+This is a code smell indicating missing abstractions. Refactor using one of these strategies:
+```typescript
+// Bad - prop explosion (20 props!)
+<TestCaseForm
+  testSuiteId={testSuiteId}
+  onTestSuiteChange={setTestSuiteId}
+  name={name}
+  onNameChange={setName}
+  question={question}
+  onQuestionChange={setQuestion}
+  threshold={threshold}
+  onThresholdChange={setThreshold}
+  testSuites={testSuites}
+  expectedOutput={expectedOutput}
+  onExpectedOutputChange={setExpectedOutput}
+  isEditing={isEditing}
+  customerIds={customerIds}
+  selectedCustomerId={selectedCustomerId}
+  onCustomerChange={setSelectedCustomerId}
+  canGenerate={canGenerate}
+  isGenerating={isGeneratingBaseline}
+  onGenerateBaseline={handleGenerateBaseline}
+  generateTooltip={generateTooltip}
+/>
+
+// Good - Strategy 1: Custom hook for related state
+const testCaseState = useTestCaseForm(defaultTestSuiteId);
+const baselineState = useBaselineGeneration(customerIds);
+
+<TestCaseForm {...testCaseState} {...baselineState} />
+
+// Good - Strategy 2: Context for shared state
+<TestCaseFormProvider defaultTestSuiteId={defaultTestSuiteId}>
+  <TestCaseForm /> {/* Reads state from context */}
+</TestCaseFormProvider>
+
+// Good - Strategy 3: Composition with children
+<TestCaseForm>
+  <TestSuiteSelect />
+  <ThresholdInput />
+  <BaselineGenerator customerIds={customerIds} />
+</TestCaseForm>
+```
+
+**When to use which strategy:**
+- **Custom hook**: Related state that's only used in one component tree
+- **Context**: State needed by 3+ components at different nesting levels
+- **Composition**: When child components have distinct responsibilities
+
 ### When You See Sorting/Filtering Logic in Component
 Extract to custom hook (no memoization needed for small datasets):
 ```typescript
@@ -555,6 +605,35 @@ Similarly, prefer using colors from our design system to maintain visual consist
 
 See the full component library: https://common-ui.zencity.io/
 
+### Common UI Component Conventions
+
+When creating ZCD components in `@zencity/common-ui`:
+
+- **ZCD prefix**: All components start with `ZCD` (e.g., `ZCDButton`, `ZCDInput`)
+- **CSS Modules**: Use `.module.scss` for component styles
+- **Logical CSS**: Use `padding-inline-start` instead of `padding-left` for RTL support
+- **No `style` prop**: Variants should be controlled through props, not inline styles
+
+**className and customStyles patterns:**
+```tsx
+// Root component uses className prop
+<div className={classNames(styles.card, className)}>
+  {/* Nested components use customStyles */}
+  <div className={customStyles?.header}>{header}</div>
+  <div className={customStyles?.body}>{children}</div>
+</div>
+
+// Props interface
+interface CardProps {
+  className?: string;  // For root element
+  customStyles?: {     // For nested elements
+    header?: string;
+    body?: string;
+    footer?: string;
+  };
+}
+```
+
 ## Dependency Injection Pattern
 
 For testability, always use interfaces and Context for DI:
@@ -634,6 +713,187 @@ type State =
 const [state, setState] = useState<State>({ status: 'idle' });
 ```
 
+## AHA - Avoid Hasty Abstractions
+
+**Start with WET (Write Everything Twice), move to DRY only when patterns are stable.**
+
+```typescript
+// Bad - premature abstraction with too many variants
+const Button: React.FC<ButtonProps> = ({
+  variant = 'primary',
+  size = 'medium',
+  isFullWidth,
+  isLoading,
+  // ... 10 more props for edge cases
+}) => {
+  // Complex conditional logic
+};
+
+// Good - specific components for specific use cases
+const PrimaryButton = ({ children, onClick }: ButtonBaseProps) => (
+  <button className="bg-blue-500 text-white px-4 py-2 rounded" onClick={onClick}>
+    {children}
+  </button>
+);
+
+const LoadingButton = ({ children, isLoading }: LoadingButtonProps) => (
+  <button className="bg-blue-500 text-white px-4 py-2 rounded" disabled={isLoading}>
+    {isLoading ? <Spinner /> : children}
+  </button>
+);
+```
+
+**Decision Framework:**
+1. Will this abstraction simplify the codebase?
+2. Is the pattern stable and unlikely to diverge?
+3. Would a new team member understand it easily?
+4. If "no" to any - keep code WET
+
+## React Anti-Patterns to Avoid
+
+### Don't Copy Props to State with useEffect
+```typescript
+// Bad - duplicates source of truth, causes extra renders
+function MyComponent({ propValue }) {
+  const [value, setValue] = useState();
+
+  useEffect(() => {
+    setValue(manipulate(propValue));  // Avoid!
+  }, [propValue]);
+
+  return <div>{value}</div>;
+}
+
+// Good - derive directly from props
+function MyComponent({ propValue }) {
+  const value = manipulate(propValue);  // Computed on each render
+  return <div>{value}</div>;
+}
+```
+
+### Return null Instead of Empty Fragment
+```typescript
+// Bad - empty fragment still creates an object
+function MyComponent({ options }) {
+  return options.length > 0 ? <OptionsList options={options} /> : <></>;
+}
+
+// Good - null signals "render nothing"
+function MyComponent({ options }) {
+  return options.length > 0 ? <OptionsList options={options} /> : null;
+}
+```
+
+### Never Store React Components in Variables
+```typescript
+// Bad - component recreated every render
+function MyComponent() {
+  const greeting = <div>Hello, {userName}</div>;  // Recreated each render!
+  return greeting;
+}
+
+// Good - JSX directly in return
+function MyComponent() {
+  return <div>Hello, {userName}</div>;
+}
+```
+
+### Extract Complex Conditions to Named Variables
+```typescript
+// Bad - hard to understand
+if (!selectedSurveyGroup?.id || !cyclesDataBySurveyGroup || !cyclesDataBySurveyGroup[selectedSurveyGroup.id]) {
+  return;
+}
+
+// Good - self-documenting
+const selectedGroupId = selectedSurveyGroup?.id;
+const hasCyclesData = selectedGroupId && cyclesDataBySurveyGroup?.[selectedGroupId];
+
+if (!hasCyclesData) {
+  return;
+}
+```
+
+### Use Stable Keys in Lists (Never uuid())
+```typescript
+// Bad - uuid() creates new key every render, breaks React diffing
+{users.map((user) => <tr key={uuid()}>{user.name}</tr>)}
+
+// Good - stable, unique identifier from data
+{users.map((user) => <tr key={user.id}>{user.name}</tr>)}
+```
+
+### Prefer Early Return
+```typescript
+// Bad - deeply nested
+function checkUser(user) {
+  let message;
+  if (user) {
+    if (user.isActive) {
+      message = `Welcome, ${user.name}`;
+    } else {
+      message = 'User is not active';
+    }
+  } else {
+    message = 'No user provided';
+  }
+  return message;
+}
+
+// Good - early return, flat structure
+function checkUser(user) {
+  if (!user) return 'No user provided';
+  if (!user.isActive) return 'User is not active';
+  return `Welcome, ${user.name}`;
+}
+```
+
+### useState vs useReducer
+
+**Use useState** for simple, independent state:
+```typescript
+const [count, setCount] = useState(0);
+const [name, setName] = useState('');
+```
+
+**Use useReducer** for complex state or when next state depends on previous:
+```typescript
+// Good - related state, predictable updates
+const initialState = { name: '', age: '', email: '' };
+
+const reducer = (state, action) => {
+  switch (action.type) {
+    case 'updateField':
+      return { ...state, [action.field]: action.value };
+    case 'reset':
+      return initialState;
+    default:
+      return state;
+  }
+};
+
+const [state, dispatch] = useReducer(reducer, initialState);
+```
+
+## Navigation with Anchor Elements
+
+**Any UI element that triggers navigation MUST be an `<a>` element** for accessibility and standard browser behavior (open in new tab, copy link).
+
+```tsx
+// Good - Link component renders <a> for SPA navigation
+import { Link } from 'react-router-dom';
+
+<Link to={`/projects/${projectId}`}>{projectName}</Link>
+
+// Good - with ZCD components
+<ZCDMenuItem as={Link} to="/settings" />
+<ZCDButton LinkComponent={Link} to="/dashboard" />
+
+// Bad - click handler on non-anchor element
+<div onClick={() => navigate('/projects')}>Go to Projects</div>  // Breaks a11y!
+<Button onClick={() => navigate('/dashboard')}>Dashboard</Button>  // Avoid
+```
+
 ## Code Style
 
 - Prefer `const` over `let`
@@ -708,6 +968,38 @@ const [state, setState] = useState<State>({ status: 'idle' });
 - Name booleans with `is`, `has`, `should` prefix
 - Name handlers with `handle` prefix (handleClick, handleSubmit)
 - Name hooks with `use` prefix
+- **Use `get`/`fetch` only for data retrieval** - use `create`, `make`, `determine`, `format` for transformations:
+  ```typescript
+  // Good - get/fetch for API calls
+  async function getLatestResults() {
+    const response = await axios.get('/api/results');
+    return response.data;
+  }
+
+  // Good - create/make for object construction
+  function createFilterOption(dateRanges) {
+    return { key: 'latest', label: 'Latest', id: determineLatestId(dateRanges) };
+  }
+
+  // Bad - get used for transformation
+  function getFilterOption(dateRanges) {  // Misleading - not fetching data
+    return { key: 'latest', ... };
+  }
+  ```
+- **Declare constants outside component functions** - avoids recreation on every render:
+  ```typescript
+  // Good - constant declared outside
+  const TRANSLATION_PATH = 'forms.inputFields';
+
+  export const CustomInput: React.FC<Props> = ({ ... }) => {
+    // component code
+  };
+
+  // Bad - constant recreated every render
+  export const CustomInput: React.FC<Props> = ({ ... }) => {
+    const translationPath = 'forms.inputFields';  // Avoid
+  };
+  ```
 - Keep components under 100 lines
 - Extract magic numbers/strings to named constants
 - **Use constants for React Query keys** - prevents typos and enables refactoring:
@@ -803,25 +1095,62 @@ const processed = useMemo(() =>
 
 ## File Structure
 
+### Backend Structure
 ```
 src/
-├── controllers/    # Backend - HTTP handlers (thin, delegate to services)
-├── services/       # Backend - Business logic layer
-├── repositories/   # Backend - Data access layer
-├── models/         # Backend - Database entities
-├── dtos/           # Backend - API request/response shapes
-├── middleware/     # Backend - Auth, validation, error handling
-├── validators/     # Backend - Zod/Joi schemas
-├── config/         # Backend - Environment config
-│
-├── components/     # Frontend - UI Layer (+ co-located CSS)
-├── hooks/          # Frontend - Logic Layer - Custom hooks
-├── context/        # Frontend - React Context providers
-│
-├── utils/          # Shared - Pure functions
-├── types/          # Shared - TypeScript interfaces
-└── styles/         # Frontend - Global/base CSS only
+├── controllers/    # HTTP handlers (thin, delegate to services)
+├── services/       # Business logic layer
+├── repositories/   # Data access layer
+├── models/         # Database entities
+├── dtos/           # API request/response shapes
+├── middleware/     # Auth, validation, error handling
+├── validators/     # Zod/Joi schemas
+└── config/         # Environment config
 ```
+
+### Frontend Structure
+```
+src/
+├── components/           # Shared UI components (+ co-located CSS)
+│   └── ComponentName/
+│       ├── ComponentName.tsx
+│       ├── ComponentName.spec.tsx
+│       └── ComponentName.module.scss
+├── screens/              # Page-level components
+│   └── HomeScreen/
+│       ├── HomeScreen.tsx
+│       └── components/   # Screen-specific components
+├── hooks/                # Custom hooks
+├── contexts/             # React Context providers
+├── services/             # API clients
+├── mocks/                # Mock files (*.mock.ts)
+├── utils/                # Pure functions
+├── types/                # TypeScript interfaces
+└── styles/               # Global CSS only
+```
+
+### Multi-Domain Structure (e.g., backoffice + dashboard)
+```
+src/
+├── common/               # Shared across all domains
+│   ├── hooks/
+│   ├── contexts/
+│   └── components/
+├── backoffice/           # Domain-specific code
+│   ├── hooks/
+│   ├── contexts/
+│   └── features/
+│       └── SurveysList/
+│           ├── hooks/     # Feature-specific hooks
+│           ├── contexts/  # Feature-specific contexts
+│           └── components/
+└── dashboard/
+```
+
+**Rules:**
+- Feature-specific hooks/contexts stay within their feature directory
+- When used by 2+ features in same domain, move to `[domain]/hooks` or `[domain]/contexts`
+- When used across domains, move to `common/`
 
 ### CSS File Organization
 Always co-locate CSS with components - one CSS file per component:
@@ -846,6 +1175,47 @@ Benefits:
 - No global namespace pollution
 - Component deletion removes its styles automatically
 - Smaller bundles with code splitting
+
+## Package Exports (for npm packages)
+
+Organize exports around logical domains for better tree-shaking and developer experience:
+
+### Explicit Named Exports
+```typescript
+// Good - explicit exports in index.ts
+export { fetchUser, updateUser } from './user/userActions';
+export { selectUserProfile } from './user/userSelectors';
+export type { User, UserRole } from './types';  // Use 'export type' for types
+
+// Bad - wildcard exports
+export * from './user/userActions';  // Makes API unclear, hides what's exported
+```
+
+### Domain-Oriented Subpath Exports
+```json
+// package.json - subpath exports
+{
+  "exports": {
+    ".": "./dist/index.js",
+    "./user": "./dist/user/index.js",
+    "./auth": "./dist/auth/index.js"
+  }
+}
+```
+
+### JSDoc for Public Exports
+```typescript
+/**
+ * Fetches user data from the API
+ * @param userId - The ID of the user to fetch
+ * @returns A promise that resolves to the user data
+ * @example
+ * const user = await fetchUser('123');
+ */
+export function fetchUser(userId: string): Promise<User> {
+  // ...
+}
+```
 
 ## Testing Considerations
 

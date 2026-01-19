@@ -179,9 +179,36 @@ export const isStatus = (value: string): value is Status =>
   STATUS_OPTIONS.some((opt) => opt.value === value);
 ```
 
+## Function Naming: get vs create/make/determine
+
+```typescript
+// Good - get/fetch for data retrieval (API, database)
+async function getUserById(id: string): Promise<User> {
+  const response = await axios.get(`/api/users/${id}`);
+  return response.data;
+}
+
+// Good - create/make for object construction
+function createFilterOption(data: Data): FilterOption {
+  return { key: data.id, label: data.name };
+}
+
+// Good - determine/compute for calculations
+function determineUserRole(permissions: number): UserRole {
+  if (permissions & Permissions.ADMIN) return 'admin';
+  return 'user';
+}
+
+// Bad - get used for transformation (misleading)
+function getUserOption(data: Data): FilterOption {  // Not fetching anything!
+  return { key: data.id, label: data.name };
+}
+```
+
 ## Never Use
 - Type casting with `as Type`
 - `any` type
 - `unknown` without type guards
 - `I` prefix for interfaces
 - Optional fields for discrimination
+- `get` prefix for non-data-fetching functions

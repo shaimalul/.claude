@@ -92,6 +92,26 @@ const handleItemSelect = (item: Item) => {
 };
 ```
 
+### Avoid Prop Explosion (10+ Props)
+```typescript
+// Bad - 10+ props is a code smell
+<Form
+  name={name} onNameChange={setName}
+  email={email} onEmailChange={setEmail}
+  phone={phone} onPhoneChange={setPhone}
+  /* ...10 more props */
+/>
+
+// Good - group into custom hook
+const formState = useContactForm();
+<Form {...formState} />
+
+// Good - use Context for shared state
+<FormProvider>
+  <Form /> {/* reads from context */}
+</FormProvider>
+```
+
 ### Extract Business Logic to Utils
 ```typescript
 // Bad - logic in TSX
@@ -142,6 +162,54 @@ type State =
   | { status: 'error'; error: string };
 ```
 
+### Return null, Not Empty Fragment
+```typescript
+// Bad
+return options.length > 0 ? <List options={options} /> : <></>;
+
+// Good
+return options.length > 0 ? <List options={options} /> : null;
+```
+
+### Never Store JSX in Variables
+```typescript
+// Bad - recreated every render
+const greeting = <div>Hello</div>;
+return greeting;
+
+// Good - JSX directly in return
+return <div>Hello</div>;
+```
+
+### Stable Keys in Lists
+```typescript
+// Bad - uuid() breaks React diffing
+{users.map(user => <Item key={uuid()} />)}
+
+// Good - stable identifier from data
+{users.map(user => <Item key={user.id} />)}
+```
+
+### Prefer Early Return
+```typescript
+// Bad - nested conditions
+function Component({ user }) {
+  if (user) {
+    if (user.isActive) {
+      return <ActiveUser />;
+    }
+  }
+  return null;
+}
+
+// Good - flat structure
+function Component({ user }) {
+  if (!user) return null;
+  if (!user.isActive) return <InactiveUser />;
+  return <ActiveUser />;
+}
+```
+
 ## Rules
 - Components under 100 lines
 - One component per file
@@ -150,3 +218,7 @@ type State =
 - No fetch() in components (use React Query)
 - No business logic in TSX
 - Use ZCD components from @zencity/common-ui
+- Constants declared outside component function
+- Return null (not `</>`) when rendering nothing
+- Use stable keys for list items (never uuid())
+- Navigation must use anchor elements (`<Link>`, not `onClick`)

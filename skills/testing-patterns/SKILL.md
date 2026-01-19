@@ -156,6 +156,28 @@ render(
 );
 ```
 
+## Go Beyond Basic Render Tests
+
+Testing components goes beyond just ensuring they render without error. Write tests that validate behavior, user interaction, and response to prop changes.
+
+```typescript
+// Bad - only tests that component renders
+it('renders without error', () => {
+  render(<MyComponent />);
+});
+
+// Good - tests actual behavior
+it('displays success message when form is submitted', async () => {
+  const user = userEvent.setup();
+  render(<MyComponent />);
+
+  await user.type(screen.getByLabelText('Email'), 'test@example.com');
+  await user.click(screen.getByRole('button', { name: 'Submit' }));
+
+  expect(screen.getByText('Form submitted successfully')).toBeVisible();
+});
+```
+
 ## Best Practices
 
 ### Do
@@ -165,6 +187,7 @@ render(
 - Mock at service boundaries
 - Use beforeEach for common setup
 - Test error states and edge cases
+- Test analytics events to prevent regression
 
 ### Don't
 - Test implementation details
@@ -172,6 +195,7 @@ render(
 - Mock internal hooks/utilities
 - Write tests that pass when code is broken
 - Ignore async operations (use waitFor)
+- Write only basic render tests
 
 ## Assertions
 ```typescript
