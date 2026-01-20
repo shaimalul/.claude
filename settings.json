@@ -11,7 +11,6 @@
       "Bash",
       "WebSearch"
     ],
-    // "deny": ["Bash(git:*)"],
     "defaultMode": "bypassPermissions"
   },
   "alwaysThinkingEnabled": true,
