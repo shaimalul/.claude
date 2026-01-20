@@ -1,38 +1,123 @@
 # Code Review
 
-I'll review your code for potential issues.
+Perform comprehensive code review using specialist agents in parallel.
 
-I'll use specialized sub-agents for comprehensive analysis:
-- **Security sub-agent**: Credential exposure, input validation, vulnerabilities
-- **Performance sub-agent**: Bottlenecks, memory issues, optimization opportunities  
-- **Quality sub-agent**: Code complexity, maintainability, best practices
-- **Architecture sub-agent**: Layer separation, dependency direction, scalability patterns
+## Instructions
 
-I'll examine files using the Read and Grep tools to analyze:
-1. **Security Issues** - credential exposure, input validation
-2. **Logic Problems** - error handling, edge cases  
-3. **Performance Concerns** - inefficient patterns, bottlenecks
-4. **Code Quality** - complexity, maintainability
+Use the **Task tool** to spawn multiple specialist agents for parallel review.
 
-When I find multiple issues, I'll create a todo list to address them systematically.
+### Step 1: Identify Files to Review
 
-For each issue, I'll:
-- Show exact location with file references
-- Explain the problem and potential impact
-- Provide specific remediation steps
-- Prioritize by severity and effort
+Use Grep/Glob to identify changed files or target files in the current context.
 
-After review, I'll provide:
-- Prioritized list of findings with detailed descriptions
-- Local todo tracking for resolution
-- Actionable summary report
+### Step 2: Spawn Specialist Reviews in Parallel
 
-**Important**: I will NEVER:
-- Add "Co-authored-by" or any Claude signatures
-- Add "Created by Claude" or any AI attribution
-- Include "Generated with Claude Code" in any output
-- Modify repository settings
-- Add any AI/assistant signatures or watermarks
-- Use emojis in documentation
+Launch these agents simultaneously using the Task tool:
 
-This focuses on real problems that impact your application's reliability and maintainability.
+**Security Review:**
+```
+subagent_type: security-principal
+prompt: |
+  Review the code for security issues.
+
+  Focus on:
+  - OWASP Top 10 vulnerabilities
+  - Credential exposure
+  - Input validation
+  - SQL injection / XSS
+  - Authentication/authorization issues
+
+  For each issue found, provide:
+  - Exact file and line number
+  - Severity (Critical/High/Medium/Low)
+  - Description of the vulnerability
+  - Remediation steps
+```
+
+**Code Quality Review (for frontend files .tsx/.jsx/.ts):**
+```
+subagent_type: frontend-principal
+prompt: |
+  Review the React/TypeScript code for quality issues.
+
+  Focus on:
+  - Component patterns (hooks, state management)
+  - CLAUDE.md compliance (file length, modularity)
+  - React anti-patterns
+  - TypeScript best practices
+  - Testing considerations
+
+  For each issue found, provide:
+  - Exact file and line number
+  - Severity (Critical/High/Medium/Low)
+  - Description of the issue
+  - Recommended fix
+```
+
+**Architecture Review (for backend files):**
+```
+subagent_type: backend-principal
+prompt: |
+  Review the backend code for architecture issues.
+
+  Focus on:
+  - Three-layer architecture compliance
+  - API design patterns
+  - Error handling
+  - Database query optimization (N+1)
+  - CLAUDE.md compliance
+
+  For each issue found, provide:
+  - Exact file and line number
+  - Severity (Critical/High/Medium/Low)
+  - Description of the issue
+  - Recommended fix
+```
+
+### Step 3: Aggregate Results
+
+Combine findings from all specialists into a prioritized report:
+
+1. **Critical** - Security vulnerabilities, data exposure (blocking)
+2. **High** - Architecture violations, major bugs (should fix)
+3. **Medium** - Code quality issues, patterns (recommended)
+4. **Low** - Style, minor improvements (nice to have)
+
+### Step 4: Create Todo List
+
+Use TodoWrite to track issues found for resolution.
+
+## Output Format
+
+```markdown
+## Code Review Report
+
+### Summary
+- Files reviewed: X
+- Critical issues: X
+- High priority: X
+- Medium priority: X
+- Low priority: X
+
+### Critical Issues
+| File | Line | Issue | Agent |
+|------|------|-------|-------|
+| ... | ... | ... | security-principal |
+
+### High Priority Issues
+| File | Line | Issue | Agent |
+|------|------|-------|-------|
+| ... | ... | ... | ... |
+
+### Medium Priority Issues
+[...]
+
+### Recommendations
+- [Key recommendation 1]
+- [Key recommendation 2]
+```
+
+**Important**:
+- NEVER add "Co-authored-by" or any Claude signatures
+- NEVER add AI attribution to output
+- Focus on real problems that impact reliability and maintainability

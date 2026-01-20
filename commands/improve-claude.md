@@ -23,22 +23,24 @@ When you provide an instruction, I will:
 | `~/.claude/agents/*.md` | Specialized AI agent personalities |
 | `~/.claude/skills/*/SKILL.md` | Reusable pattern libraries |
 | `~/.claude/rules/*.mdc` | Enforcement guidelines |
+| `~/.claude/commands/*.md` | Command definitions that may embed standards |
 
 ## Category Detection
 
 I analyze your instruction keywords to determine the category:
 
-| Category | Keywords | Target Files |
-|----------|----------|--------------|
-| TypeScript | type, interface, enum, any, unknown, casting, generic | CLAUDE.md, typescript-types skill, zc-typescript-conventions.mdc |
-| Frontend | react, component, hook, useState, jsx, tsx, prop | CLAUDE.md, frontend-principal agent, react-component skill |
-| Backend | express, nestjs, controller, service, repository, api, http | CLAUDE.md, backend-principal agent, backend-patterns skill |
-| Security | auth, jwt, password, injection, xss, csrf, owasp | CLAUDE.md, security-principal agent, security-patterns skill |
-| DevOps | docker, kubernetes, terraform, ci, cd, pipeline | CLAUDE.md, devops-principal agent, relevant skills |
-| AI/ML | openai, llm, prompt, gpt, embedding | CLAUDE.md, ai-principal agent, openai-integration skill |
-| Testing | test, jest, vitest, mock, spec | CLAUDE.md, testing-patterns skill |
-| Styling | css, scss, style, rtl, color | CLAUDE.md, styling-rtl skill |
-| General | (none of above) | CLAUDE.md, all relevant agents |
+| Category | Keywords | Target Files | Commands Affected |
+|----------|----------|--------------|-------------------|
+| TypeScript | type, interface, enum, any, unknown, casting, generic | CLAUDE.md, typescript-types skill | quality-gate.md (Code Standards) |
+| Frontend | react, component, hook, useState, jsx, tsx, prop | CLAUDE.md, frontend-principal agent | quality-gate.md (Code Standards) |
+| Backend | express, nestjs, controller, service, repository, api, http | CLAUDE.md, backend-principal agent | quality-gate.md (Code Standards) |
+| Security | auth, jwt, password, injection, xss, csrf, owasp | CLAUDE.md, security-principal agent | quality-gate.md (Security Review) |
+| DevOps | docker, kubernetes, terraform, ci, cd, pipeline | CLAUDE.md, devops-principal agent | quality-gate.md (Performance) |
+| Architect | architecture, design, pattern, ADR, scalability, system, integration, module | CLAUDE.md, architect-principal agent, architect skill | quality-gate.md (Code Standards) |
+| AI/ML | openai, llm, prompt, gpt, embedding | CLAUDE.md, ai-principal agent | quality-gate.md (Code Standards) |
+| Testing | test, jest, vitest, mock, spec | CLAUDE.md, testing-patterns skill | quality-gate.md (Test Coverage) |
+| Styling | css, scss, style, rtl, color | CLAUDE.md, styling-rtl skill | quality-gate.md (Code Standards) |
+| General | (none of above) | CLAUDE.md, all relevant agents | Review all commands |
 
 ## Phase 1: Parse & Categorize
 
@@ -150,6 +152,34 @@ I'll update each target file directly:
 - Expand examples if needed
 - Preserve existing formatting
 
+## Phase 6.5: Review and Update Commands
+
+After updating the core configuration files, I'll review command files for related content:
+
+**Command Review Strategy:**
+1. Search all `/commands/*.md` files for keywords from the instruction
+2. Check if any command has embedded rules, checklists, or examples that should include the new standard
+3. Update affected commands to maintain consistency
+
+**Key Commands to Check:**
+
+| Command | What to Update |
+|---------|----------------|
+| `quality-gate.md` | Add new check to relevant section (Code Standards, Security, etc.) |
+| `refactor.md` | Add new refactoring pattern if applicable |
+| `review.md` | Add new review criterion if applicable |
+| `review-with-rules.md` | Add new rule reference if applicable |
+
+**Update Logic:**
+- **Code Style rule** → Add to quality-gate.md "Code Standards" checklist
+- **Security rule** → Add to quality-gate.md "Security Review" checklist
+- **Refactoring pattern** → Consider adding to refactor.md patterns
+- **Testing rule** → Add to quality-gate.md "Test Coverage" checklist
+
+**Example Update:**
+If instruction is "never use console.log in production":
+- Add `- [ ] No console.log in production code` to quality-gate.md's Code Standards section
+
 ## Phase 7: Report Results
 
 After applying changes, I'll show:
@@ -167,6 +197,7 @@ After applying changes, I'll show:
 | CLAUDE.md | Updated | Code Style |
 | frontend-principal.md | Added | Guidelines |
 | react-component/SKILL.md | Added | Patterns |
+| quality-gate.md | Added | Code Standards Checklist |
 
 ### Changes Applied
 
@@ -177,10 +208,15 @@ After applying changes, I'll show:
 **frontend-principal.md:**
 - Added new section: [title]
 
+**quality-gate.md:**
+- Added new check: "[check description]"
+
 ### Verification
 - [x] Rule synced across all target files
 - [x] No duplicates created
 - [x] Code examples generated
+- [x] Commands reviewed for related content
+- [x] Quality gate checklist updated (if applicable)
 ```
 
 ## Usage Examples

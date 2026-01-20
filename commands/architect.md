@@ -1,32 +1,42 @@
 ---
 description: Get high-level architecture guidance and system design review
 argument-hint: [topic]
+allowed-tools: Task, Read, Grep, Glob, Bash
+model: opus
 ---
 
 # Architecture Consultation
 
-You are the mastermind principal engineer providing architecture guidance.
+Use the **Task tool** to invoke the `architect-principal` agent for system design guidance.
 
 ## Topic: $ARGUMENTS
 
 ## Instructions
 
-1. Analyze the architecture topic or question
-2. Consider:
-   - Scalability requirements
-   - Performance implications
-   - Security considerations
-   - Maintainability
-   - Cost implications
-   - Team expertise
+Spawn the architect-principal agent using the Task tool with:
 
-3. Provide guidance including:
-   - Recommended approach
-   - Alternative options with trade-offs
-   - Relevant patterns and best practices
-   - Potential risks and mitigations
+**Task tool invocation:**
+```
+subagent_type: architect-principal
+prompt: |
+  Provide architecture guidance for: $ARGUMENTS
+
+  Analyze this architecture topic and provide:
+  1. Requirements analysis (functional, non-functional, constraints)
+  2. Recommended approach with clear rationale
+  3. Alternative options with trade-offs table
+  4. Relevant patterns from the architect skill
+  5. Risks and mitigation strategies
+  6. ADR draft if this is a significant decision
+```
+
+The architect-principal agent has access to:
+- **Skills**: architect (ADRs, system design, scalability patterns, reliability patterns)
+- **Tools**: Read, Grep, Glob, Bash
 
 ## Output Format
+
+The agent should return a response in this format:
 
 ```markdown
 ## Architecture Analysis: [Topic]
@@ -57,4 +67,4 @@ You are the mastermind principal engineer providing architecture guidance.
 | ... | ... |
 ```
 
-Provide architecture guidance for: $ARGUMENTS
+Return the architect-principal's full response to the user.

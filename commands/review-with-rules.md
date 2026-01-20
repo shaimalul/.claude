@@ -1,61 +1,139 @@
+---
+description: Code Review with Project Rules
+allowed-tools: Task, Bash, Read, Grep, Glob, TodoWrite
+---
+
 # Code Review with Project Rules
 
-I'll review your code for potential issues while adhering to your project-specific rules.
+Review code for compliance with project-specific rules from `.cursor/rules`.
 
-First, let me check for project-specific rules:
+## Instructions
+
+### Step 1: Discover Project Rules
+
 ```bash
 find . -name ".cursor" -type d 2>/dev/null | head -5
 find . -path "*/.cursor/rules*" -type f 2>/dev/null | head -10
 ```
 
-If `.cursor/rules` files exist, I'll analyze them to understand:
-- Project-specific coding standards
-- Framework conventions
-- Architecture patterns
-- Testing requirements
-- Documentation standards
+Read discovered rules files to understand project conventions.
 
-Let me create a checkpoint before detailed analysis:
+### Step 2: Identify Changes
+
 ```bash
-git add -A  
-git commit -m "Pre-review checkpoint" || echo "No changes to commit"
+git status
+git diff --stat
 ```
 
-I'll use specialized sub-agents for comprehensive analysis:
-- **Cursor-rules-reviewer sub-agent**: Ensures compliance with .cursor/rules standards
-- **Security sub-agent**: Credential exposure, input validation, vulnerabilities
-- **Performance sub-agent**: Bottlenecks, memory issues, optimization opportunities  
-- **Quality sub-agent**: Code complexity, maintainability, best practices
-- **Architecture sub-agent**: Layer separation, dependency direction, scalability patterns
+### Step 3: Spawn Standard Agents with Rules Context
 
-I'll examine files using the Read and Grep tools to analyze:
-1. **Project Standards Compliance** - adherence to .cursor/rules
-2. **Security Issues** - credential exposure, input validation
-3. **Logic Problems** - error handling, edge cases  
-4. **Performance Concerns** - inefficient patterns, bottlenecks
-5. **Code Quality** - complexity, maintainability
-6. **Convention Violations** - naming, structure, patterns
+Use the **Task tool** to spawn principal agents with project rules context:
 
-When I find multiple issues, I'll create a todo list to address them systematically.
+**Frontend Review (for React/TypeScript files):**
+```
+subagent_type: frontend-principal
+prompt: |
+  Review code changes for compliance with project rules and standards.
 
-For each issue, I'll:
-- Show exact location with file references
-- Explain how it violates project rules (if applicable)
-- Explain the problem and potential impact
-- Provide specific remediation steps that follow project conventions
-- Prioritize by severity and effort
+  **Project Rules (from .cursor/rules):**
+  [Include content from discovered rules files]
 
-After review, I'll ask: "Create GitHub issues for critical findings?"
-- Yes: I'll create prioritized issues with detailed descriptions
-- Todos only: I'll maintain local tracking for resolution
-- Summary: I'll provide actionable report
+  **Focus on:**
+  - Compliance with project-specific conventions
+  - CLAUDE.md standards
+  - React patterns and hooks usage
+  - TypeScript best practices
+  - Component structure
 
-**Important**: I will NEVER:
-- Add "Co-authored-by" or any Claude signatures to commits
-- Add "Created by Claude" or any AI attribution to issues
-- Include "Generated with Claude Code" in any output
-- Modify git config or repository settings
-- Add any AI/assistant signatures or watermarks
-- Use emojis in commits, PRs, issues, or git-related content
+  Highlight which findings relate to project rules vs. general standards.
+```
 
-This review ensures code quality while maintaining consistency with your project's established standards and patterns.
+**Backend Review (for Node.js/service files):**
+```
+subagent_type: backend-principal
+prompt: |
+  Review code changes for compliance with project rules and standards.
+
+  **Project Rules (from .cursor/rules):**
+  [Include content from discovered rules files]
+
+  **Focus on:**
+  - Compliance with project-specific conventions
+  - Three-layer architecture
+  - API design patterns
+  - Error handling
+  - Database patterns
+
+  Highlight which findings relate to project rules vs. general standards.
+```
+
+**Security Review:**
+```
+subagent_type: security-principal
+prompt: |
+  Review code changes for security issues.
+
+  Focus on:
+  - OWASP Top 10 vulnerabilities
+  - Credential exposure
+  - Input validation
+  - Authentication patterns
+```
+
+### Step 4: Aggregate Findings
+
+Categorize findings by source:
+- **Project Rules Violations** - Issues from .cursor/rules
+- **General Standards Violations** - Issues from CLAUDE.md
+- **Security Issues** - OWASP/security concerns
+
+Prioritize by:
+1. **Critical** - Security vulnerabilities
+2. **High** - Project rules violations
+3. **Medium** - General standards violations
+4. **Low** - Style improvements
+
+### Step 5: Create Todo List
+
+Use TodoWrite to track issues for resolution.
+
+## Output Format
+
+```markdown
+## Code Review Report (with Project Rules)
+
+### Project Rules Loaded
+- [Rule file 1]: [Brief description]
+- [Rule file 2]: [Brief description]
+
+### Summary
+- Files reviewed: X
+- Project rules violations: X
+- General standards violations: X
+- Security issues: X
+
+### Project Rules Violations
+| File | Line | Rule | Issue |
+|------|------|------|-------|
+| ... | ... | [rule name] | ... |
+
+### General Standards Violations
+| File | Line | Standard | Issue |
+|------|------|----------|-------|
+| ... | ... | CLAUDE.md | ... |
+
+### Security Issues
+| File | Line | Issue | Severity |
+|------|------|-------|----------|
+| ... | ... | ... | Critical/High/Medium |
+
+### Recommendations
+1. [Priority action for project rules]
+2. [Priority action for standards]
+3. [Priority action for security]
+```
+
+**Important**:
+- NEVER add AI attribution or signatures
+- NEVER modify git config or repository settings
+- Focus on real problems that impact reliability

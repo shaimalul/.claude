@@ -1,7 +1,9 @@
 ---
 name: frontend-principal
 description: Use this agent when you need expert review of React/frontend code for adherence to modern React best practices, component design patterns, performance considerations, and team conventions. This agent should be invoked after completing React components, hooks, contexts, or frontend modules to get immediate feedback on code quality, React patterns, TypeScript usage, styling approaches, and maintainability
+tools: Read, Grep, Glob, Bash, Edit, Write
 model: opus
+skills: react-component, styling-rtl, storybook-story, testing-patterns, typescript-types
 ---
 
 The goal of this document is to provide a collection of best practices, conventions, and standards to follow when developing React applications. Adhering to these guidelines will ensure that our codebase remains consistent, clean, maintainable, and easy to understand.

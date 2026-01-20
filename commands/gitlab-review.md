@@ -239,15 +239,69 @@ echo "Review assets created in: $ASSETS_DIR"
 echo "Review report: $REVIEW_FILE"
 ```
 
-Now I'll analyze the code changes using the review process from review.md.
+## Phase 2: Agent-Based Analysis
 
-I'll create structured review data that includes:
+After fetching MR data, use the **Task tool** to spawn specialist agents for comprehensive review.
 
-1. Accurate line numbers from diff hunks
-2. Actual code snippets before recommendations
-3. Comprehensive file analysis
+**Security Analysis:**
+```
+subagent_type: security-principal
+prompt: |
+  Review the GitLab MR diffs for security issues.
 
-Let me process the changes and run specialized analysis agents:
+  MR Context:
+  - Assets directory: [Use $ASSETS_DIR]
+  - Diff files: [Use $DIFFS_DIR/*.diff]
+
+  Focus on:
+  - OWASP Top 10 vulnerabilities
+  - Credential exposure (hardcoded tokens, passwords)
+  - Input validation issues
+  - Authentication/authorization problems
+
+  Provide findings with exact file:line numbers.
+```
+
+**Code Quality Analysis (for React/TS files):**
+```
+subagent_type: frontend-principal
+prompt: |
+  Review the GitLab MR diffs for React/TypeScript quality issues.
+
+  MR Context:
+  - Assets directory: [Use $ASSETS_DIR]
+  - Diff files: [Use $DIFFS_DIR/*.diff]
+  - Full files: [Use $FILES_DIR]
+
+  Focus on:
+  - React patterns and hooks usage
+  - TypeScript best practices
+  - CLAUDE.md compliance
+  - Performance considerations
+
+  Provide findings with exact file:line numbers.
+```
+
+**Architecture Analysis (for backend files):**
+```
+subagent_type: backend-principal
+prompt: |
+  Review the GitLab MR diffs for architecture issues.
+
+  MR Context:
+  - Assets directory: [Use $ASSETS_DIR]
+  - Diff files: [Use $DIFFS_DIR/*.diff]
+
+  Focus on:
+  - Three-layer architecture compliance
+  - API design patterns
+  - Error handling
+  - Database query optimization
+
+  Provide findings with exact file:line numbers.
+```
+
+Now I'll process the changes and run the analysis:
 
 ```bash
 # Count changed files

@@ -1,45 +1,67 @@
 ---
 description: Plan a new feature by analyzing requirements and creating an implementation roadmap with the mastermind agent
 argument-hint: [feature-description]
+allowed-tools: Task, Read, Grep, Glob
+model: opus
 ---
 
 # Feature Planning
 
-You are the mastermind principal engineer. Plan the implementation of a new feature by breaking it down into domain-specific tasks.
+Use the **Task tool** to invoke the `mastermind` agent for comprehensive feature planning.
 
 ## Feature Request: $ARGUMENTS
 
-## Planning Process
+## Instructions
 
-### 1. Requirement Analysis
-- What problem does this solve?
-- Who is the user?
-- What are the acceptance criteria?
-- What are the constraints?
+Spawn the mastermind agent using the Task tool:
 
-### 2. Domain Breakdown
-Identify which domains are involved:
-- [ ] **Frontend**: UI components, user interactions
-- [ ] **Backend**: APIs, services, data models
-- [ ] **AI**: LLM features, prompts, embeddings
-- [ ] **DevOps**: Infrastructure, deployment, monitoring
-- [ ] **Security**: Auth, validation, vulnerabilities
+**Task tool invocation:**
+```
+subagent_type: mastermind
+prompt: |
+  Plan the implementation of this feature: $ARGUMENTS
 
-### 3. Task Definition
-For each domain, create specific tasks with:
-- Clear description
-- Expected output
-- Dependencies
-- Estimated complexity
+  As the mastermind principal engineer, you should:
 
-### 4. Dependency Graph
-Order tasks by dependencies:
-- Phase 1: No dependencies (can start immediately)
-- Phase 2: Depends on Phase 1
-- Phase 3: Depends on Phase 2
-- etc.
+  1. **Gather Requirements**
+     - What problem does this solve?
+     - Who is the user?
+     - What are the acceptance criteria?
+     - What are the constraints?
+
+  2. **Domain Analysis**
+     Identify which specialists are needed:
+     - frontend-principal (React, TypeScript, UI/UX)
+     - backend-principal (APIs, services, databases)
+     - ai-principal (LLM features, prompts)
+     - devops-principal (infrastructure, CI/CD)
+     - security-principal (auth, vulnerabilities)
+     - architect-principal (system design, patterns)
+
+  3. **Task Breakdown**
+     Create atomic tasks with:
+     - Clear description
+     - Expected output
+     - Dependencies
+     - Assigned specialist
+
+  4. **Dependency Graph**
+     Order tasks by phases:
+     - Phase 1: No dependencies (can start immediately)
+     - Phase 2: Depends on Phase 1
+     - Phase 3: Depends on Phase 2
+
+  5. **Output Format**
+     Generate a structured plan in markdown format.
+```
+
+The mastermind agent has access to:
+- **Tools**: Read, Grep, Glob, Bash, Edit, Write, Task
+- **Specialists**: All principal engineers via Task tool delegation
 
 ## Output Format
+
+The agent should return a plan in this format:
 
 ```markdown
 ## Feature Plan: [Feature Name]
@@ -58,11 +80,11 @@ As a [user type], I want to [action] so that [benefit].
 ### Domain Involvement
 | Domain | Involved | Complexity |
 |--------|----------|------------|
-| Frontend | ✅/❌ | Low/Medium/High |
-| Backend | ✅/❌ | Low/Medium/High |
-| AI | ✅/❌ | Low/Medium/High |
-| DevOps | ✅/❌ | Low/Medium/High |
-| Security | ✅/❌ | Low/Medium/High |
+| Frontend | Yes/No | Low/Medium/High |
+| Backend | Yes/No | Low/Medium/High |
+| AI | Yes/No | Low/Medium/High |
+| DevOps | Yes/No | Low/Medium/High |
+| Security | Yes/No | Low/Medium/High |
 
 ### Task Breakdown
 
@@ -76,11 +98,6 @@ As a [user type], I want to [action] so that [benefit].
 |---|--------|------|------------|--------------|
 | 2 | ... | ... | ... | Task 1 |
 
-#### Phase 3: Integration
-| # | Domain | Task | Complexity | Dependencies |
-|---|--------|------|------------|--------------|
-| 3 | ... | ... | ... | Tasks 1, 2 |
-
 ### Risks & Considerations
 - [Risk 1 and mitigation]
 - [Risk 2 and mitigation]
@@ -92,4 +109,4 @@ As a [user type], I want to [action] so that [benefit].
 - [ ] Documentation updated
 ```
 
-Now analyze and plan the feature: $ARGUMENTS
+Return the mastermind's full plan to the user.

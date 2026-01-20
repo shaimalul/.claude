@@ -1,31 +1,45 @@
 ---
-description: Directly consult a specific principal engineer (frontend/backend/ai/devops/security)
+description: Directly consult a specific principal engineer (frontend/backend/ai/devops/security/architect)
 argument-hint: [domain] [question]
+allowed-tools: Task, Read, Grep, Glob
 ---
 
 # Principal Engineer Consultation
 
-You are connecting the user with a specialist principal engineer based on their request.
+Route the user's request to the appropriate specialist agent using the **Task tool**.
 
 ## Arguments
-- `$1` = Domain (frontend, backend, ai, devops, security)
+- `$1` = Domain (frontend, backend, ai, devops, security, architect)
 - `$2+` = Question or task for the specialist
 
-## Domain Mapping
+## Domain → Agent Mapping
 
-| Domain | Agent | Expertise |
-|--------|-------|-----------|
-| frontend | frontend-principal | React, TypeScript, components, state management |
-| backend | backend-principal | Node.js, NestJS, APIs, databases |
-| ai | ai-principal | OpenAI, prompts, RAG, AI features |
-| devops | devops-principal | Docker, K8s, Terraform, CI/CD |
-| security | security-principal | OWASP, auth, vulnerability review |
+| Domain | Agent | Skills Loaded |
+|--------|-------|---------------|
+| frontend | frontend-principal | react-component, styling-rtl, storybook-story, testing-patterns, typescript-types |
+| backend | backend-principal | backend-patterns, api-design, database-patterns |
+| ai | ai-principal | openai-integration, prompt-engineering |
+| devops | devops-principal | docker-patterns, kubernetes-patterns, terraform-patterns, cicd-patterns |
+| security | security-principal | security-patterns |
+| architect | architect-principal | architect |
 
 ## Instructions
 
-1. Identify the domain from `$1`
-2. Route the question `$ARGUMENTS` to the appropriate specialist agent using the Task tool
-3. Provide the specialist's response to the user
+1. Parse the domain from `$1`
+2. Use the **Task tool** to spawn the appropriate agent:
+
+**Task tool invocation:**
+```
+subagent_type: {domain}-principal
+prompt: |
+  User is consulting you as the {domain} principal engineer.
+
+  Question/Task: $ARGUMENTS
+
+  Provide expert guidance following your specialized skills and CLAUDE.md standards.
+```
+
+3. Return the specialist's full response to the user
 
 ## Example Usage
 
@@ -35,6 +49,7 @@ You are connecting the user with a specialist principal engineer based on their 
 /principal devops Set up GitHub Actions for this project
 /principal security Review auth implementation for vulnerabilities
 /principal frontend How to structure this complex form component?
+/principal architect Should we use microservices or monolith?
 ```
 
 Route this request to the appropriate specialist:

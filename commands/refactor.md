@@ -130,6 +130,44 @@ I'll create a detailed plan in `refactor/plan.md`:
 | /api/v1/* | /api/v2/* | Pending |
 ```
 
+## Phase 2.5: Consult Specialist for Patterns
+
+Based on detected file types, use the **Task tool** to consult the appropriate specialist:
+
+**For React/TypeScript files:**
+```
+subagent_type: frontend-principal
+prompt: |
+  Recommend refactoring patterns for React/TypeScript code.
+
+  Files to refactor: [List from analysis]
+  Current issues found: [From Phase 2 analysis]
+
+  Provide recommendations from react-component skill:
+  - Component extraction patterns
+  - Hook patterns
+  - State management improvements
+  - Performance optimizations
+```
+
+**For Backend files:**
+```
+subagent_type: backend-principal
+prompt: |
+  Recommend refactoring patterns for Node.js/backend code.
+
+  Files to refactor: [List from analysis]
+  Current issues found: [From Phase 2 analysis]
+
+  Provide recommendations from backend-patterns skill:
+  - Three-layer architecture improvements
+  - Service extraction patterns
+  - Repository patterns
+  - Error handling improvements
+```
+
+The specialist will provide guidance that aligns with CLAUDE.md standards.
+
 ## Phase 3: Incremental Execution
 
 I'll apply refactorings systematically:

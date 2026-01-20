@@ -308,18 +308,40 @@ echo "## Comment Analysis Details" >> "$REPORT_FILE"
 echo "" >> "$REPORT_FILE"
 ```
 
-I'll now use specialized agents to perform intelligent analysis of each comment.
+## Phase 2: Agent-Based Analysis
 
-The analysis will:
+Use the **Task tool** to invoke the `gitlab-comment-fixer` agent for intelligent comment analysis:
 
-1. **Parse each comment** to extract the suggested fix
-2. **Read the current code** at the specified location
-3. **Validate the suggestion** against best practices and project conventions
-4. **Determine necessity** - is this fix critical, beneficial, or just preference?
-5. **Generate decision report** with detailed reasoning
-6. **Apply fixes selectively** based on the analysis
+**Task tool invocation:**
+```
+subagent_type: gitlab-comment-fixer
+prompt: |
+  Analyze GitLab MR comments and apply necessary fixes.
 
-Let me analyze the comments and generate the comprehensive report.
+  **Session Context:**
+  - Session directory: $SESSION_DIR
+  - Unresolved comments: $SESSION_DIR/unresolved_comments.json
+  - Project: $PROJECT_ID, MR: $MR_ID
+
+  **Analysis Steps:**
+  1. Parse each comment to extract the suggested fix
+  2. Read the current code at the specified location
+  3. Validate the suggestion against best practices
+  4. Determine necessity (critical, beneficial, preference)
+  5. Apply only 100% necessary and beneficial fixes
+  6. Generate detailed decision report with reasoning
+
+  **Categorize each suggestion as:**
+  - Critical: Security/correctness issues (APPLY)
+  - Recommended: Best practices improvements (APPLY)
+  - Style: Personal preference (SKIP unless project standard)
+  - Invalid: Incorrect suggestions (SKIP with explanation)
+  - Already Correct: Code already follows suggestion (SKIP)
+
+  Output a comprehensive fix report in $SESSION_DIR/fix_report.md
+```
+
+The gitlab-comment-fixer agent will analyze each comment and generate the comprehensive report.
 
 ## Performing Intelligent Analysis
 

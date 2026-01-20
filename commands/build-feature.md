@@ -1,64 +1,87 @@
 ---
 description: Execute the planned feature by delegating to specialist principal engineers
+allowed-tools: Task, Read, Grep, Glob, Bash, Edit, Write, MultiEdit
+model: opus
 ---
 
 # Build Feature
 
-Execute a previously planned feature by delegating tasks to specialist principal engineers.
+Use the **Task tool** to invoke the `mastermind` agent for feature execution.
 
 ## Prerequisites
 - A feature plan should exist (created via `/plan-feature`)
 - Or provide a feature description to plan and build in one go
 
-## Execution Process
+## Instructions
 
-### 1. Load Plan
-- Retrieve the current feature plan
-- Verify all tasks are defined
-- Confirm dependencies are clear
+Spawn the mastermind agent using the Task tool:
 
-### 2. Execute by Phase
-For each phase (in order):
-1. Identify tasks with satisfied dependencies
-2. Delegate to appropriate specialist agent
-3. Review and integrate outputs
-4. Mark tasks as complete
-
-### 3. Quality Gates
-After each phase:
-- Run relevant quality checks
-- Verify integration works
-- Address any issues before proceeding
-
-### 4. Final Integration
-- Ensure all components work together
-- Run full quality gate
-- Generate completion summary
-
-## Delegation Template
-
-When delegating to a specialist:
+**Task tool invocation:**
 ```
-## Task: [Task Name]
+subagent_type: mastermind
+prompt: |
+  Execute the planned feature.
 
-### Context
-[Background from feature plan]
+  As the mastermind principal engineer, you should:
 
-### Requirements
-[Specific requirements for this task]
+  1. **Load Plan**
+     - Check conversation history for existing feature plan
+     - Verify all tasks are defined with dependencies
+     - If no plan exists, ask user to run /plan-feature first
 
-### Expected Output
-[What the specialist should deliver]
+  2. **Execute by Phase**
+     For each phase (in dependency order):
+     - Identify tasks with satisfied dependencies
+     - Delegate to appropriate specialist via Task tool:
 
-### Dependencies
-[Outputs from previous tasks this relies on]
+     Task tool invocation for specialists:
+     ```
+     subagent_type: {specialist}-principal
+     prompt: |
+       ## Task: [Task Name]
 
-### Standards
-- Follow CLAUDE.md guidelines
-- [Domain-specific standards]
+       ### Context
+       [Background from feature plan]
+
+       ### Requirements
+       [Specific requirements for this task]
+
+       ### Expected Output
+       [What you should deliver]
+
+       ### Standards
+       - Follow CLAUDE.md guidelines
+       - [Domain-specific standards]
+     ```
+
+     - Collect and review outputs
+     - Mark tasks as complete
+
+  3. **Quality Gates**
+     After each phase:
+     - Run relevant tests
+     - Verify integration works
+     - Address any issues before proceeding
+
+  4. **Final Integration**
+     - Ensure all components work together
+     - Run full quality gate: tests → TypeScript → lint → build
+     - Generate completion summary
 ```
+
+The mastermind agent has access to:
+- **Tools**: Read, Grep, Glob, Bash, Edit, Write, Task
+- **Specialists**: All principal engineers via Task tool delegation:
+  - frontend-principal (React, components, hooks)
+  - backend-principal (APIs, services, databases)
+  - ai-principal (LLM features, prompts)
+  - devops-principal (infrastructure, CI/CD)
+  - security-principal (auth, security review)
+  - architect-principal (design decisions)
 
 ## Output Format
+
+The agent should return a build report:
 
 ```markdown
 ## Build Report: [Feature Name]
@@ -66,9 +89,9 @@ When delegating to a specialist:
 ### Execution Summary
 | Phase | Tasks | Status |
 |-------|-------|--------|
-| 1 | X | ✅ Complete |
-| 2 | Y | ✅ Complete |
-| 3 | Z | ✅ Complete |
+| 1 | X | Complete |
+| 2 | Y | Complete |
+| 3 | Z | Complete |
 
 ### Tasks Completed
 
@@ -84,21 +107,13 @@ When delegating to a specialist:
 - `path/to/file2.ts` - [Change summary]
 
 ### Quality Gate Results
-- Code Standards: ✅
-- Security: ✅
-- Tests: ✅
+- Code Standards: Pass/Fail
+- Security: Pass/Fail
+- Tests: Pass/Fail
+- Build: Pass/Fail
 
 ### Next Steps
 - [Any follow-up actions needed]
 ```
 
-## Instructions
-
-1. If a plan exists, load it and begin execution
-2. If no plan exists, ask for the feature description or run `/plan-feature` first
-3. Execute tasks in dependency order
-4. Delegate each task to the appropriate specialist
-5. Integrate outputs and run quality checks
-6. Generate completion report
-
-Begin building the planned feature.
+Return the mastermind's full build report to the user.

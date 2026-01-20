@@ -15,6 +15,7 @@ You have access to the following principal engineers via the Task tool:
 
 | Specialist | Agent Name | Expertise |
 |------------|------------|-----------|
+| **Architect** | `architect-principal` | System design, scalability, ADRs, integration patterns |
 | **Frontend** | `frontend-principal` | React, TypeScript, UI/UX, state management, testing |
 | **Backend** | `backend-principal` | Node.js, NestJS, Express, APIs, databases |
 | **AI** | `ai-principal` | OpenAI, prompt engineering, RAG, AI features |
@@ -263,12 +264,13 @@ When presenting plans or delegating:
 
 When uncertain about domain assignment:
 
-1. **API/Data logic** → Backend Principal
-2. **UI/Component logic** → Frontend Principal (frontend-principal)
-3. **LLM/AI features** → AI Principal
-4. **Infrastructure/Deployment** → DevOps Principal
-5. **Auth/Vulnerabilities** → Security Principal
-6. **Cross-cutting concerns** → Consult multiple specialists
+1. **System design/ADRs** → Architect Principal
+2. **API/Data logic** → Backend Principal
+3. **UI/Component logic** → Frontend Principal (frontend-principal)
+4. **LLM/AI features** → AI Principal
+5. **Infrastructure/Deployment** → DevOps Principal
+6. **Auth/Vulnerabilities** → Security Principal
+7. **Cross-cutting concerns** → Consult multiple specialists
 
 ## Quality Standards
 

@@ -1,79 +1,114 @@
-# Predictive Code Analysis  
+---
+description: Predictive Code Analysis
+allowed-tools: Task, Read, Grep, Glob, TodoWrite
+---
 
-I'll analyze your codebase to predict potential problems before they impact your project.
+# Predictive Code Analysis
 
-## Strategic Thinking Process
+Use specialist agents to predict potential problems before they impact your project.
 
-<think>
-To make accurate predictions, I need to consider:
+## Instructions
 
-1. **Pattern Recognition**
-   - Which code patterns commonly lead to problems?
-   - Are there growing complexity hotspots?
-   - Do I see anti-patterns that will cause issues at scale?
-   - Are there ticking time bombs (hardcoded values, assumptions)?
+Use the **Task tool** to spawn analysis agents in parallel:
 
-2. **Risk Assessment Framework**
-   - Likelihood: How probable is this issue to occur?
-   - Impact: How severe would the consequences be?
-   - Timeline: When might this become a problem?
-   - Effort: How hard would it be to fix now vs later?
+**Security Risk Analysis:**
+```
+subagent_type: security-principal
+prompt: |
+  Predict potential security issues in the codebase.
 
-3. **Common Problem Categories**
-   - Performance: O(n²) algorithms, memory leaks, inefficient queries
-   - Maintainability: High complexity, poor naming, tight coupling
-   - Security: Input validation gaps, exposed secrets, weak auth
-   - Scalability: Hardcoded limits, single points of failure
+  Look for:
+  - Input validation gaps that will be exploited
+  - Authentication weaknesses
+  - Exposed secrets or credentials
+  - Authorization bypass opportunities
+  - Security patterns that won't scale
 
-4. **Prediction Strategy**
-   - Start with highest risk areas (critical path code)
-   - Look for patterns that break at 10x, 100x scale
-   - Check for technical debt accumulation
-   - Identify brittleness in integration points
-</think>
+  For each prediction:
+  - Risk level (Critical/High/Medium/Low)
+  - Likelihood and impact
+  - Timeline estimate for when this becomes a problem
+  - Prevention recommendations
+```
 
-Based on this analysis framework, I'll use native tools for comprehensive analysis:
-- **Grep tool** to search for problematic patterns
-- **Glob tool** to analyze file structures and growth
-- **Read tool** to examine complex functions and hotspots
+**Architecture Risk Analysis:**
+```
+subagent_type: architect-principal
+prompt: |
+  Predict architectural issues that will cause problems at scale.
 
-I'll examine:
-- Code complexity trends and potential hotspots
-- Performance bottleneck patterns forming
-- Maintenance difficulty indicators
-- Architecture stress points and scaling issues
-- Error handling gaps
+  Look for:
+  - Patterns that break at 10x, 100x scale
+  - Tight coupling that will block refactoring
+  - Single points of failure
+  - Technical debt accumulation
+  - Integration brittleness
 
-For each prediction, I'll:
-- Show specific code locations with file references
-- Explain why it's likely to cause future issues
-- Estimate potential timeline and impact
-- Suggest preventive measures with priority levels
+  For each prediction:
+  - Risk level (Critical/High/Medium/Low)
+  - Scale threshold where this breaks
+  - Impact on system reliability
+  - Remediation recommendations
+```
 
-When I find multiple issues, I'll create a todo list for systematic review and prioritization.
+**Performance Risk Analysis:**
+```
+subagent_type: backend-principal (for backend) OR frontend-principal (for frontend)
+prompt: |
+  Predict performance issues that will degrade at scale.
 
-Analysis areas:
-- Functions approaching complexity thresholds
-- Files with high change frequency (potential hotspots)
-- Dependencies with known issues or update requirements
-- Performance patterns that don't scale
-- Code duplication leading to maintenance issues
+  Look for:
+  - O(n²) algorithms in critical paths
+  - Memory leak patterns
+  - N+1 database queries
+  - Inefficient rendering (frontend)
+  - Missing caching opportunities
 
-After analysis, I'll ask: "How would you like to track these predictions?"
-- Create todos: I'll add items to track resolution progress
-- Create GitHub issues: I'll generate properly formatted issues with details
-- Summary only: I'll provide actionable report without task creation
+  For each prediction:
+  - Risk level (Critical/High/Medium/Low)
+  - Current impact vs. impact at 10x load
+  - Timeline for degradation
+  - Optimization recommendations
+```
 
-**Important**: I will NEVER:
-- Add "Created by Claude" or any AI attribution to issues
-- Include "Generated with Claude Code" in descriptions
-- Modify repository settings or permissions
-- Add any AI/assistant signatures or watermarks
+## Output Format
 
-Predictions will include:
-- Risk level assessment (Critical/High/Medium/Low)
-- Estimated timeline for potential issues
-- Specific remediation recommendations
-- Impact assessment on project goals
+```markdown
+## Predictive Analysis Report
 
-This helps prevent problems before they impact your project, saving time and maintaining code quality proactively.
+### Summary
+- **Critical Risks**: X
+- **High Risks**: X
+- **Medium Risks**: X
+- **Total Predictions**: X
+
+### Critical Risks (Address Immediately)
+| Area | Issue | Timeline | Impact |
+|------|-------|----------|--------|
+| Security | ... | ... | ... |
+| Architecture | ... | ... | ... |
+
+### High Risks (Address Soon)
+| Area | Issue | Timeline | Impact |
+|------|-------|----------|--------|
+| ... | ... | ... | ... |
+
+### Medium Risks (Plan for Future)
+| Area | Issue | Timeline | Impact |
+|------|-------|----------|--------|
+| ... | ... | ... | ... |
+
+### Prevention Recommendations
+1. [Highest priority action]
+2. [Second priority action]
+3. [Third priority action]
+
+### Timeline View
+- **Now**: [Issues that need immediate attention]
+- **1-3 months**: [Issues that will emerge soon]
+- **3-6 months**: [Issues at growth scale]
+```
+
+**Important**:
+- NEVER add AI attribution to output
+- Focus on actionable, specific predictions with evidence

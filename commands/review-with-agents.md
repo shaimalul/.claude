@@ -1,78 +1,136 @@
+---
+description: Code Review with Project Agents
+allowed-tools: Task, Bash, Read, Grep, Glob, TodoWrite
+---
+
 # Code Review with Project Agents
 
-I'll review your code changes using project-specific agents from `.claude/agents`.
+Review code changes using project-specific agents from `.claude/agents` and standard principal agents.
 
-First, let me discover project-specific agents:
+## Instructions
+
+### Step 1: Discover Project Agents
+
 ```bash
 find . -path "*/.claude/agents/*.md" -type f 2>/dev/null | head -20
 ls -la .claude/agents/ 2>/dev/null || echo "No .claude/agents directory found"
 ```
 
-I'll also check for `.cursor/rules` to understand project standards:
+### Step 2: Check Project Standards
+
 ```bash
 find . -path "*/.cursor/rules*" -type f 2>/dev/null | head -10
 ```
 
-Let me analyze what changes you've made:
+### Step 3: Identify Changes
+
 ```bash
 git status
 git diff --stat
 ```
 
-Creating a checkpoint before review:
-```bash
-git add -A  
-git commit -m "Pre-review checkpoint" || echo "No changes to commit"
+### Step 4: Spawn Project Agents via Task Tool
+
+For each discovered project agent, use the **Task tool**:
+
+**For custom agents in .claude/agents/:**
+```
+subagent_type: {agent-name-from-file}
+prompt: |
+  Review the code changes according to your expertise.
+
+  Changes to review:
+  [Include git diff output or file list]
+
+  Provide findings with:
+  - Exact file and line numbers
+  - Issue description
+  - Recommended fix
 ```
 
-I'll use specialized agents for comprehensive analysis:
+### Step 5: Spawn Standard Agents as Fallback/Complement
 
-**Project-Specific Agents** (from .claude/agents):
-- I'll read and utilize any custom agents defined in your project
-- Each agent will review changes according to its specific expertise
-- Agents will be launched as sub-agents to analyze your code
+Use the **Task tool** to spawn standard principal agents in parallel:
 
-**Default Review Agents**:
-- **cursor-rules-reviewer**: Ensures compliance with .cursor/rules standards
-- **standards-enforcer**: Comprehensive coding standards validation
-- **Security sub-agent**: Credential exposure, input validation, vulnerabilities
-- **Performance sub-agent**: Bottlenecks, memory issues, optimization opportunities  
-- **Quality sub-agent**: Code complexity, maintainability, best practices
-- **Architecture sub-agent**: Layer separation, dependency direction, scalability patterns
+**Security Review:**
+```
+subagent_type: security-principal
+prompt: |
+  Review code changes for security issues.
 
-I'll examine your changes to analyze:
-1. **Project Agent Concerns** - issues identified by your custom agents
-2. **Standards Compliance** - adherence to .cursor/rules and project conventions
-3. **Security Issues** - credential exposure, input validation
-4. **Logic Problems** - error handling, edge cases  
-5. **Performance Concerns** - inefficient patterns, bottlenecks
-6. **Code Quality** - complexity, maintainability
+  Focus on:
+  - OWASP Top 10 vulnerabilities
+  - Credential exposure
+  - Input validation
+  - Authentication/authorization
+```
 
-For each custom agent found, I'll:
-- Read the agent definition from .claude/agents/
-- Launch it as a sub-agent to review your changes
-- Incorporate its findings into the overall review
+**Code Quality Review:**
+```
+subagent_type: frontend-principal (for .tsx/.jsx files)
+OR
+subagent_type: backend-principal (for .ts/.js service/controller files)
+prompt: |
+  Review code changes for quality issues.
 
-When issues are found, I'll create a todo list to address them systematically.
+  Focus on:
+  - CLAUDE.md compliance
+  - Component patterns (frontend)
+  - Three-layer architecture (backend)
+  - Testing considerations
+```
 
-For each issue, I'll:
-- Show exact location with file references
-- Explain which agent identified the issue
-- Describe the problem and potential impact
-- Provide specific remediation steps following project conventions
-- Prioritize by severity and effort
+### Step 6: Aggregate Findings
 
-After review, I'll ask: "Create GitHub issues for critical findings?"
-- Yes: I'll create prioritized issues with detailed descriptions
-- Todos only: I'll maintain local tracking for resolution
-- Summary: I'll provide actionable report
+Combine findings from:
+- Project-specific agents (custom agents found in .claude/agents/)
+- Standard principal agents (security, frontend, backend)
 
-**Important**: I will NEVER:
-- Add "Co-authored-by" or any Claude signatures to commits
-- Add "Created by Claude" or any AI attribution to issues
-- Include "Generated with Claude Code" in any output
-- Modify git config or repository settings
-- Add any AI/assistant signatures or watermarks
-- Use emojis in commits, PRs, issues, or git-related content
+Prioritize by:
+1. **Critical** - Security vulnerabilities (blocking)
+2. **High** - Architecture violations (should fix)
+3. **Medium** - Code quality issues (recommended)
+4. **Low** - Style improvements (nice to have)
 
-This review leverages your project's custom agents to ensure code quality while maintaining consistency with established standards and patterns.
+### Step 7: Create Todo List
+
+Use TodoWrite to track issues for resolution.
+
+## Output Format
+
+```markdown
+## Code Review Report (with Project Agents)
+
+### Agents Used
+- [Custom Agent 1 from .claude/agents/]
+- [Custom Agent 2 from .claude/agents/]
+- security-principal (standard)
+- frontend-principal / backend-principal (standard)
+
+### Summary
+- Files reviewed: X
+- Critical issues: X
+- High priority: X
+- Total findings: X
+
+### Findings by Agent
+
+#### [Custom Agent Name]
+| File | Line | Issue | Severity |
+|------|------|-------|----------|
+| ... | ... | ... | ... |
+
+#### security-principal
+| File | Line | Issue | Severity |
+|------|------|-------|----------|
+| ... | ... | ... | ... |
+
+### Recommendations
+1. [Priority action 1]
+2. [Priority action 2]
+```
+
+**Important**:
+- NEVER add AI attribution or signatures
+- NEVER modify git config or repository settings
+- Focus on real problems that impact reliability
