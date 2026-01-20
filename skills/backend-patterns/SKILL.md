@@ -114,6 +114,188 @@ export class UserResponseDto {
 }
 ```
 
+## Refactoring Patterns
+
+### When You See DB Query in Controller → Extract to Repository
+
+```typescript
+// Before (bad) - controller does data access
+app.get('/users', async (req, res) => {
+  const users = await db.query('SELECT * FROM users WHERE active = true');
+  res.json(users);
+});
+
+// After (good) - repository handles data access
+// repositories/userRepository.ts
+export const userRepository = {
+  findActive: async (filters?: UserFilters): Promise<User[]> => {
+    return db.query('SELECT * FROM users WHERE active = true', filters);
+  },
+  findById: async (id: string): Promise<User | null> => {
+    return db.query('SELECT * FROM users WHERE id = $1', [id]);
+  },
+};
+
+// controllers/userController.ts
+app.get('/users', async (req, res) => {
+  const users = await userRepository.findActive(req.query);
+  res.json(users);
+});
+```
+
+### When You See Business Logic in Controller → Extract to Service
+
+```typescript
+// Before (bad) - controller does business logic
+app.post('/orders', async (req, res) => {
+  const items = req.body.items;
+  let total = 0;
+  for (const item of items) {
+    const product = await productRepo.findById(item.productId);
+    if (product.stock < item.quantity) throw new Error('Out of stock');
+    total += product.price * item.quantity;
+  }
+  if (req.user.membershipLevel === 'gold') total *= 0.9;
+  const order = await orderRepo.create({ userId: req.user.id, items, total });
+  await emailService.sendConfirmation(req.user.email, order);
+  res.json(order);
+});
+
+// After (good) - service handles business logic
+// services/orderService.ts
+export const orderService = {
+  create: async (userId: string, items: OrderItem[]): Promise<Order> => {
+    await validateStock(items);
+    const total = await calculateTotal(items, userId);
+    const order = await orderRepository.create({ userId, items, total });
+    await notificationService.sendOrderConfirmation(order);
+    return order;
+  },
+};
+
+// controllers/orderController.ts
+app.post('/orders', async (req, res) => {
+  const order = await orderService.create(req.user.id, req.body.items);
+  res.json(toOrderResponse(order));
+});
+```
+
+### When You See Validation Logic Scattered → Centralize with Zod
+
+```typescript
+// Before (bad) - validation in controller
+app.post('/users', async (req, res) => {
+  if (!req.body.email) throw new Error('Email required');
+  if (!req.body.email.includes('@')) throw new Error('Invalid email');
+  if (!req.body.password || req.body.password.length < 8) throw new Error('Password too short');
+  // ...
+});
+
+// After (good) - validation schema
+// validators/userValidator.ts
+import { z } from 'zod';
+
+export const createUserSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(8),
+  name: z.string().min(1),
+});
+
+// middleware/validate.ts
+export const validate = (schema: z.Schema) => (req, res, next) => {
+  const result = schema.safeParse(req.body);
+  if (!result.success) {
+    return res.status(StatusCodes.BAD_REQUEST).json({ errors: result.error.flatten() });
+  }
+  req.body = result.data;
+  next();
+};
+
+// controllers/userController.ts
+app.post('/users', validate(createUserSchema), asyncHandler(async (req, res) => {
+  const user = await userService.create(req.body);
+  res.status(StatusCodes.CREATED).json(toUserResponse(user));
+}));
+```
+
+### When You See Config/Secrets Hardcoded → Extract to Config Module
+
+```typescript
+// Before (bad) - hardcoded values
+const db = new Database('postgres://user:pass@localhost:5432/mydb');
+const stripe = new Stripe('sk_live_xxx');
+
+// After (good) - centralized config
+// config/index.ts
+export const config = {
+  database: {
+    url: process.env.DATABASE_URL,
+    poolSize: parseInt(process.env.DB_POOL_SIZE || '10'),
+  },
+  stripe: {
+    secretKey: process.env.STRIPE_SECRET_KEY,
+  },
+  server: {
+    port: parseInt(process.env.PORT || '3000'),
+  },
+} as const;
+
+// Validate required env vars on startup
+const required = ['DATABASE_URL', 'STRIPE_SECRET_KEY'];
+for (const key of required) {
+  if (!process.env[key]) throw new Error(`Missing env var: ${key}`);
+}
+```
+
+## HTTP Status Codes
+
+**Never use raw numbers** - use the `http-status-codes` package:
+
+```typescript
+// Bad - what does 429 mean?
+if (response.status === 429) throw new Error('Rate limited');
+res.status(404).json({ error: 'Not found' });
+res.status(500).json({ error: 'Server error' });
+
+// Good - self-documenting
+import { StatusCodes } from 'http-status-codes';
+
+if (response.status === StatusCodes.TOO_MANY_REQUESTS) throw new Error('Rate limited');
+res.status(StatusCodes.NOT_FOUND).json({ error: 'Not found' });
+res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ error: 'Server error' });
+```
+
+## Dependency Injection Pattern
+
+For testability, use interfaces and Context for DI:
+
+```typescript
+// types/services.ts
+interface IDataItemService {
+  getAll(filters?: DataItemFilters): Promise<DataItem[]>;
+  getById(id: string): Promise<DataItem | null>;
+  classify(id: string): Promise<ClassificationResult>;
+}
+
+// context/DependencyContext.tsx
+const DependencyContext = createContext<{ dataItemService: IDataItemService } | null>(null);
+
+export const DependencyProvider: React.FC<{
+  overrides?: { dataItemService?: IDataItemService };
+  children: React.ReactNode;
+}> = ({ overrides, children }) => (
+  <DependencyContext.Provider value={{ dataItemService: overrides?.dataItemService ?? dataItemService }}>
+    {children}
+  </DependencyContext.Provider>
+);
+
+export const useDataItemService = () => {
+  const ctx = useContext(DependencyContext);
+  if (!ctx) throw new Error('Missing DependencyProvider');
+  return ctx.dataItemService;
+};
+```
+
 ## Checklist
 
 - [ ] Controller only handles HTTP, delegates to service
@@ -122,3 +304,7 @@ export class UserResponseDto {
 - [ ] DTOs used for API responses
 - [ ] Async handlers wrapped for error catching
 - [ ] Centralized error handling middleware
+- [ ] Validation uses Zod schemas with validate middleware
+- [ ] Config/secrets loaded from environment variables
+- [ ] HTTP status codes use `http-status-codes` package
+- [ ] Interfaces defined for testability (DI pattern)

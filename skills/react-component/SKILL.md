@@ -210,6 +210,121 @@ function Component({ user }) {
 }
 ```
 
+### Don't Copy Props to State with useEffect
+```typescript
+// Bad - duplicates source of truth, causes extra renders
+function MyComponent({ propValue }) {
+  const [value, setValue] = useState();
+
+  useEffect(() => {
+    setValue(manipulate(propValue));  // Avoid!
+  }, [propValue]);
+
+  return <div>{value}</div>;
+}
+
+// Good - derive directly from props
+function MyComponent({ propValue }) {
+  const value = manipulate(propValue);  // Computed on each render
+  return <div>{value}</div>;
+}
+```
+
+### Extract Complex Conditions to Named Variables
+```typescript
+// Bad - hard to understand
+if (!selectedSurveyGroup?.id || !cyclesDataBySurveyGroup || !cyclesDataBySurveyGroup[selectedSurveyGroup.id]) {
+  return;
+}
+
+// Good - self-documenting
+const selectedGroupId = selectedSurveyGroup?.id;
+const hasCyclesData = selectedGroupId && cyclesDataBySurveyGroup?.[selectedGroupId];
+
+if (!hasCyclesData) {
+  return;
+}
+```
+
+### useState vs useReducer
+
+**Use useState** for simple, independent state:
+```typescript
+const [count, setCount] = useState(0);
+const [name, setName] = useState('');
+```
+
+**Use useReducer** for complex state or when next state depends on previous:
+```typescript
+// Good - related state, predictable updates
+const initialState = { name: '', age: '', email: '' };
+
+const reducer = (state, action) => {
+  switch (action.type) {
+    case 'updateField':
+      return { ...state, [action.field]: action.value };
+    case 'reset':
+      return initialState;
+    default:
+      return state;
+  }
+};
+
+const [state, dispatch] = useReducer(reducer, initialState);
+```
+
+## Memoization (useMemo/useCallback)
+
+**Default: Don't use memoization.** Only add it when:
+1. You've profiled and measured an actual performance problem
+2. The computation is genuinely expensive (1000+ items, complex algorithms)
+3. It's required for correctness (stable reference for useEffect deps)
+
+```typescript
+// Bad - premature optimization
+const stats = useMemo(() => ({
+  total: items.length,  // O(1)
+  active: items.filter(x => x.active).length  // O(n) where n=8
+}), [items]);
+
+// Good - just compute it
+const stats = {
+  total: items.length,
+  active: items.filter(x => x.active).length
+};
+
+// Good - genuinely expensive (measured problem)
+const processed = useMemo(() =>
+  largeDataset.map(expensiveTransform).sort(complexComparator),
+  [largeDataset]  // 10,000+ items
+);
+```
+
+**Why avoid premature memoization:**
+- Adds cognitive overhead (dependency arrays, stale closure bugs)
+- useMemo itself has overhead (comparison, caching)
+- React re-renders are fast - don't optimize what isn't slow
+- Makes code harder to read and maintain
+
+## Navigation with Anchors
+
+**Any UI element that triggers navigation MUST be an `<a>` element** for accessibility and standard browser behavior (open in new tab, copy link).
+
+```tsx
+// Good - Link component renders <a> for SPA navigation
+import { Link } from 'react-router-dom';
+
+<Link to={`/projects/${projectId}`}>{projectName}</Link>
+
+// Good - with ZCD components
+<ZCDMenuItem as={Link} to="/settings" />
+<ZCDButton LinkComponent={Link} to="/dashboard" />
+
+// Bad - click handler on non-anchor element
+<div onClick={() => navigate('/projects')}>Go to Projects</div>  // Breaks a11y!
+<Button onClick={() => navigate('/dashboard')}>Dashboard</Button>  // Avoid
+```
+
 ## Rules
 - Components under 100 lines
 - One component per file
@@ -222,3 +337,5 @@ function Component({ user }) {
 - Return null (not `</>`) when rendering nothing
 - Use stable keys for list items (never uuid())
 - Navigation must use anchor elements (`<Link>`, not `onClick`)
+- Don't copy props to state with useEffect - derive directly
+- Don't use useMemo/useCallback unless you've measured a performance problem

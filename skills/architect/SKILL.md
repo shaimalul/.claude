@@ -462,6 +462,83 @@ app.get('/health/ready', async (req, res) => {
 });
 ```
 
+## Design Patterns
+
+### Strategy Pattern for Complex Conditionals
+
+When you see nested if/else or switch statements with item-type-specific logic:
+
+```typescript
+interface ItemUpdater {
+  update(item: Item): void;
+}
+
+class NormalItemUpdater implements ItemUpdater {
+  update(item: Item) { /* ... */ }
+}
+
+class SpecialItemUpdater implements ItemUpdater {
+  update(item: Item) { /* ... */ }
+}
+
+const getUpdater = (type: string): ItemUpdater => {
+  const updaters: Record<string, ItemUpdater> = {
+    'special': new SpecialItemUpdater(),
+  };
+  return updaters[type] ?? new NormalItemUpdater();
+};
+
+// Clean usage
+items.forEach(item => getUpdater(item.type).update(item));
+```
+
+**When to use:**
+- Multiple item types with different behaviors
+- Logic for each type is substantial (not just one-liners)
+- New types are likely to be added
+- Need to test each strategy independently
+
+### AHA - Avoid Hasty Abstractions
+
+**Start with WET (Write Everything Twice), move to DRY only when patterns are stable.**
+
+```typescript
+// Bad - premature abstraction with too many variants
+const Button: React.FC<ButtonProps> = ({
+  variant = 'primary',
+  size = 'medium',
+  isFullWidth,
+  isLoading,
+  // ... 10 more props for edge cases
+}) => {
+  // Complex conditional logic
+};
+
+// Good - specific components for specific use cases
+const PrimaryButton = ({ children, onClick }: ButtonBaseProps) => (
+  <button className="bg-blue-500 text-white px-4 py-2 rounded" onClick={onClick}>
+    {children}
+  </button>
+);
+
+const LoadingButton = ({ children, isLoading }: LoadingButtonProps) => (
+  <button className="bg-blue-500 text-white px-4 py-2 rounded" disabled={isLoading}>
+    {isLoading ? <Spinner /> : children}
+  </button>
+);
+```
+
+**Decision Framework:**
+1. Will this abstraction simplify the codebase?
+2. Is the pattern stable and unlikely to diverge?
+3. Would a new team member understand it easily?
+4. If "no" to any - keep code WET
+
+**The Rule of Three:**
+- First time: Write the code
+- Second time: Note the duplication, but write it again
+- Third time: Now consider abstracting (patterns are clearer)
+
 ## Checklist
 
 ### Before Design Review

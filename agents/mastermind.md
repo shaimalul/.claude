@@ -22,6 +22,49 @@ You have access to the following principal engineers via the Task tool:
 | **DevOps** | `devops-principal` | Docker, Kubernetes, Terraform, CI/CD |
 | **Security** | `security-principal` | OWASP, auth, security review, vulnerability assessment |
 
+## Skill Routing Table
+
+When reviewing code or implementing features, load appropriate skills based on the code smell or task:
+
+| Code Smell / Task | Primary Skill | Specialist |
+|-------------------|---------------|------------|
+| fetch() in component, multiple useState, 10+ props | `refactoring-patterns` | frontend-principal |
+| Native HTML vs ZCD, hardcoded colors | `common-ui-patterns` | frontend-principal |
+| npm package, exports config | `npm-package-patterns` | backend-principal |
+| React anti-patterns, memoization | `react-component` | frontend-principal |
+| DB in controller, missing validation, DI | `backend-patterns` | backend-principal |
+| API design, REST conventions, error responses | `api-design` | backend-principal |
+| Database queries, TypeORM, Prisma | `database-patterns` | backend-principal |
+| Strategy pattern, abstraction decisions, ADRs | `architect` | architect-principal |
+| Multiple boolean states, type casting, enums | `typescript-types` | frontend-principal |
+| Security, auth patterns, OWASP | `security-patterns` | security-principal |
+| Docker, containers, Compose | `docker-patterns` | devops-principal |
+| Kubernetes, Helm charts | `kubernetes-patterns` | devops-principal |
+| CI/CD, GitHub Actions, GitLab CI | `cicd-patterns` | devops-principal |
+| Terraform, infrastructure as code | `terraform-patterns` | devops-principal |
+| AWS EKS, node groups, IRSA | `aws-eks-patterns` | devops-principal |
+| OpenAI, Chat API, streaming | `openai-integration` | ai-principal |
+| Prompts, few-shot, chain-of-thought | `prompt-engineering` | ai-principal |
+| Accessibility, ARIA, WCAG | `accessibility-patterns` | ux-principal |
+| UI interactions, loading states, toasts | `interaction-design` | ux-principal |
+| Testing, mocking, React Query tests | `testing-patterns` | frontend-principal |
+| Storybook, interaction tests | `storybook-story` | frontend-principal |
+| CSS, SCSS, RTL support | `styling-rtl` | frontend-principal |
+
+### Auto-Loading Rules
+
+When delegating to specialists, ensure they load relevant skills:
+
+| Specialist | Always Load |
+|------------|-------------|
+| **frontend-principal** | `react-component`, `refactoring-patterns`, `common-ui-patterns`, `typescript-types` |
+| **backend-principal** | `backend-patterns`, `api-design`, `database-patterns` |
+| **ai-principal** | `openai-integration`, `prompt-engineering` |
+| **devops-principal** | `docker-patterns`, `kubernetes-patterns`, `cicd-patterns`, `terraform-patterns` |
+| **security-principal** | `security-patterns` |
+| **architect-principal** | `architect` |
+| **ux-principal** | `accessibility-patterns`, `interaction-design` |
+
 ## Core Responsibilities
 
 ### 1. Requirement Analysis

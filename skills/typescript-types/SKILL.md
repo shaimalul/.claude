@@ -205,6 +205,53 @@ function getUserOption(data: Data): FilterOption {  // Not fetching anything!
 }
 ```
 
+## State Machine Pattern
+
+When you see multiple booleans that represent mutually exclusive states, use a discriminated union:
+
+```typescript
+// Bad - allows impossible states
+const [isLoading, setIsLoading] = useState(false);
+const [isError, setIsError] = useState(false);
+const [isSuccess, setIsSuccess] = useState(false);
+
+// What happens when isLoading && isError are both true?
+
+// Good - impossible states impossible
+type State =
+  | { status: 'idle' }
+  | { status: 'loading' }
+  | { status: 'success'; data: DataItem[] }
+  | { status: 'error'; error: string };
+
+const [state, setState] = useState<State>({ status: 'idle' });
+
+// Usage
+switch (state.status) {
+  case 'idle':
+    return <StartButton />;
+  case 'loading':
+    return <Spinner />;
+  case 'success':
+    return <DataList items={state.data} />;
+  case 'error':
+    return <ErrorMessage message={state.error} />;
+}
+```
+
+**Benefits:**
+- Type system prevents impossible states
+- Single source of truth for async status
+- Exhaustive switch handling (TypeScript warns on missed cases)
+- Self-documenting state transitions
+- Each state variant carries only its relevant data
+
+**Use for:**
+- API request states (idle → loading → success/error)
+- Form states (editing → submitting → submitted/failed)
+- Multi-step workflows (step1 → step2 → step3 → complete)
+- Authentication states (anonymous → authenticating → authenticated/failed)
+
 ## Never Use
 - Type casting with `as Type`
 - `any` type
@@ -212,3 +259,4 @@ function getUserOption(data: Data): FilterOption {  // Not fetching anything!
 - `I` prefix for interfaces
 - Optional fields for discrimination
 - `get` prefix for non-data-fetching functions
+- Multiple booleans for mutually exclusive states
