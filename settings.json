@@ -8,6 +8,7 @@
       "mcp__playwright__*",
       "Read(**)",
       "Write(**)",
+      "Edit(**)",
       "Bash",
       "WebSearch"
     ],
@@ -32,7 +33,7 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "AskUserQuestion",
+        "matcher": "AskUserQuestion|ExitPlanMode",
         "hooks": [
           {
             "type": "command",
