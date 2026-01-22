@@ -1,15 +1,15 @@
 ---
-description: Plan a new feature by analyzing requirements and creating an implementation roadmap with the mastermind agent
-argument-hint: [feature-description]
+description: Plan a task by analyzing requirements and creating an implementation roadmap with the mastermind agent
+argument-hint: [task-description]
 allowed-tools: Task, Read, Grep, Glob
 model: opus
 ---
 
-# Feature Planning
+# Task Planning
 
-Use the **Task tool** to invoke the `mastermind` agent for comprehensive feature planning.
+Use the **Task tool** to invoke the `mastermind` agent for comprehensive task planning.
 
-## Feature Request: $ARGUMENTS
+## Task: $ARGUMENTS
 
 ## Instructions
 
@@ -19,7 +19,7 @@ Spawn the mastermind agent using the Task tool:
 ```
 subagent_type: mastermind
 prompt: |
-  Plan the implementation of this feature: $ARGUMENTS
+  Plan the implementation of this task: $ARGUMENTS
 
   As the mastermind principal engineer, you should:
 
@@ -64,10 +64,10 @@ The mastermind agent has access to:
 The agent should return a plan in this format:
 
 ```markdown
-## Feature Plan: [Feature Name]
+## Task Plan: [Task Name]
 
 ### Overview
-[Brief description of the feature]
+[Brief description of the task]
 
 ### User Story
 As a [user type], I want to [action] so that [benefit].

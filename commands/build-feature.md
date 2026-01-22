@@ -9,7 +9,7 @@ model: opus
 Use the **Task tool** to invoke the `mastermind` agent for feature execution.
 
 ## Prerequisites
-- A feature plan should exist (created via `/plan-feature`)
+- A feature plan should exist (created via `/plan-task`)
 - Or provide a feature description to plan and build in one go
 
 ## Instructions
@@ -27,7 +27,7 @@ prompt: |
   1. **Load Plan**
      - Check conversation history for existing feature plan
      - Verify all tasks are defined with dependencies
-     - If no plan exists, ask user to run /plan-feature first
+     - If no plan exists, ask user to run /plan-task first
 
   2. **Execute by Phase**
      For each phase (in dependency order):

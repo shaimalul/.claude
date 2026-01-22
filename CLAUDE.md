@@ -190,7 +190,7 @@ Use specialized agents for principal-engineer level development:
 | `/principal architect` | architect-principal | System design, ADRs |
 
 ### Key Commands
-- `/plan-feature [description]` - Plan a feature with the mastermind
+- `/plan-task [description]` - Plan a task with the mastermind
 - `/build-feature` - Execute the planned feature
 - `/architect [topic]` - Get architecture guidance
 - `/quality-gate` - Run comprehensive quality checks
