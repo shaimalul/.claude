@@ -96,16 +96,23 @@ Files:
 
 ## Phase 4: User Confirmation
 
-After showing the plan, ask the user to confirm:
+After showing the plan, use the `AskUserQuestion` tool to confirm:
 
-```
-Ready to create [N] commits. Proceed? (Respond with 'yes' to continue or suggest changes)
-```
+**Question:** "Ready to create [N] commits. How would you like to proceed?"
+**Header:** "Confirm"
+**Options:**
+1. **Yes** - "Proceed with creating all commits as planned"
+2. **Improve** - "Suggest changes to the commit grouping or messages"
 
-If `--dry-run` was specified, stop here and show:
+If `--dry-run` was specified, skip this step and show:
 ```
 Dry run complete. No commits were created.
 ```
+
+Based on response:
+- **Yes**: Continue to Phase 5 (Execute Commits)
+- **Improve**: Ask user for specific changes, update plan, then ask again
+- **Other**: Handle user's custom input accordingly
 
 ## Phase 5: Execute Commits
 
