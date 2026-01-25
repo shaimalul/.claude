@@ -35,19 +35,19 @@ The Claude Code setup follows a three-tier architecture where **Commands** orche
         ┌───────────────────────┼───────────────────────┐
         │                       │                       │
         ▼                       ▼                       ▼
-┌───────────────┐       ┌───────────────┐       ┌───────────────┐
-│   COMMANDS    │       │    AGENTS     │       │    SKILLS     │
-│   (18 total)  │──────▶│  (10 total)   │──────▶│  (26 total)   │
-│               │       │               │       │               │
-│ User-facing   │       │ Specialist    │       │ Pattern       │
-│ workflows     │       │ principals    │       │ libraries     │
-│               │       │               │       │               │
+┌───────────────┐       ┌───────────────┐       ┌────────────────┐
+│   COMMANDS    │       │    AGENTS     │       │    SKILLS      │
+│   (18 total)  │──────▶│  (10 total)   │──────▶│  (26 total)    │
+│               │       │               │       │                │
+│ User-facing   │       │ Specialist    │       │ Pattern        │
+│ workflows     │       │ principals    │       │ libraries      │
+│               │       │               │       │                │
 │ /review       │       │ mastermind    │       │ react-component│
-│ /gitlab-review│       │ frontend-*    │       │ backend-*     │
-│ /plan-task    │       │ backend-*     │       │ security-*    │
-│ /build-feature│       │ security-*    │       │ architect     │
-│ ...           │       │ ...           │       │ ...           │
-└───────────────┘       └───────────────┘       └───────────────┘
+│ /gitlab-review│       │ frontend-*    │       │ backend-*      │
+│ /plan-task    │       │ backend-*     │       │ security-*     │
+│ /build-feature│       │ security-*    │       │ architect      │
+│ ...           │       │ ...           │       │ ...            │
+└───────────────┘       └───────────────┘       └────────────────┘
 
         │                       │                       │
         └───────────────────────┼───────────────────────┘
@@ -89,10 +89,10 @@ The hooks system provides real-time notifications when Claude needs attention.
 │  └────────┬────────┘                                                 │
 │           │                                                          │
 │           ▼                                                          │
-│  ┌────────────────────────────────────────────────────────────────┐ │
-│  │  afplay /System/Library/Sounds/Submarine.aiff                  │ │
-│  │  (Plays submarine sound when Claude finishes processing)       │ │
-│  └────────────────────────────────────────────────────────────────┘ │
+│  ┌────────────────────────────────────────────────────────────────┐  │
+│  │  afplay /System/Library/Sounds/Submarine.aiff                  │  │
+│  │  (Plays submarine sound when Claude finishes processing)       │  │
+│  └────────────────────────────────────────────────────────────────┘  │
 │                                                                      │
 │  ┌─────────────────┐                                                 │
 │  │ PreToolUse Hook │                                                 │
@@ -102,10 +102,10 @@ The hooks system provides real-time notifications when Claude needs attention.
 │  └────────┬────────┘                                                 │
 │           │                                                          │
 │           ▼                                                          │
-│  ┌────────────────────────────────────────────────────────────────┐ │
-│  │  notify.sh → HTTP POST to localhost:19847                      │ │
-│  │  (Sends notification to ClaudeNotifier menu bar app)           │ │
-│  └────────────────────────────────────────────────────────────────┘ │
+│  ┌────────────────────────────────────────────────────────────────┐  │
+│  │  notify.sh → HTTP POST to localhost:19847                      │  │
+│  │  (Sends notification to ClaudeNotifier menu bar app)           │  │ 
+│  └────────────────────────────────────────────────────────────────┘  │
 │                                                                      │
 └──────────────────────────────────────────────────────────────────────┘
 ```
@@ -373,52 +373,52 @@ When mastermind encounters specific code patterns, it routes to the appropriate 
 The system continuously improves by learning from code reviews.
 
 ```
-┌──────────────────────────────────────────────────────────────────────┐
-│                        LEARNING LOOP                                 │
-├──────────────────────────────────────────────────────────────────────┤
-│                                                                      │
+┌─────────────────────────────────────────────────────────────────────┐
+│                        LEARNING LOOP                                │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
 │    ┌─────────────────────────────────────────────────────────────┐  │
 │    │ 1. REVIEW RUNS                                              │  │
 │    │    /review or /gitlab-review                                │  │
 │    └─────────────────────────────────────────────────────────────┘  │
-│                              │                                       │
-│                              ▼                                       │
+│                              │                                      │
+│                              ▼                                      │
 │    ┌─────────────────────────────────────────────────────────────┐  │
 │    │ 2. AGENTS FIND ISSUES                                       │  │
 │    │    Critical • High • Medium • Low severity                  │  │
 │    └─────────────────────────────────────────────────────────────┘  │
-│                              │                                       │
-│                              ▼                                       │
+│                              │                                      │
+│                              ▼                                      │
 │    ┌─────────────────────────────────────────────────────────────┐  │
 │    │ 3. EXTRACT LEARNABLE PATTERNS                               │  │
 │    │    Filter: Critical + High + Suggestion severity            │  │
 │    │    Exclude: Project-specific bugs, questions                │  │
 │    └─────────────────────────────────────────────────────────────┘  │
-│                              │                                       │
-│                              ▼                                       │
+│                              │                                      │
+│                              ▼                                      │
 │    ┌─────────────────────────────────────────────────────────────┐  │
 │    │ 4. INVOKE /improve-claude                                   │  │
 │    │    Categorizes by domain:                                   │  │
 │    │    TypeScript • Frontend • Backend • Security • DevOps      │  │
 │    └─────────────────────────────────────────────────────────────┘  │
-│                              │                                       │
+│                              │                                      │
 │              ┌───────────────┼───────────────┐                      │
 │              │               │               │                      │
 │              ▼               ▼               ▼                      │
-│    ┌─────────────┐  ┌─────────────┐  ┌─────────────┐               │
+│    ┌─────────────┐  ┌──────────────┐  ┌─────────────┐               │
 │    │  CLAUDE.md  │  │  agents/*.md │  │ skills/*.md │               │
 │    │  (if code   │  │  (if agent   │  │ (if pattern │               │
 │    │   standard) │  │   behavior)  │  │  library)   │               │
-│    └─────────────┘  └─────────────┘  └─────────────┘               │
-│                              │                                       │
-│                              ▼                                       │
+│    └─────────────┘  └──────────────┘  └─────────────┘               │
+│                              │                                      │
+│                              ▼                                      │
 │    ┌─────────────────────────────────────────────────────────────┐  │
 │    │ 5. LOG TO learning-history.md                               │  │
 │    │    Records: Date, branch, patterns learned, rules applied   │  │
 │    └─────────────────────────────────────────────────────────────┘  │
-│                                                                      │
+│                                                                     │
 │    RESULT: Claude gets smarter over time!                           │
-└──────────────────────────────────────────────────────────────────────┘
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Learning History Format
@@ -446,7 +446,7 @@ Entries are automatically added to `~/.claude/learning-history.md`:
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│                 FEATURE IMPLEMENTATION                            │
+│                 FEATURE IMPLEMENTATION                           │
 └──────────────────────────────────────────────────────────────────┘
 
 User: /plan-task "implement user authentication"
@@ -500,7 +500,7 @@ User: /build-feature
                 ▼
         ┌───────────────────────────────────────────┐
         │ QUALITY GATE                              │
-        │ npm test → tsc --noEmit → lint → build   │
+        │ npm test → tsc --noEmit → lint → build    │
         └───────────────────────────────────────────┘
 
 User: /commit-all
@@ -539,20 +539,20 @@ User: /review
         ┌───────────────────────────────────────────┐
         │ SPAWN AGENTS IN PARALLEL                  │
         │                                           │
-        │ ┌──────────────┐ ┌──────────────┐        │
-        │ │ security-*   │ │ architect-*  │        │
-        │ │ (always)     │ │ (always)     │        │
-        │ └──────────────┘ └──────────────┘        │
+        │ ┌──────────────┐ ┌──────────────┐         │
+        │ │ security-*   │ │ architect-*  │         │
+        │ │ (always)     │ │ (always)     │         │
+        │ └──────────────┘ └──────────────┘         │
         │                                           │
-        │ ┌──────────────┐ ┌──────────────┐        │
-        │ │ frontend-*   │ │ backend-*    │        │
-        │ │ (has .tsx)   │ │ (has .ts)    │        │
-        │ └──────────────┘ └──────────────┘        │
+        │ ┌──────────────┐ ┌──────────────┐         │
+        │ │ frontend-*   │ │ backend-*    │         │
+        │ │ (has .tsx)   │ │ (has .ts)    │         │
+        │ └──────────────┘ └──────────────┘         │
         │                                           │
-        │ ┌──────────────┐                         │
-        │ │ devops-*     │                         │
-        │ │ (Dockerfile) │                         │
-        │ └──────────────┘                         │
+        │ ┌──────────────┐                          │
+        │ │ devops-*     │                          │
+        │ │ (Dockerfile) │                          │
+        │ └──────────────┘                          │
         └───────────────────────────────────────────┘
                 │
                 ▼
@@ -560,9 +560,9 @@ User: /review
         │ AGGREGATE FINDINGS                        │
         │                                           │
         │ Critical: 1 (SQL injection in controller) │
-        │ High: 2 (missing validation, type cast)  │
-        │ Medium: 3 (file too long, dead code)     │
-        │ Low: 1 (naming convention)               │
+        │ High: 2 (missing validation, type cast)   │
+        │ Medium: 3 (file too long, dead code)      │
+        │ Low: 1 (naming convention)                │
         └───────────────────────────────────────────┘
                 │
                 ▼
@@ -582,7 +582,7 @@ User: /review
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│                   GITLAB MR REVIEW                                │
+│                   GITLAB MR REVIEW                               │
 └──────────────────────────────────────────────────────────────────┘
 
 User: /gitlab-review https://gitlab.com/team/project/-/merge_requests/123
@@ -597,14 +597,14 @@ User: /gitlab-review https://gitlab.com/team/project/-/merge_requests/123
         └───────────────────────────────────────────┘
                 │
                 ▼
-        ┌───────────────────────────────────────────┐
-        │ FETCH MR DATA via GitLab API             │
-        │                                           │
-        │ GET /api/v4/projects/:id/merge_requests/123 │
-        │ GET /api/v4/projects/:id/merge_requests/123/diffs │
-        │                                           │
-        │ Downloads: MR metadata, diffs, comments   │
-        └───────────────────────────────────────────┘
+        ┌─────────────────────────────────────────────────────┐
+        │ FETCH MR DATA via GitLab API                        │
+        │                                                     │
+        │ GET /api/v4/projects/:id/merge_requests/123         │
+        │ GET /api/v4/projects/:id/merge_requests/123/diffs   │
+        │                                                     │
+        │ Downloads: MR metadata, diffs, comments             │
+        └─────────────────────────────────────────────────────┘
                 │
                 ▼
         ┌───────────────────────────────────────────┐
