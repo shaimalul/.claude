@@ -14,14 +14,20 @@ Comprehensive code review of **current branch changes** using all relevant princ
 Get the list of changed files in the current branch compared to the base branch:
 
 ```bash
+# Fetch latest from origin to ensure accurate comparison
+git fetch origin
+
 # Get base branch (main or master)
 BASE_BRANCH=$(git remote show origin | grep 'HEAD branch' | cut -d' ' -f5 2>/dev/null || echo "main")
 
-# Get list of changed files
-git diff $(git merge-base HEAD $BASE_BRANCH)...HEAD --name-only
+# Get list of changed files (comparing against origin's base branch)
+git diff $(git merge-base HEAD origin/$BASE_BRANCH)...HEAD --name-only
+
+# Get the actual diff content (this is what agents will review)
+git diff $(git merge-base HEAD origin/$BASE_BRANCH)...HEAD
 
 # Get diff stat summary
-git diff $(git merge-base HEAD $BASE_BRANCH)...HEAD --stat
+git diff $(git merge-base HEAD origin/$BASE_BRANCH)...HEAD --stat
 
 # Get current branch name
 git branch --show-current
@@ -49,11 +55,15 @@ Use the **Task tool** to spawn multiple agents simultaneously based on changed f
 ```
 subagent_type: security-principal
 prompt: |
-  Review the following code changes for security issues.
+  Review ONLY the following diff for security issues. Do NOT review unchanged code.
 
   Branch: [current branch name]
-  Changed files:
-  [list of changed files]
+
+  Diff (review ONLY these changes):
+  [git diff output]
+
+  IMPORTANT: Only review the lines shown in the diff (+ and - lines).
+  Do NOT comment on existing code that wasn't changed in this branch.
 
   Focus on:
   - OWASP Top 10 vulnerabilities
@@ -74,11 +84,15 @@ prompt: |
 ```
 subagent_type: architect-principal
 prompt: |
-  Review the following code changes as a principal engineer would.
+  Review ONLY the following diff as a principal engineer would. Do NOT review unchanged code.
 
   Branch: [current branch name]
-  Changed files:
-  [list of changed files]
+
+  Diff (review ONLY these changes):
+  [git diff output]
+
+  IMPORTANT: Only review the lines shown in the diff (+ and - lines).
+  Do NOT comment on existing code that wasn't changed in this branch.
 
   Focus on:
   **CLAUDE.md Compliance:**
@@ -111,10 +125,13 @@ prompt: |
 ```
 subagent_type: frontend-principal
 prompt: |
-  Review the following frontend code changes as a principal engineer would.
+  Review ONLY the following frontend diff as a principal engineer would. Do NOT review unchanged code.
 
-  Changed files:
-  [list of frontend files only]
+  Diff (review ONLY these changes):
+  [git diff output for frontend files]
+
+  IMPORTANT: Only review the lines shown in the diff (+ and - lines).
+  Do NOT comment on existing code that wasn't changed in this branch.
 
   Focus on:
   **React Patterns:**
@@ -146,10 +163,13 @@ prompt: |
 ```
 subagent_type: ux-principal
 prompt: |
-  Review the following frontend code changes for UX and accessibility.
+  Review ONLY the following frontend diff for UX and accessibility. Do NOT review unchanged code.
 
-  Changed files:
-  [list of frontend files only]
+  Diff (review ONLY these changes):
+  [git diff output for frontend files]
+
+  IMPORTANT: Only review the lines shown in the diff (+ and - lines).
+  Do NOT comment on existing code that wasn't changed in this branch.
 
   Focus on:
   - WCAG 2.1 AA compliance
@@ -170,10 +190,13 @@ prompt: |
 ```
 subagent_type: backend-principal
 prompt: |
-  Review the following backend code changes as a principal engineer would.
+  Review ONLY the following backend diff as a principal engineer would. Do NOT review unchanged code.
 
-  Changed files:
-  [list of backend files only]
+  Diff (review ONLY these changes):
+  [git diff output for backend files]
+
+  IMPORTANT: Only review the lines shown in the diff (+ and - lines).
+  Do NOT comment on existing code that wasn't changed in this branch.
 
   Focus on:
   **Architecture:**
@@ -206,10 +229,13 @@ prompt: |
 ```
 subagent_type: devops-principal
 prompt: |
-  Review the following infrastructure code changes as a principal engineer would.
+  Review ONLY the following infrastructure diff as a principal engineer would. Do NOT review unchanged code.
 
-  Changed files:
-  [list of devops files only]
+  Diff (review ONLY these changes):
+  [git diff output for devops files]
+
+  IMPORTANT: Only review the lines shown in the diff (+ and - lines).
+  Do NOT comment on existing code that wasn't changed in this branch.
 
   Focus on:
   **Security:**
@@ -239,10 +265,13 @@ prompt: |
 ```
 subagent_type: ai-principal
 prompt: |
-  Review the following AI/ML code changes as a principal engineer would.
+  Review ONLY the following AI/ML diff as a principal engineer would. Do NOT review unchanged code.
 
-  Changed files:
-  [list of AI-related files only]
+  Diff (review ONLY these changes):
+  [git diff output for AI-related files]
+
+  IMPORTANT: Only review the lines shown in the diff (+ and - lines).
+  Do NOT comment on existing code that wasn't changed in this branch.
 
   Focus on:
   **Security & Reliability:**
