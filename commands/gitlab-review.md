@@ -1,10 +1,21 @@
 ---
-description: Review GitLab merge request by fetching diffs and analyzing code changes
+description: Automatically review GitLab MR, post draft comments, and generate report
 argument-hint: <mr-url> [context]
 allowed-tools: Bash, WebFetch, Task, TodoWrite, Write, Read
 ---
 
 # GitLab Merge Request Review
+
+## FULLY AUTOMATED WORKFLOW
+
+This command runs **without any user prompts**. It will:
+1. Fetch MR data and diffs
+2. Analyze code using principal agents (frontend, security, bug-finder, etc.)
+3. Post findings as draft comments on GitLab
+4. Generate a comprehensive review report
+5. Display the final summary with links
+
+**Do NOT ask user questions during execution.** Proceed directly through all phases.
 
 ## MANDATORY OUTPUT
 
@@ -48,12 +59,11 @@ if [ -z "$MR_URL" ]; then
   exit 1
 fi
 
-# Extract project path and MR ID from URL
-# Supports: https://gitlab.com/group/subgroup/project/-/merge_requests/123
-if [[ "$MR_URL" =~ gitlab\.com/(.+)/-/merge_requests/([0-9]+) ]]; then
-  PROJECT_PATH="${BASH_REMATCH[1]}"
-  MR_ID="${BASH_REMATCH[2]}"
-else
+# Extract project path and MR ID using sed (more portable than BASH_REMATCH)
+PROJECT_PATH=$(echo "$MR_URL" | sed -n 's|https://gitlab\.com/\(.*\)/-/merge_requests/.*|\1|p')
+MR_ID=$(echo "$MR_URL" | sed -n 's|.*/-/merge_requests/\([0-9]*\).*|\1|p')
+
+if [ -z "$PROJECT_PATH" ] || [ -z "$MR_ID" ]; then
   echo "Error: Invalid GitLab MR URL format"
   echo "Expected: https://gitlab.com/<project-path>/-/merge_requests/<mr-id>"
   echo "Got: $MR_URL"
@@ -64,7 +74,7 @@ echo "Project Path: $PROJECT_PATH"
 echo "MR ID: $MR_ID"
 
 # Get numeric project ID from GitLab API
-ENCODED_PATH=$(echo "$PROJECT_PATH" | jq -sRr @uri)
+ENCODED_PATH=$(echo "$PROJECT_PATH" | sed 's|/|%2F|g')
 echo "Fetching project ID for: $PROJECT_PATH"
 
 PROJECT_INFO=$(curl -s -H "PRIVATE-TOKEN: $GITLAB_TOKEN" \
@@ -287,9 +297,9 @@ echo "Review assets created in: $ASSETS_DIR"
 echo "Review report: $REVIEW_FILE"
 ```
 
-## Phase 2: Agent-Based Analysis
+## Phase 2: Agent-Based Analysis (Automated)
 
-After fetching MR data, use the **Task tool** to spawn specialist agents **IN PARALLEL** for comprehensive review.
+After fetching MR data, **immediately** spawn specialist agents **IN PARALLEL** for comprehensive review. Do NOT wait for user confirmation.
 
 ### Review Comment Format
 
@@ -316,10 +326,16 @@ Use the team's code review prefix format. **DO NOT post positive/complimentary c
   "type": "inline",
   "prefix": "[Suggestion]",
   "file_path": "src/foo.ts",
-  "line_number": 42,
+  "code_pattern": "return variant as SomeType",
   "comment": "Type guard would make the intent clearer here."
 }
 ```
+
+**IMPORTANT - code_pattern field:**
+- Copy the EXACT code snippet from the diff that you're commenting on (5-50 chars)
+- Use a unique snippet that appears only once in the file
+- If code appears multiple times, include more context to make it unique
+- Line numbers will be calculated automatically from code_pattern - do NOT guess them
 
 **Bad vs Good examples:**
 - Bad: `[Suggestion] Duration conversion logic - could extract to a constant`
@@ -349,9 +365,22 @@ prompt: |
   - Performance (useMemo, useCallback usage)
   - CLAUDE.md compliance
 
-  Output findings as JSON with prefix format: [Blocker], [Nice to have], [Suggestion], [Need to check], [Question]
-  Keep comments concise and natural-sounding.
-  IMPORTANT: Comments are attached to specific lines - DO NOT describe what the code does. Jump straight to the feedback.
+  OUTPUT FORMAT - Use code_pattern instead of line_number:
+  {
+    "type": "inline",
+    "prefix": "[Blocker]",
+    "file_path": "src/path/to/file.ts",
+    "code_pattern": "the exact code snippet you're commenting on",
+    "comment": "Your feedback here."
+  }
+
+  RULES:
+  - code_pattern: Copy the EXACT code from the diff (5-50 chars) that you're commenting on
+  - Use a unique snippet that appears only once in the file
+  - If code appears multiple times, include more context to make it unique
+  - DO NOT include line_number - it will be calculated automatically from code_pattern
+  - Keep comments concise and natural-sounding
+  - DO NOT describe what the code does - jump straight to the feedback
 ```
 
 **2. Backend Principal** (if service/api/controller/repository files):
@@ -373,9 +402,22 @@ prompt: |
   - Database query optimization
   - Input validation
 
-  Output findings as JSON with prefix format: [Blocker], [Nice to have], [Suggestion], [Need to check], [Question]
-  Keep comments concise and natural-sounding.
-  IMPORTANT: Comments are attached to specific lines - DO NOT describe what the code does. Jump straight to the feedback.
+  OUTPUT FORMAT - Use code_pattern instead of line_number:
+  {
+    "type": "inline",
+    "prefix": "[Blocker]",
+    "file_path": "src/path/to/file.ts",
+    "code_pattern": "the exact code snippet you're commenting on",
+    "comment": "Your feedback here."
+  }
+
+  RULES:
+  - code_pattern: Copy the EXACT code from the diff (5-50 chars) that you're commenting on
+  - Use a unique snippet that appears only once in the file
+  - If code appears multiple times, include more context to make it unique
+  - DO NOT include line_number - it will be calculated automatically from code_pattern
+  - Keep comments concise and natural-sounding
+  - DO NOT describe what the code does - jump straight to the feedback
 ```
 
 **3. Security Principal** (always run):
@@ -397,9 +439,22 @@ prompt: |
   - Authentication/authorization issues
   - SQL injection, XSS, CSRF risks
 
-  Output findings as JSON with prefix format: [Blocker], [Nice to have], [Suggestion], [Need to check], [Question]
-  Keep comments concise and natural-sounding.
-  IMPORTANT: Comments are attached to specific lines - DO NOT describe what the code does. Jump straight to the feedback.
+  OUTPUT FORMAT - Use code_pattern instead of line_number:
+  {
+    "type": "inline",
+    "prefix": "[Blocker]",
+    "file_path": "src/path/to/file.ts",
+    "code_pattern": "the exact code snippet you're commenting on",
+    "comment": "Your feedback here."
+  }
+
+  RULES:
+  - code_pattern: Copy the EXACT code from the diff (5-50 chars) that you're commenting on
+  - Use a unique snippet that appears only once in the file
+  - If code appears multiple times, include more context to make it unique
+  - DO NOT include line_number - it will be calculated automatically from code_pattern
+  - Keep comments concise and natural-sounding
+  - DO NOT describe what the code does - jump straight to the feedback
 ```
 
 **4. Architect Principal** (if significant structural changes):
@@ -420,9 +475,22 @@ prompt: |
   - Scalability concerns
   - Code organization
 
-  Output findings as JSON with prefix format: [Blocker], [Nice to have], [Suggestion], [Need to check], [Question]
-  Keep comments concise and natural-sounding.
-  IMPORTANT: Comments are attached to specific lines - DO NOT describe what the code does. Jump straight to the feedback.
+  OUTPUT FORMAT - Use code_pattern instead of line_number:
+  {
+    "type": "inline",
+    "prefix": "[Blocker]",
+    "file_path": "src/path/to/file.ts",
+    "code_pattern": "the exact code snippet you're commenting on",
+    "comment": "Your feedback here."
+  }
+
+  RULES:
+  - code_pattern: Copy the EXACT code from the diff (5-50 chars) that you're commenting on
+  - Use a unique snippet that appears only once in the file
+  - If code appears multiple times, include more context to make it unique
+  - DO NOT include line_number - it will be calculated automatically from code_pattern
+  - Keep comments concise and natural-sounding
+  - DO NOT describe what the code does - jump straight to the feedback
 ```
 
 **5. Bug Finder** (always run):
@@ -444,9 +512,22 @@ prompt: |
   - Null/undefined risks
   - Off-by-one errors
 
-  Output findings as JSON with prefix format: [Blocker], [Nice to have], [Suggestion], [Need to check], [Question]
-  Keep comments concise and natural-sounding.
-  IMPORTANT: Comments are attached to specific lines - DO NOT describe what the code does. Jump straight to the feedback.
+  OUTPUT FORMAT - Use code_pattern instead of line_number:
+  {
+    "type": "inline",
+    "prefix": "[Blocker]",
+    "file_path": "src/path/to/file.ts",
+    "code_pattern": "the exact code snippet you're commenting on",
+    "comment": "Your feedback here."
+  }
+
+  RULES:
+  - code_pattern: Copy the EXACT code from the diff (5-50 chars) that you're commenting on
+  - Use a unique snippet that appears only once in the file
+  - If code appears multiple times, include more context to make it unique
+  - DO NOT include line_number - it will be calculated automatically from code_pattern
+  - Keep comments concise and natural-sounding
+  - DO NOT describe what the code does - jump straight to the feedback
 ```
 
 ### Example: Launching Agents in Parallel
@@ -726,9 +807,7 @@ Each finding will include:
 - **Recommendation**: Specific fix with example code
 - **Severity**: Critical, High, Medium, or Low
 
-After the analysis, I'll ask: "Create GitHub issues for critical findings?"
-
-I'll now perform the comprehensive analysis directly.
+Proceeding with automated analysis, draft posting, and report generation.
 
 ````bash
 # Perform comprehensive code review analysis
@@ -938,9 +1017,9 @@ Now I'll spawn the relevant agents **IN PARALLEL** using multiple Task tool call
 - **If significant changes:** architect-principal
 - **If infra/config files:** devops-principal
 
-## Phase 3: Post Draft Notes to GitLab
+## Phase 3: Post Draft Notes to GitLab (Automated)
 
-After analysis is complete and findings are saved to `$FINDINGS_FILE`, post them as draft notes:
+After analysis is complete and findings are saved to `$FINDINGS_FILE`, **immediately** post them as draft notes. Do NOT ask user for confirmation:
 
 ```bash
 # Source the paths file to get all variables
@@ -987,7 +1066,111 @@ post_draft_note() {
 # Read findings and post each as a draft note
 echo ""
 echo "=== Posting Draft Notes to GitLab ==="
+
+# Calculate line numbers from code patterns using Python
+echo "Calculating line numbers from code patterns..."
+
+export ASSETS_DIR
+python3 << 'PYTHON_EOF'
+import json
+import re
+import os
+
+assets_dir = os.environ.get('ASSETS_DIR', '')
+diffs_dir = os.path.join(assets_dir, 'diffs')
+findings_file = os.path.join(assets_dir, 'findings.json')
+
+def find_line_in_diff(diff_content, pattern):
+    """Find the new file line number for a code pattern in a diff."""
+    if not pattern or not pattern.strip():
+        return None
+
+    current_new_line = 0
+    pattern_clean = pattern.strip()
+
+    for line in diff_content.split('\n'):
+        # Parse hunk header: @@ -old,count +new,count @@
+        if line.startswith('@@'):
+            match = re.search(r'\+(\d+)', line)
+            if match:
+                current_new_line = int(match.group(1))
+            continue
+
+        # Skip deleted lines (don't exist in new file)
+        if line.startswith('-') and not line.startswith('---'):
+            continue
+
+        # Check if this line contains the pattern
+        line_content = line[1:] if line.startswith('+') or line.startswith(' ') else line
+        if pattern_clean in line_content:
+            return current_new_line
+
+        # Increment line counter for added/context lines
+        if line.startswith('+') or line.startswith(' ') or (not line.startswith('-') and not line.startswith('\\') and not line.startswith('@@')):
+            current_new_line += 1
+
+    return None
+
+# Load findings
+try:
+    with open(findings_file, 'r') as f:
+        findings = json.load(f)
+except (FileNotFoundError, json.JSONDecodeError):
+    findings = []
+
+# Process each finding
+updated_findings = []
+for finding in findings:
+    file_path = finding.get('file_path', '')
+    code_pattern = finding.get('code_pattern', '')
+
+    # Skip if no file path
+    if not file_path:
+        updated_findings.append(finding)
+        continue
+
+    # Read the diff file
+    safe_filename = file_path.replace('/', '_') + '.diff'
+    diff_file = os.path.join(diffs_dir, safe_filename)
+
+    if not os.path.exists(diff_file):
+        print(f"  ⚠ Diff not found for {file_path}")
+        finding['line_number'] = None
+        updated_findings.append(finding)
+        continue
+
+    with open(diff_file, 'r') as f:
+        diff_content = f.read()
+
+    # Find line number from code pattern
+    line_number = find_line_in_diff(diff_content, code_pattern)
+
+    if line_number:
+        pattern_preview = code_pattern[:30] + '...' if len(code_pattern) > 30 else code_pattern
+        print(f"  ✓ Found '{pattern_preview}' at line {line_number}")
+        finding['line_number'] = line_number
+    else:
+        pattern_preview = code_pattern[:40] + '...' if len(code_pattern) > 40 else code_pattern
+        print(f"  ⚠ Pattern not found: '{pattern_preview}'")
+        finding['line_number'] = None
+
+    updated_findings.append(finding)
+
+# Save updated findings
+with open(findings_file, 'w') as f:
+    json.dump(updated_findings, f, indent=2)
+
+print(f"\nProcessed {len(updated_findings)} findings")
+PYTHON_EOF
+
+# Deduplicate findings by file_path + code_pattern
+echo "Deduplicating findings..."
+ORIGINAL_COUNT=$(jq 'length' "$FINDINGS_FILE")
+UNIQUE_FINDINGS=$(jq 'unique_by(.file_path + ":" + (.code_pattern // ""))' "$FINDINGS_FILE")
+echo "$UNIQUE_FINDINGS" > "$FINDINGS_FILE"
 FINDINGS_COUNT=$(jq 'length' "$FINDINGS_FILE")
+echo "Deduplicated: $ORIGINAL_COUNT → $FINDINGS_COUNT findings"
+
 POSTED_COUNT=0
 
 if [ "$FINDINGS_COUNT" -gt 0 ]; then
@@ -996,12 +1179,49 @@ if [ "$FINDINGS_COUNT" -gt 0 ]; then
     comment=$(echo "$finding" | jq -r '.comment // ""')
     file_path=$(echo "$finding" | jq -r '.file_path // ""')
     line_number=$(echo "$finding" | jq -r '.line_number // ""')
+    code_pattern=$(echo "$finding" | jq -r '.code_pattern // ""')
 
-    # Build the comment with prefix
-    note="$prefix $comment"
+    # Validate file exists in diff - if not, post as general comment
+    if [ -n "$file_path" ] && [ "$file_path" != "null" ]; then
+      safe_filename=$(echo "$file_path" | tr '/' '_')
+      diff_file="$DIFFS_DIR/${safe_filename}.diff"
+      if [ ! -f "$diff_file" ]; then
+        echo "  ⚠ File not in diff: $file_path - posting as general comment"
+        file_path=""
+        line_number=""
+      fi
+    fi
+
+    # If line_number is null or empty, post as general comment with file/code context
+    if [ "$line_number" = "null" ] || [ -z "$line_number" ]; then
+      if [ -n "$file_path" ] && [ "$file_path" != "null" ]; then
+        if [ -n "$code_pattern" ] && [ "$code_pattern" != "null" ]; then
+          note="$prefix **File**: \`$file_path\`
+**Code**: \`$code_pattern\`
+
+$comment"
+        else
+          note="$prefix **File**: \`$file_path\`
+
+$comment"
+        fi
+        echo "  → Posting as general comment (pattern not found in diff)"
+        file_path=""
+        line_number=""
+      else
+        note="$prefix $comment"
+      fi
+    else
+      # Build the comment with prefix for inline note
+      note="$prefix $comment"
+    fi
 
     if post_draft_note "$note" "$file_path" "$line_number"; then
-      echo "  ✓ Posted: $prefix ($file_path:$line_number)"
+      if [ -n "$file_path" ] && [ -n "$line_number" ]; then
+        echo "  ✓ Posted inline: $prefix ($file_path:$line_number)"
+      else
+        echo "  ✓ Posted general: $prefix"
+      fi
       POSTED_COUNT=$((POSTED_COUNT + 1))
     fi
 
@@ -1020,7 +1240,9 @@ else
 fi
 ```
 
-After all analysis is complete:
+## Phase 4: Generate Report (Automated)
+
+After all analysis is complete, **immediately** generate the report without asking:
 
 1. **MANDATORY**: Generate a comprehensive `review-report.md` file in the assets directory with the full review
 2. **MANDATORY**: Save all findings to `$FINDINGS_FILE` as JSON array for draft note posting
