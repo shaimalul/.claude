@@ -391,7 +391,7 @@ The system continuously improves by learning from code reviews.
 │                              ▼                                       │
 │    ┌─────────────────────────────────────────────────────────────┐  │
 │    │ 3. EXTRACT LEARNABLE PATTERNS                               │  │
-│    │    Filter: Critical + High severity issues                  │  │
+│    │    Filter: Critical + High + Suggestion severity            │  │
 │    │    Exclude: Project-specific bugs, questions                │  │
 │    └─────────────────────────────────────────────────────────────┘  │
 │                              │                                       │
@@ -569,7 +569,7 @@ User: /review
         ┌───────────────────────────────────────────┐
         │ LEARNING LOOP                             │
         │                                           │
-        │ Extracts Critical + High issues           │
+        │ Extracts Critical + High + Suggestion     │
         │ Invokes /improve-claude for each          │
         │ Logs to learning-history.md               │
         └───────────────────────────────────────────┘
