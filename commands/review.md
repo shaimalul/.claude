@@ -399,12 +399,13 @@ After generating the review report, execute the learning feedback loop.
 From your review findings, identify all findings with these prefixes:
 - `[Blocker]` - Critical issues (MUST learn from these)
 - `[Nice to have]` - Important improvements (SHOULD learn from these)
+- `[Suggestion]` - Best practices to adopt (SHOULD learn from these)
 
-Skip `[Suggestion]`, `[Need to check]`, `[Question]`, and project-specific bugs.
+Skip `[Need to check]`, `[Question]`, and project-specific bugs.
 
 ### Step 2: For Each Learnable Pattern, Invoke improve-claude
 
-For each `[Blocker]` or `[Nice to have]` finding:
+For each `[Blocker]`, `[Nice to have]`, or `[Suggestion]` finding:
 
 1. **Determine the category** based on the finding content:
    - Keywords `any`, `casting`, `type`, `TypeScript` → category: `typescript-types`
@@ -437,7 +438,7 @@ Use this format (replace placeholders with actual values):
 ---
 ```
 
-If no learnable patterns were found (no `[Blocker]` or `[Nice to have]` findings), skip this step.
+If no learnable patterns were found (no `[Blocker]`, `[Nice to have]`, or `[Suggestion]` findings), skip this step.
 
 ### Step 4: Report Learning Results
 
@@ -452,4 +453,4 @@ Include in your final output to the user:
 Learning history updated: ~/.claude/learning-history.md
 ```
 
-If no patterns were learned, report: "No learnable patterns identified in this review (no Blocker or Nice-to-have findings)."
+If no patterns were learned, report: "No learnable patterns identified in this review (no Blocker, Nice-to-have, or Suggestion findings)."
