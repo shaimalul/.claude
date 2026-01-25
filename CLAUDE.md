@@ -214,3 +214,4 @@ For detailed patterns and code examples, refer to these skills:
 | Security (OWASP, auth) | `security-patterns` |
 | DevOps (Docker, K8s, CI/CD) | `docker-patterns`, `kubernetes-patterns`, `cicd-patterns` |
 | AI/ML integration | `openai-integration`, `prompt-engineering` |
+| Self-documenting code, avoiding comments | `no-comments` |

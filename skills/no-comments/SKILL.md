@@ -108,6 +108,111 @@ This explains the "why" - preventing rate limiting - which isn't obvious from th
 
 ---
 
+### JSX Section Comments (Bad)
+
+```tsx
+<ZCDFlex flexDirection="column" gap={16}>
+  {/* Generate Button */}
+  <ZCDFlex flexDirection="row" gap={16} alignItems="center">
+    <ZCDButton
+      text={isLoading ? 'Generating...' : 'Generate'}
+      onClick={handleGenerateClick}
+      disabled={isGenerateButtonDisabled}
+      variant="primary"
+      loading={isLoading}
+    />
+  </ZCDFlex>
+
+  {/* Error Message */}
+  {error && (
+    <ZCDCard>
+      <ZCDTypography variant="t-body" color="zcd-red-30">
+        {error}
+      </ZCDTypography>
+    </ZCDCard>
+  )}
+
+  {/* No Published Version Message */}
+  {!publishedVersion && (
+    <ZCDCard>
+      <ZCDTypography variant="t-body" color="zcd-gray-80">
+        No published version available
+      </ZCDTypography>
+    </ZCDCard>
+  )}
+
+  {/* Metadata Display */}
+  {metadata && <ExpectedOutputMetadata metadata={metadata} />}
+
+  {/* Expected Output Editor */}
+  <ZCDTextArea value={expectedOutput} onChange={handleChange} rows={10} />
+</ZCDFlex>
+```
+
+These `{/* Section Name */}` comments are redundant - the JSX structure and component names are already self-documenting.
+
+### Self-Documenting JSX (Good)
+
+```tsx
+<ZCDFlex flexDirection="column" gap={16}>
+  <GenerateButtonSection
+    isLoading={isLoading}
+    onGenerate={handleGenerateClick}
+    disabled={isGenerateButtonDisabled}
+  />
+
+  {error && <ErrorMessage error={error} />}
+
+  {!publishedVersion && <NoPublishedVersionMessage />}
+
+  {metadata && <ExpectedOutputMetadata metadata={metadata} />}
+
+  <ExpectedOutputEditor value={expectedOutput} onChange={handleChange} />
+</ZCDFlex>
+```
+
+Extract sections into well-named components. If extraction isn't warranted, the variable names and component structure should be clear enough without comments.
+
+### Inline JSX Without Comments (Also Good)
+
+```tsx
+<ZCDFlex flexDirection="column" gap={16}>
+  <ZCDFlex flexDirection="row" gap={16} alignItems="center">
+    <ZCDButton
+      text={isLoading ? 'Generating...' : 'Generate'}
+      onClick={handleGenerateClick}
+      disabled={isGenerateButtonDisabled}
+      variant="primary"
+      loading={isLoading}
+    />
+  </ZCDFlex>
+
+  {error && (
+    <ZCDCard>
+      <ZCDTypography variant="t-body" color="zcd-red-30">
+        {error}
+      </ZCDTypography>
+    </ZCDCard>
+  )}
+
+  {!publishedVersion && (
+    <ZCDCard>
+      <ZCDTypography variant="t-body" color="zcd-gray-80">
+        No published version available
+      </ZCDTypography>
+    </ZCDCard>
+  )}
+
+  {metadata && <ExpectedOutputMetadata metadata={metadata} />}
+
+  <ZCDTextArea value={expectedOutput} onChange={handleChange} rows={10} />
+</ZCDFlex>
+```
+
+The conditional rendering (`{error && ...}`, `{!publishedVersion && ...}`) and component names already communicate intent.
+
+---
+
 ## Quick Reference
 
 | Pattern | Action |
@@ -116,5 +221,6 @@ This explains the "why" - preventing rate limiting - which isn't obvious from th
 | `// i++` next to `i++` | Delete - obvious |
 | `/* TODO: fix later */` | Move to issue tracker |
 | Commented-out code blocks | Delete entirely |
+| `{/* Section Name */}` in JSX | Delete - use component names |
 | `// HACK: workaround for bug #123` | Keep - explains intent |
 | JSDoc on public API | Keep - API documentation |
