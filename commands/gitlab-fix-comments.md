@@ -23,11 +23,15 @@ MR ID: $2
 Let me fetch and analyze the MR discussions and comments.
 
 ```bash
+# Source secrets file if it exists
+if [ -f "$HOME/.claude/.secrets" ]; then
+  source "$HOME/.claude/.secrets"
+fi
+
 # Parse project ID and MR ID from arguments
 ARGS="$ARGUMENTS"
 PROJECT_ID=$(echo "$ARGS" | awk '{print $1}')
 MR_ID=$(echo "$ARGS" | awk '{print $2}')
-GITLAB_TOKEN="glpat-TpEqtc9Vcl9mHFYOd38LR286MQp1OjcxMmNuCw.01.121fblwju"
 
 if [ -z "$PROJECT_ID" ] || [ -z "$MR_ID" ]; then
   echo "Error: Missing required arguments"

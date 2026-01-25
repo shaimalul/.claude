@@ -20,3 +20,6 @@ history.jsonl
 stats-cache.json
 .DS_Store
 
+# Secrets
+.secrets
+

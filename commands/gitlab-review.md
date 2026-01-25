@@ -1,6 +1,6 @@
 ---
 description: Review GitLab merge request by fetching diffs and analyzing code changes
-argument-hint: <project-id> <mr-id> [context]
+argument-hint: <mr-url> [context]
 allowed-tools: Bash, WebFetch, Task, TodoWrite, Write, Read
 ---
 
@@ -20,46 +20,68 @@ Use the **Write** tool to create the comprehensive review report file.
    ```bash
    export GITLAB_TOKEN='token'
    ```
-2. Ensure your token has the `read_api` scope for accessing private projects
+2. Token MUST have **`api` scope** (not just `read_api`) to post draft review comments
 
 3. **Important for private projects**: You must be a member of the project or its parent group.
    Even with a valid token, you cannot access private projects you're not a member of.
 
-4. If you have project access but the path doesn't work, use the project ID:
-   - Ask a team member for the project ID (found in Project Settings → General)
-   - Use URL format: `https://gitlab.com/PROJECT_ID/-/merge_requests/MR_ID`
+4. Paste the full MR URL (the command will extract project path and MR ID automatically)
 
-I'll fetch and review the GitLab merge request with Project ID: $1 and MR ID: $2
+I'll fetch and review the GitLab merge request from the provided URL.
 
-Let me parse the arguments and fetch the MR changes.
+Let me parse the URL and fetch the MR changes.
 
 ```bash
-# Parse project ID and MR ID from arguments
-ARGS="$ARGUMENTS"
-PROJECT_ID=$(echo "$ARGS" | awk '{print $1}')
-MR_ID=$(echo "$ARGS" | awk '{print $2}')
-GITLAB_TOKEN="glpat-TpEqtc9Vcl9mHFYOd38LR286MQp1OjcxMmNuCw.01.121fblwju"
+# Source secrets file if it exists
+if [ -f "$HOME/.claude/.secrets" ]; then
+  source "$HOME/.claude/.secrets"
+fi
 
-if [ -z "$PROJECT_ID" ] || [ -z "$MR_ID" ]; then
-  echo "Error: Missing required arguments"
-  echo "Usage: /gitlab-review <project-id> <mr-id>"
-  echo "Example: /gitlab-review 65438965 416"
+# Parse MR URL and optional context from arguments
+ARGS="$ARGUMENTS"
+MR_URL=$(echo "$ARGS" | awk '{print $1}')
+
+if [ -z "$MR_URL" ]; then
+  echo "Error: Missing MR URL"
+  echo "Usage: /gitlab-review <mr-url> [context]"
+  echo "Example: /gitlab-review https://gitlab.com/group/project/-/merge_requests/123"
   exit 1
 fi
 
-# Validate that both are numeric
-if ! [[ "$PROJECT_ID" =~ ^[0-9]+$ ]] || ! [[ "$MR_ID" =~ ^[0-9]+$ ]]; then
-  echo "Error: Both project ID and MR ID must be numeric"
-  echo "Project ID: $PROJECT_ID"
-  echo "MR ID: $MR_ID"
+# Extract project path and MR ID from URL
+# Supports: https://gitlab.com/group/subgroup/project/-/merge_requests/123
+if [[ "$MR_URL" =~ gitlab\.com/(.+)/-/merge_requests/([0-9]+) ]]; then
+  PROJECT_PATH="${BASH_REMATCH[1]}"
+  MR_ID="${BASH_REMATCH[2]}"
+else
+  echo "Error: Invalid GitLab MR URL format"
+  echo "Expected: https://gitlab.com/<project-path>/-/merge_requests/<mr-id>"
+  echo "Got: $MR_URL"
+  exit 1
+fi
+
+echo "Project Path: $PROJECT_PATH"
+echo "MR ID: $MR_ID"
+
+# Get numeric project ID from GitLab API
+ENCODED_PATH=$(echo "$PROJECT_PATH" | jq -sRr @uri)
+echo "Fetching project ID for: $PROJECT_PATH"
+
+PROJECT_INFO=$(curl -s -H "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+  "https://gitlab.com/api/v4/projects/$ENCODED_PATH")
+
+PROJECT_ID=$(echo "$PROJECT_INFO" | jq -r '.id // empty')
+
+if [ -z "$PROJECT_ID" ]; then
+  echo "Error: Could not find project. Check URL and token permissions."
+  echo "$PROJECT_INFO" | jq -r '.message // .'
   exit 1
 fi
 
 echo "Project ID: $PROJECT_ID"
-echo "MR ID: $MR_ID"
 
-# Parse optional context (everything after project-id and mr-id)
-CONTEXT=$(echo "$ARGS" | awk '{$1=""; $2=""; print $0}' | sed 's/^[[:space:]]*//')
+# Parse optional context (everything after the URL)
+CONTEXT=$(echo "$ARGS" | awk '{$1=""; print $0}' | sed 's/^[[:space:]]*//')
 if [ -n "$CONTEXT" ]; then
   echo "Review Context: $CONTEXT"
 fi
@@ -71,7 +93,7 @@ if [ -z "$GITLAB_TOKEN" ]; then
   echo ""
   echo "To create a token:"
   echo "1. Go to GitLab -> Settings -> Access Tokens"
-  echo "2. Create a token with 'read_api' scope"
+  echo "2. Create a token with 'api' scope (required for posting draft review comments)"
   echo "3. Run: export GITLAB_TOKEN='your-token-here'"
   exit 1
 fi
@@ -138,13 +160,39 @@ AUTHOR=$(jq -r '.author.name' "$TEMP_FILE")
 SOURCE_BRANCH=$(jq -r '.source_branch' "$TEMP_FILE")
 TARGET_BRANCH=$(jq -r '.target_branch' "$TEMP_FILE")
 
+# Extract diff_refs SHAs needed for draft note positioning
+BASE_SHA=$(jq -r '.diff_refs.base_sha // empty' "$TEMP_FILE")
+HEAD_SHA=$(jq -r '.diff_refs.head_sha // empty' "$TEMP_FILE")
+START_SHA=$(jq -r '.diff_refs.start_sha // empty' "$TEMP_FILE")
+
+if [ -z "$BASE_SHA" ] || [ -z "$HEAD_SHA" ] || [ -z "$START_SHA" ]; then
+  echo "Warning: Could not extract diff_refs SHAs - inline comments may not work"
+  echo "BASE_SHA: $BASE_SHA, HEAD_SHA: $HEAD_SHA, START_SHA: $START_SHA"
+fi
+
+# Validate token has 'api' scope by checking draft_notes endpoint
+echo "Validating GitLab token permissions..."
+DRAFT_CHECK_CODE=$(curl -s -w "%{http_code}" \
+  -H "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+  "https://gitlab.com/api/v4/projects/$PROJECT_ID/merge_requests/$MR_ID/draft_notes" \
+  -o /dev/null)
+
+if [ "$DRAFT_CHECK_CODE" = "403" ]; then
+  echo "Error: Token lacks 'api' scope. Draft notes require write access."
+  echo "Please create a token with 'api' scope at:"
+  echo "  GitLab → Settings → Access Tokens"
+  exit 1
+elif [ "$DRAFT_CHECK_CODE" != "200" ]; then
+  echo "Warning: Could not verify draft_notes access (HTTP $DRAFT_CHECK_CODE)"
+fi
+
 echo ""
 echo "=== Merge Request Summary ==="
 echo "Title: $TITLE"
 echo "Author: $AUTHOR"
 echo "State: $STATE"
 echo "Source: $SOURCE_BRANCH → Target: $TARGET_BRANCH"
-echo "URL: https://gitlab.com/$PROJECT_ID/-/merge_requests/$MR_ID"
+echo "URL: $MR_URL"
 echo ""
 
 # Create assets directory for this review in the correct location
@@ -220,7 +268,7 @@ echo "" >> "$REVIEW_FILE"
 echo "**MR Title:** $TITLE" >> "$REVIEW_FILE"
 echo "**Author:** $AUTHOR" >> "$REVIEW_FILE"
 echo "**Date:** $(date)" >> "$REVIEW_FILE"
-echo "**URL:** https://gitlab.com/$PROJECT_ID/-/merge_requests/$MR_ID" >> "$REVIEW_FILE"
+echo "**URL:** $MR_URL" >> "$REVIEW_FILE"
 echo "**State:** $STATE" >> "$REVIEW_FILE"
 echo "**Branch:** $SOURCE_BRANCH → $TARGET_BRANCH" >> "$REVIEW_FILE"
 echo "" >> "$REVIEW_FILE"
@@ -241,64 +289,175 @@ echo "Review report: $REVIEW_FILE"
 
 ## Phase 2: Agent-Based Analysis
 
-After fetching MR data, use the **Task tool** to spawn specialist agents for comprehensive review.
+After fetching MR data, use the **Task tool** to spawn specialist agents **IN PARALLEL** for comprehensive review.
 
-**Security Analysis:**
+### Review Comment Format
+
+Use the team's code review prefix format. **DO NOT post positive/complimentary comments** - only actionable feedback:
+
+- `[Blocker]` - MR won't be approved without fixing this - breaks coding principals
+- `[Nice to have]` - Not a blocker but better if changed (e.g., function could be split for readability)
+- `[Suggestion]` - Opinionated preference (e.g., types vs enums, forEach vs map)
+- `[Need to check]` - Something looks weird, worth checking/testing/explaining
+- `[Question]` - Needs clarification or explanation
+
+**Comment style:**
+- Sound natural and human, not robotic
+- Keep it concise and professional
+- Relaxed grammar is fine if it improves flow
+- Skip the emojis
+- **DO NOT repeat what the code is doing** - the comment is attached to the line, so context is already visible
+- Jump straight to the actionable feedback
+
+### Findings JSON structure
+
+```json
+{
+  "type": "inline",
+  "prefix": "[Suggestion]",
+  "file_path": "src/foo.ts",
+  "line_number": 42,
+  "comment": "Type guard would make the intent clearer here."
+}
 ```
-subagent_type: security-principal
-prompt: |
-  Review the GitLab MR diffs for security issues.
 
-  MR Context:
-  - Assets directory: [Use $ASSETS_DIR]
-  - Diff files: [Use $DIFFS_DIR/*.diff]
+**Bad vs Good examples:**
+- Bad: `[Suggestion] Duration conversion logic - could extract to a constant`
+- Good: `[Suggestion] Could extract to a named constant for clarity.`
 
-  Focus on:
-  - OWASP Top 10 vulnerabilities
-  - Credential exposure (hardcoded tokens, passwords)
-  - Input validation issues
-  - Authentication/authorization problems
+### Launch ALL Principal Agents in Parallel
 
-  Provide findings with exact file:line numbers.
-```
+Based on the file types in the MR, spawn the relevant agents using **multiple Task tool calls in a single message**:
 
-**Code Quality Analysis (for React/TS files):**
+**1. Frontend Principal** (if `.tsx`, `.ts`, `.jsx`, `.js`, `.css`, `.scss` files):
 ```
 subagent_type: frontend-principal
 prompt: |
-  Review the GitLab MR diffs for React/TypeScript quality issues.
+  Review this GitLab MR for React/TypeScript issues.
 
-  MR Context:
-  - Assets directory: [Use $ASSETS_DIR]
-  - Diff files: [Use $DIFFS_DIR/*.diff]
-  - Full files: [Use $FILES_DIR]
+  Assets: $ASSETS_DIR
+  Diffs: $DIFFS_DIR/*.diff
+  Full files: $FILES_DIR
+  Findings file: $FINDINGS_FILE
 
-  Focus on:
-  - React patterns and hooks usage
-  - TypeScript best practices
+  Use skills: react-component, typescript-types, refactoring-patterns, testing-patterns
+
+  Review for:
+  - React hooks usage and patterns
+  - TypeScript best practices (no `any`, proper typing)
+  - Component structure and modularity
+  - Performance (useMemo, useCallback usage)
   - CLAUDE.md compliance
-  - Performance considerations
 
-  Provide findings with exact file:line numbers.
+  Output findings as JSON with prefix format: [Blocker], [Nice to have], [Suggestion], [Need to check], [Question]
+  Keep comments concise and natural-sounding.
+  IMPORTANT: Comments are attached to specific lines - DO NOT describe what the code does. Jump straight to the feedback.
 ```
 
-**Architecture Analysis (for backend files):**
+**2. Backend Principal** (if service/api/controller/repository files):
 ```
 subagent_type: backend-principal
 prompt: |
-  Review the GitLab MR diffs for architecture issues.
+  Review this GitLab MR for backend/API issues.
 
-  MR Context:
-  - Assets directory: [Use $ASSETS_DIR]
-  - Diff files: [Use $DIFFS_DIR/*.diff]
+  Assets: $ASSETS_DIR
+  Diffs: $DIFFS_DIR/*.diff
+  Findings file: $FINDINGS_FILE
 
-  Focus on:
-  - Three-layer architecture compliance
+  Use skills: backend-patterns, api-design, database-patterns
+
+  Review for:
+  - Three-layer architecture (Controller → Service → Repository)
   - API design patterns
   - Error handling
   - Database query optimization
+  - Input validation
 
-  Provide findings with exact file:line numbers.
+  Output findings as JSON with prefix format: [Blocker], [Nice to have], [Suggestion], [Need to check], [Question]
+  Keep comments concise and natural-sounding.
+  IMPORTANT: Comments are attached to specific lines - DO NOT describe what the code does. Jump straight to the feedback.
+```
+
+**3. Security Principal** (always run):
+```
+subagent_type: security-principal
+prompt: |
+  Review this GitLab MR for security vulnerabilities.
+
+  Assets: $ASSETS_DIR
+  Diffs: $DIFFS_DIR/*.diff
+  Findings file: $FINDINGS_FILE
+
+  Use skills: security-patterns
+
+  Review for:
+  - OWASP Top 10 vulnerabilities
+  - Hardcoded secrets/tokens/passwords
+  - Input validation and sanitization
+  - Authentication/authorization issues
+  - SQL injection, XSS, CSRF risks
+
+  Output findings as JSON with prefix format: [Blocker], [Nice to have], [Suggestion], [Need to check], [Question]
+  Keep comments concise and natural-sounding.
+  IMPORTANT: Comments are attached to specific lines - DO NOT describe what the code does. Jump straight to the feedback.
+```
+
+**4. Architect Principal** (if significant structural changes):
+```
+subagent_type: architect-principal
+prompt: |
+  Review this GitLab MR for architecture concerns.
+
+  Assets: $ASSETS_DIR
+  Diffs: $DIFFS_DIR/*.diff
+  Findings file: $FINDINGS_FILE
+
+  Use skills: architect
+
+  Review for:
+  - Module boundaries and coupling
+  - Design patterns usage
+  - Scalability concerns
+  - Code organization
+
+  Output findings as JSON with prefix format: [Blocker], [Nice to have], [Suggestion], [Need to check], [Question]
+  Keep comments concise and natural-sounding.
+  IMPORTANT: Comments are attached to specific lines - DO NOT describe what the code does. Jump straight to the feedback.
+```
+
+**5. Bug Finder** (always run):
+```
+subagent_type: bug-finder
+prompt: |
+  Analyze this GitLab MR for potential bugs.
+
+  Assets: $ASSETS_DIR
+  Diffs: $DIFFS_DIR/*.diff
+  Findings file: $FINDINGS_FILE
+
+  Use skills: find-bug
+
+  Look for:
+  - Logic errors
+  - Edge cases not handled
+  - Race conditions
+  - Null/undefined risks
+  - Off-by-one errors
+
+  Output findings as JSON with prefix format: [Blocker], [Nice to have], [Suggestion], [Need to check], [Question]
+  Keep comments concise and natural-sounding.
+  IMPORTANT: Comments are attached to specific lines - DO NOT describe what the code does. Jump straight to the feedback.
+```
+
+### Example: Launching Agents in Parallel
+
+```markdown
+I'll spawn the following agents in parallel using multiple Task tool calls:
+1. frontend-principal - for React/TypeScript review
+2. security-principal - for security vulnerabilities
+3. bug-finder - for potential bugs
+
+[Use Task tool 3 times in single message with the prompts above]
 ```
 
 Now I'll process the changes and run the analysis:
@@ -669,6 +828,18 @@ echo "ANALYSIS_FILE=$ANALYSIS_FILE" >> "$PATHS_FILE"
 echo "DIFFS_DIR=$DIFFS_DIR" >> "$PATHS_FILE"
 echo "FILES_DIR=$FILES_DIR" >> "$PATHS_FILE"
 echo "MASTER_CHANGES=$MASTER_CHANGES" >> "$PATHS_FILE"
+echo "PROJECT_ID=$PROJECT_ID" >> "$PATHS_FILE"
+echo "MR_ID=$MR_ID" >> "$PATHS_FILE"
+echo "MR_URL=$MR_URL" >> "$PATHS_FILE"
+echo "BASE_SHA=$BASE_SHA" >> "$PATHS_FILE"
+echo "HEAD_SHA=$HEAD_SHA" >> "$PATHS_FILE"
+echo "START_SHA=$START_SHA" >> "$PATHS_FILE"
+echo "GITLAB_TOKEN=$GITLAB_TOKEN" >> "$PATHS_FILE"
+
+# Create findings JSON file for structured output
+FINDINGS_FILE="$ASSETS_DIR/findings.json"
+echo "[]" > "$FINDINGS_FILE"
+echo "FINDINGS_FILE=$FINDINGS_FILE" >> "$PATHS_FILE"
 
 echo ""
 echo "=== ANALYSIS COMPLETE ==="
@@ -722,57 +893,153 @@ const getPollingInterval = (attempt: number) => {
 
 ```
 
-## How the Improved Analysis Works
-
-1. **Diff Parsing**: Extracts exact line numbers from Git diff hunk headers (`@@ -old,count +new,count @@`)
-2. **Code Context**: Saves both the diff and full file content when available
-3. **Structured Data**: Creates JSON files with all changes for programmatic analysis
-4. **Comprehensive Review**: Uses specialized agents that read all context files to provide accurate analysis
-
-The analysis agents will:
-- Use the exact line numbers from the diff hunks
-- Include the actual code changes in each finding
-- Reference the specific files and line ranges
-- Provide actionable recommendations with code examples
-
-I'll use the Task tool to perform deep analysis. The Task agent will:
-1. Read the paths from `/tmp/gitlab_review_paths_<mr_id>.txt`
-2. Analyze all diff files with accurate line numbers
-3. Append detailed findings to the review file
-
-After the Task analysis completes, I'll display the final review report.
-
-For React/TypeScript projects, I'll also use the frontend-principal agent:
+## Detecting Which Agents to Run
 
 ```bash
-# Check if this is a React/TypeScript project
-IS_REACT_PROJECT=false
-if jq -r '.changes[].new_path' "$TEMP_FILE" | grep -qE "\.(tsx?|jsx?)$"; then
-  IS_REACT_PROJECT=true
-  echo "Detected React/TypeScript project - will run frontend-principal analysis"
+# Detect file types to determine which agents to spawn
+HAS_FRONTEND=false
+HAS_BACKEND=false
+HAS_TESTS=false
+HAS_CONFIG=false
+
+FILE_TYPES=$(jq -r '.changes[].new_path' "$TEMP_FILE")
+
+if echo "$FILE_TYPES" | grep -qE "\.(tsx?|jsx?)$"; then
+  HAS_FRONTEND=true
+  echo "✓ Detected React/TypeScript files - will run frontend-principal"
 fi
+
+if echo "$FILE_TYPES" | grep -qE "(service|controller|repository|api|handler)\.(ts|js)$"; then
+  HAS_BACKEND=true
+  echo "✓ Detected backend files - will run backend-principal"
+fi
+
+if echo "$FILE_TYPES" | grep -qE "\.(spec|test)\.(ts|tsx|js|jsx)$"; then
+  HAS_TESTS=true
+  echo "✓ Detected test files - will check testing patterns"
+fi
+
+if echo "$FILE_TYPES" | grep -qE "(Dockerfile|docker-compose|\.yml|\.yaml|terraform|\.tf)$"; then
+  HAS_CONFIG=true
+  echo "✓ Detected config/infra files - will run devops-principal"
+fi
+
+# Always run security-principal and bug-finder
+echo "✓ Running security-principal (always)"
+echo "✓ Running bug-finder (always)"
 ```
 
-Then I'll invoke the frontend-principal agent to review React best practices.
+Now I'll spawn the relevant agents **IN PARALLEL** using multiple Task tool calls in a single message.
+
+**IMPORTANT:** Launch agents based on detected file types:
+- **Always run:** security-principal, bug-finder
+- **If frontend files:** frontend-principal
+- **If backend files:** backend-principal
+- **If significant changes:** architect-principal
+- **If infra/config files:** devops-principal
+
+## Phase 3: Post Draft Notes to GitLab
+
+After analysis is complete and findings are saved to `$FINDINGS_FILE`, post them as draft notes:
+
+```bash
+# Source the paths file to get all variables
+source "/tmp/gitlab_review_paths_${MR_ID}.txt"
+
+# Function to post a draft note to GitLab
+post_draft_note() {
+  local note="$1"
+  local file_path="$2"
+  local line_number="$3"
+
+  # URL-encode the note content
+  local encoded_note=$(printf '%s' "$note" | jq -sRr @uri)
+
+  if [ -n "$file_path" ] && [ -n "$line_number" ] && [ "$line_number" != "null" ]; then
+    # Inline comment on a specific line
+    RESPONSE=$(curl -s -w "\n%{http_code}" --request POST \
+      --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+      --url "https://gitlab.com/api/v4/projects/$PROJECT_ID/merge_requests/$MR_ID/draft_notes" \
+      --data-urlencode "note=$note" \
+      --data "position[base_sha]=$BASE_SHA" \
+      --data "position[head_sha]=$HEAD_SHA" \
+      --data "position[start_sha]=$START_SHA" \
+      --data "position[position_type]=text" \
+      --data "position[new_path]=$file_path" \
+      --data "position[new_line]=$line_number")
+  else
+    # General comment (not on a specific line)
+    RESPONSE=$(curl -s -w "\n%{http_code}" --request POST \
+      --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+      --url "https://gitlab.com/api/v4/projects/$PROJECT_ID/merge_requests/$MR_ID/draft_notes" \
+      --data-urlencode "note=$note")
+  fi
+
+  HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+  if [ "$HTTP_CODE" = "201" ]; then
+    return 0
+  else
+    echo "Warning: Failed to post draft note (HTTP $HTTP_CODE)"
+    return 1
+  fi
+}
+
+# Read findings and post each as a draft note
+echo ""
+echo "=== Posting Draft Notes to GitLab ==="
+FINDINGS_COUNT=$(jq 'length' "$FINDINGS_FILE")
+POSTED_COUNT=0
+
+if [ "$FINDINGS_COUNT" -gt 0 ]; then
+  jq -c '.[]' "$FINDINGS_FILE" | while read -r finding; do
+    prefix=$(echo "$finding" | jq -r '.prefix // "[Suggestion]"')
+    comment=$(echo "$finding" | jq -r '.comment // ""')
+    file_path=$(echo "$finding" | jq -r '.file_path // ""')
+    line_number=$(echo "$finding" | jq -r '.line_number // ""')
+
+    # Build the comment with prefix
+    note="$prefix $comment"
+
+    if post_draft_note "$note" "$file_path" "$line_number"; then
+      echo "  ✓ Posted: $prefix ($file_path:$line_number)"
+      POSTED_COUNT=$((POSTED_COUNT + 1))
+    fi
+
+    # Small delay to avoid rate limiting
+    sleep 0.1
+  done
+
+  echo ""
+  echo "Posted $POSTED_COUNT draft notes to GitLab"
+  echo ""
+  echo "→ Review your pending comments at the MR page"
+  echo ""
+  echo "When ready, click 'Submit review' in GitLab to publish all comments."
+else
+  echo "No findings to post as draft notes."
+fi
+```
 
 After all analysis is complete:
 
 1. **MANDATORY**: Generate a comprehensive `review-report.md` file in the assets directory with the full review
-2. Display a clickable link to the report
+2. **MANDATORY**: Save all findings to `$FINDINGS_FILE` as JSON array for draft note posting
+3. Display a clickable link to the report
 
 The review report MUST include these sections:
 - MR metadata table (title, author, state, branch, URL, files changed, review date)
 - Summary of changes
-- Positive changes (green checkmarks)
-- Medium concerns (yellow warnings)
-- Points to verify (orange notes)
-- Action items (red alerts)
+- Findings grouped by prefix: [Blocker], [Nice to have], [Suggestion], [Need to check], [Question]
 - Final verdict (APPROVE / REQUEST CHANGES / NEEDS DISCUSSION)
+
+**Note:** Do NOT include positive/complimentary comments - only actionable feedback.
 
 **IMPORTANT**: Always end with:
 1. A clickable markdown link to the report file
 2. The full absolute path for easy access
 3. A Finder command to open the folder
+4. Summary of draft notes posted to GitLab
+5. Direct link to review pending comments in GitLab
 
 Example output:
 ```
@@ -781,6 +1048,14 @@ Example output:
 📂 **Full path**: `~/.claude/gitlab-review-assets/mr_<MR_ID>_<TIMESTAMP>/review-report.md`
 
 🔍 **Open in Finder**: Run `open ~/.claude/gitlab-review-assets/mr_<MR_ID>_<TIMESTAMP>/`
+
+---
+
+✅ **Draft Notes Posted**: 5 findings posted as pending review comments
+
+🔗 **Review in GitLab**: https://gitlab.com/<project>/-/merge_requests/<MR_ID>
+
+💡 Click "Submit review" in GitLab to publish all comments, or edit/delete individual comments first.
 ```
 
 The link format must be relative from the workspace root so it's clickable in VSCode. The full path allows users to copy/paste it, and the Finder command lets them quickly navigate to the folder.
