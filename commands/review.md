@@ -390,68 +390,66 @@ Suggestions for cleaner code, reduced duplication, and better approaches:
 
 ---
 
-## Phase 6: Learning Feedback Loop (Automated)
+## Phase 6: Learning Feedback Loop
 
-After generating the review report, **automatically** analyze findings to improve Claude configuration.
+After generating the review report, execute the learning feedback loop.
 
 ### Step 1: Extract Learnable Patterns
 
-Filter findings for learning:
-- **Include:** All actionable findings:
-  - `[Blocker]` - Critical issues that must be fixed
-  - `[Nice to have]` - Improvements worth learning
-  - `[Suggestion]` - Best practices to adopt
-- **Exclude:** `[Need to check]`, `[Question]`, project-specific bugs
+From your review findings, identify all findings with these prefixes:
+- `[Blocker]` - Critical issues (MUST learn from these)
+- `[Nice to have]` - Important improvements (SHOULD learn from these)
 
-### Step 2: Categorize and Generate Instructions
+Skip `[Suggestion]`, `[Need to check]`, `[Question]`, and project-specific bugs.
 
-Map findings to `/improve-claude` categories and generate instructions:
+### Step 2: For Each Learnable Pattern, Invoke improve-claude
 
-| Keywords | Category | Example Instruction |
-|----------|----------|---------------------|
-| any, casting, type | TypeScript | "Never use 'any' - use proper types" |
-| useEffect, hook, useState | Frontend | "Include all deps in useEffect array" |
-| controller, service, layer | Backend | "Never skip architecture layers" |
-| injection, XSS, secret | Security | "Never hardcode secrets" |
+For each `[Blocker]` or `[Nice to have]` finding:
 
-### Step 3: Invoke /improve-claude
+1. **Determine the category** based on the finding content:
+   - Keywords `any`, `casting`, `type`, `TypeScript` → category: `typescript-types`
+   - Keywords `useEffect`, `useState`, `hook`, `React`, `component` → category: `react-component`
+   - Keywords `controller`, `service`, `repository`, `layer` → category: `backend-patterns`
+   - Keywords `injection`, `XSS`, `secret`, `auth`, `security` → category: `security-patterns`
+   - Other patterns → category: `general`
 
-For each learnable pattern:
+2. **Check if the rule already exists** by searching CLAUDE.md for similar rules. Skip if already covered.
+
+3. **Invoke the Skill tool** with:
+   - skill: `improve-claude`
+   - args: `[category]: [concise rule description] - learned from branch [BRANCH_NAME]`
+
+### Step 3: Update Learning History
+
+After invoking improve-claude for all learnable patterns, append a new entry to `~/.claude/learning-history.md` using the Edit tool.
+
+Use this format (replace placeholders with actual values):
 
 ```
-Use Skill tool:
-  skill: "improve-claude"
-  args: "[Category]: [Rule] - found in [file:line]"
-```
-
-**Skip if:** Rule already exists in CLAUDE.md (search first).
-
-### Step 4: Update Learning History
-
-Append entry to `~/.claude/learning-history.md`:
-
-```markdown
-## [DATE] - Review: [branch]
+### [YYYY-MM-DD] - Branch Review: [BRANCH_NAME]
 
 **Source:** /review
-**Patterns Learned:** [count]
 
-| Pattern | Category | Rule |
-|---------|----------|------|
-| ... | ... | ... |
+**Patterns Learned:**
+- [category]: [rule description]
+- [category]: [rule description]
+
+---
 ```
 
-### Step 5: Report Results
+If no learnable patterns were found (no `[Blocker]` or `[Nice to have]` findings), skip this step.
 
-Add to review output:
+### Step 4: Report Learning Results
 
-```markdown
-## 🔄 Learning Feedback Loop
+Include in your final output to the user:
 
-**Patterns Analyzed:** [count]
-**Rules Applied:** [count]
-
-| Pattern | Action | Target |
-|---------|--------|--------|
-| [desc] | Added/Skipped | [file] |
 ```
+## Learning Feedback Loop
+
+**Patterns Found:** [count]
+**Rules Applied:** [list of rules added via improve-claude]
+
+Learning history updated: ~/.claude/learning-history.md
+```
+
+If no patterns were learned, report: "No learnable patterns identified in this review (no Blocker or Nice-to-have findings)."
