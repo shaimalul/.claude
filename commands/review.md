@@ -358,3 +358,71 @@ Suggestions for cleaner code, reduced duplication, and better approaches:
 - **Flag backward compatibility code** that may no longer be needed (unused aliases, deprecated endpoints, re-exports)
 - **Suggest file minimization**: Can large files be split? Can dead code be removed?
 - **Prefer simplicity**: If something can be done with less code, suggest it
+
+---
+
+## Phase 6: Learning Feedback Loop (Automated)
+
+After generating the review report, **automatically** analyze findings to improve Claude configuration.
+
+### Step 1: Extract Learnable Patterns
+
+Filter findings for learning:
+- **Include:** All actionable findings:
+  - `[Blocker]` - Critical issues that must be fixed
+  - `[Nice to have]` - Improvements worth learning
+  - `[Suggestion]` - Best practices to adopt
+- **Exclude:** `[Need to check]`, `[Question]`, project-specific bugs
+
+### Step 2: Categorize and Generate Instructions
+
+Map findings to `/improve-claude` categories and generate instructions:
+
+| Keywords | Category | Example Instruction |
+|----------|----------|---------------------|
+| any, casting, type | TypeScript | "Never use 'any' - use proper types" |
+| useEffect, hook, useState | Frontend | "Include all deps in useEffect array" |
+| controller, service, layer | Backend | "Never skip architecture layers" |
+| injection, XSS, secret | Security | "Never hardcode secrets" |
+
+### Step 3: Invoke /improve-claude
+
+For each learnable pattern:
+
+```
+Use Skill tool:
+  skill: "improve-claude"
+  args: "[Category]: [Rule] - found in [file:line]"
+```
+
+**Skip if:** Rule already exists in CLAUDE.md (search first).
+
+### Step 4: Update Learning History
+
+Append entry to `~/.claude/learning-history.md`:
+
+```markdown
+## [DATE] - Review: [branch]
+
+**Source:** /review
+**Patterns Learned:** [count]
+
+| Pattern | Category | Rule |
+|---------|----------|------|
+| ... | ... | ... |
+```
+
+### Step 5: Report Results
+
+Add to review output:
+
+```markdown
+## 🔄 Learning Feedback Loop
+
+**Patterns Analyzed:** [count]
+**Rules Applied:** [count]
+
+| Pattern | Action | Target |
+|---------|--------|--------|
+| [desc] | Added/Skipped | [file] |
+```

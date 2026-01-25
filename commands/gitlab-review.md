@@ -1281,3 +1281,81 @@ Example output:
 ```
 
 The link format must be relative from the workspace root so it's clickable in VSCode. The full path allows users to copy/paste it, and the Finder command lets them quickly navigate to the folder.
+
+---
+
+## Phase 5: Learning Feedback Loop (Automated)
+
+After generating the review report, **automatically** analyze findings to improve Claude configuration.
+
+### Step 1: Extract Learnable Patterns
+
+Filter findings from `$FINDINGS_FILE` for learning:
+- **Include:** All actionable findings:
+  - `[Blocker]` - Critical issues that must be fixed
+  - `[Nice to have]` - Improvements worth learning
+  - `[Suggestion]` - Best practices to adopt
+- **Exclude:** `[Need to check]`, `[Question]`, project-specific bugs
+
+```bash
+# Extract learnable patterns from findings (all actionable prefixes)
+LEARNABLE=$(jq '[.[] | select(.prefix == "[Blocker]" or .prefix == "[Nice to have]" or .prefix == "[Suggestion]")]' "$FINDINGS_FILE")
+LEARNABLE_COUNT=$(echo "$LEARNABLE" | jq 'length')
+echo "Found $LEARNABLE_COUNT learnable patterns"
+```
+
+### Step 2: Categorize and Generate Instructions
+
+Map findings to `/improve-claude` categories:
+
+| Keywords | Category | Example Instruction |
+|----------|----------|---------------------|
+| any, casting, type | TypeScript | "Never use 'any' - use proper types" |
+| useEffect, hook, useState | Frontend | "Include all deps in useEffect array" |
+| controller, service, layer | Backend | "Never skip architecture layers" |
+| injection, XSS, secret | Security | "Never hardcode secrets" |
+
+### Step 3: Invoke /improve-claude
+
+For each learnable pattern:
+
+```
+Use Skill tool:
+  skill: "improve-claude"
+  args: "[Category]: [Rule] - found in MR #[MR_ID] [file:line]"
+```
+
+**Skip if:** Rule already exists in CLAUDE.md (search first).
+
+### Step 4: Update Learning History
+
+Append entry to `~/.claude/learning-history.md`:
+
+```markdown
+## [DATE] - GitLab MR #[MR_ID]: [MR_TITLE]
+
+**Source:** /gitlab-review
+**URL:** [MR_URL]
+**Patterns Learned:** [count]
+
+| Pattern | Category | Rule |
+|---------|----------|------|
+| ... | ... | ... |
+```
+
+### Step 5: Report Results
+
+Add to final output:
+
+```markdown
+## 🔄 Learning Feedback Loop
+
+**Patterns Analyzed:** [count]
+**Rules Applied:** [count]
+
+| Pattern | Action | Target |
+|---------|--------|--------|
+| [desc] | Added/Skipped | [file] |
+
+**Learning History:** [~/.claude/learning-history.md](learning-history.md)
+```

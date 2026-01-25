@@ -179,6 +179,61 @@ export const isStatus = (value: string): value is Status =>
   STATUS_OPTIONS.some((opt) => opt.value === value);
 ```
 
+## Optional Parameter Syntax
+
+Use optional parameter syntax (`?`) instead of union with `undefined`:
+
+```typescript
+// Bad - verbose and inconsistent
+interface Props {
+  versionId: string | undefined;
+}
+
+function fetchData(id: string | undefined) {
+  // ...
+}
+
+// Good - idiomatic TypeScript
+interface Props {
+  versionId?: string;
+}
+
+function fetchData(id?: string) {
+  // ...
+}
+```
+
+**Why?**
+- Shorter and more idiomatic
+- Consistent with TypeScript conventions
+- `?` implies the parameter can be omitted entirely
+- `| undefined` suggests the value must be explicitly passed (even if undefined)
+
+## Enums Over String Literals
+
+Use enums instead of magic strings for status comparisons:
+
+```typescript
+// Bad - magic strings are error-prone and not type-safe
+if (status === 'completed') { ... }
+if (status === 'processing') { ... }
+if (status === 'compl3ted') { ... }  // Typo not caught!
+
+// Good - type-safe enums with autocomplete
+import { EvaluationStatus } from 'types/evaluation';
+
+if (status === EvaluationStatus.COMPLETED) { ... }
+if (status === EvaluationStatus.PROCESSING) { ... }
+if (status === EvaluationStatus.COMPL3TED) { ... }  // TypeScript error!
+```
+
+**Benefits:**
+- Typos caught at compile time
+- Autocomplete in IDE
+- Single source of truth for valid values
+- Refactoring support (rename propagates everywhere)
+- Self-documenting code
+
 ## Function Naming: get vs create/make/determine
 
 ```typescript

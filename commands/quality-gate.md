@@ -55,6 +55,11 @@ prompt: |
   - http-status-codes package used (no magic numbers)
   - No type casting with `as`
   - No `any` or `unknown` casting
+  - Optional params use `?` not `| undefined`
+  - Enums used instead of string literals for status comparisons
+  - No empty catch blocks (always log errors)
+  - Use `void` for ignored promises (not eslint-disable)
+  - No backward compatibility wrappers in new code
 
   Return a checklist with Pass/Fail for each item and specific violations found.
 ```
@@ -112,6 +117,10 @@ Aggregate all findings into a unified quality gate report.
 | File length | Pass/Fail | ... |
 | Three-layer arch | Pass/Fail | ... |
 | Export patterns | Pass/Fail | ... |
+| Optional param syntax | Pass/Fail | ... |
+| Enums vs strings | Pass/Fail | ... |
+| Empty catch blocks | Pass/Fail | ... |
+| Floating promises | Pass/Fail | ... |
 
 ### Architecture (architect-principal)
 | Check | Status | Notes |

@@ -70,6 +70,42 @@ export const classifySentiment = (dataItem: DataItem): Sentiment => {
 
 ---
 
+## Complex JSX Expressions → Variables
+
+Move complex conditional logic out of JSX props:
+
+```typescript
+// Before (bad) - hard to read inline
+<ZCDButton
+  text={isLoading
+    ? i18n.get('generating')
+    : i18n.get('generate')}
+  disabled={isRunning || !canRun || !hasExpected}
+/>
+
+// After (good) - extracted to variables
+const buttonText = isLoading
+  ? i18n.get('generating')
+  : i18n.get('generate');
+const isButtonDisabled = isRunning || !canRun || !hasExpected;
+
+<ZCDButton text={buttonText} disabled={isButtonDisabled} />
+```
+
+**When to extract:**
+- Ternary expressions with function calls
+- Boolean expressions with 2+ conditions
+- Any prop value that wraps to multiple lines
+- Complex string interpolations
+
+**Benefits:**
+- Easier to read and understand
+- Easier to debug (can log intermediate values)
+- Self-documenting with meaningful variable names
+- Simpler JSX structure
+
+---
+
 ## Multiple useState for Related Data → Custom Hook
 
 Extract to custom hook:

@@ -81,10 +81,22 @@ Controller Layer → Service Layer → Repository Layer
 - Constants: `UPPER_SNAKE_CASE`
 - Types/Interfaces: `PascalCase` (no `I` prefix)
 
+### TypeScript Patterns
+- **Optional params**: Use `?` instead of `| undefined`
+  ```typescript
+  // Bad: versionId: string | undefined
+  // Good: versionId?: string
+  ```
+- **Enums over strings**: Use enums instead of string literals for status comparisons
+  ```typescript
+  // Bad: if (status === 'completed')
+  // Good: if (status === EvaluationStatus.COMPLETED)
+  ```
+
 ### Exports and Imports
 - **Always use named exports** - never `export default`
 - **Never use index.ts barrel files** - import directly from source files
-- **Declare constants outside component functions**
+- **Declare constants outside component functions** - centralize in `constants.ts` files
 
 ### Never Use
 - Type casting (`as Type`) - use type guards instead
@@ -92,6 +104,9 @@ Controller Layer → Service Layer → Repository Layer
 - Raw HTTP status numbers - use `http-status-codes` package
 - `console.log` in production - use proper logging service
 - `uuid()` as React list keys - use stable IDs from data
+- Empty catch blocks - always log errors even when returning fallback values
+- `eslint-disable` for floating promises - use `void asyncFn()` instead
+- Backward compatibility wrappers in new code - write clean code directly
 
 ### React Query Keys
 ```typescript
@@ -205,6 +220,7 @@ For detailed patterns and code examples, refer to these skills:
 |-------|-------|
 | Frontend refactoring ("When You See..." patterns) | `refactoring-patterns` |
 | React components, hooks, anti-patterns | `react-component` |
+| useEffect best practices, common mistakes | `useeffect-patterns` |
 | Backend patterns, DI, validation | `backend-patterns` |
 | System design, ADRs, scalability | `architect` |
 | TypeScript types, discriminated unions | `typescript-types` |
