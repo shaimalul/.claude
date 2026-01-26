@@ -2,9 +2,12 @@
 description: Automatically review GitLab MR, post draft comments, and generate report
 argument-hint: <mr-url> [context]
 allowed-tools: Bash, WebFetch, Task, TodoWrite, Write, Read
+skills: review-base
 ---
 
 # GitLab Merge Request Review
+
+**Uses:** `review-base` skill for finding prefixes, agent routing, comment style guidelines, and learning feedback loop.
 
 ## FULLY AUTOMATED WORKFLOW
 
@@ -1312,30 +1315,14 @@ For each `[Blocker]`, `[Nice to have]`, or `[Suggestion]` finding:
 
 3. **Invoke the Skill tool** with:
    - skill: `improve-claude`
-   - args: `[category]: [concise rule description] - learned from MR #[MR_IID]`
+   - args: `[category]: [concise rule description] --save-skill`
 
-### Step 3: Update Learning History
+The `/improve-claude` command will automatically:
+- Update relevant config files (CLAUDE.md, agents, skills)
+- Save the pattern as a reusable skill in `~/.claude/skills/learned/`
+- The `session-start.js` hook will notify of learned skills in future sessions
 
-After invoking improve-claude for all learnable patterns, append a new entry to `~/.claude/learning-history.md` using the Edit tool.
-
-Use this format (replace placeholders with actual values):
-
-```
-### [YYYY-MM-DD] - GitLab MR #[MR_IID]: [MR_TITLE]
-
-**Source:** /gitlab-review
-**URL:** [MR_WEB_URL]
-
-**Patterns Learned:**
-- [category]: [rule description]
-- [category]: [rule description]
-
----
-```
-
-If no learnable patterns were found (no `[Blocker]`, `[Nice to have]`, or `[Suggestion]` findings), skip this step.
-
-### Step 4: Report Learning Results
+### Step 3: Report Learning Results
 
 Include in your final output to the user:
 
@@ -1344,8 +1331,7 @@ Include in your final output to the user:
 
 **Patterns Found:** [count]
 **Rules Applied:** [list of rules added via improve-claude]
-
-Learning history updated: ~/.claude/learning-history.md
+**Skills Saved:** [list of skills saved to ~/.claude/skills/learned/]
 ```
 
 If no patterns were learned, report: "No learnable patterns identified in this review (no Blocker, Nice-to-have, or Suggestion findings)."

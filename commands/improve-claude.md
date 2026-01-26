@@ -180,7 +180,55 @@ After updating the core configuration files, I'll review command files for relat
 If instruction is "never use console.log in production":
 - Add `- [ ] No console.log in production code` to quality-gate.md's Code Standards section
 
-## Phase 7: Report Results
+## Phase 7: Save to Learned Skills (Pattern Extraction)
+
+When processing rules from code reviews or session learning, I also save patterns as reusable skills in `~/.claude/skills/learned/`.
+
+**This happens automatically when:**
+- Rule comes from a review (`/review`, `/gitlab-review`)
+- Pattern is marked as [Blocker], [Nice to have], or [Suggestion]
+- `--save-skill` flag is used
+
+**Skill File Creation:**
+
+1. **Filename:** `[category]-[short-description].md` (kebab-case)
+   - Example: `typescript-avoid-any-type.md`
+   - Example: `react-missing-useeffect-deps.md`
+
+2. **Location:** `~/.claude/skills/learned/`
+
+3. **Format:**
+```markdown
+# [Descriptive Pattern Name]
+
+**Extracted:** [YYYY-MM-DD]
+**Source:** [/improve-claude | /review | /gitlab-review]
+**Type:** [rule|blocker|nice-to-have|suggestion]
+**Category:** [typescript-types|react-component|backend-patterns|security-patterns|general]
+
+## Problem
+[What issue this pattern addresses - be specific]
+
+## Solution
+[The fix or best practice to apply]
+
+## Example
+```typescript
+// Bad
+[problematic code pattern]
+
+// Good
+[correct code pattern]
+```
+
+## When to Use
+[Trigger conditions - when this skill should activate]
+```
+
+**Automatic Loading:**
+The `session-start.js` hook notifies Claude of available learned skills at the start of each session.
+
+## Phase 8: Report Results
 
 After applying changes, I'll show:
 
@@ -199,6 +247,12 @@ After applying changes, I'll show:
 | react-component/SKILL.md | Added | Patterns |
 | quality-gate.md | Added | Code Standards Checklist |
 
+### Skills Saved
+
+| Skill File | Type | Category |
+|------------|------|----------|
+| typescript-avoid-any.md | rule | typescript-types |
+
 ### Changes Applied
 
 **CLAUDE.md:**
@@ -211,12 +265,16 @@ After applying changes, I'll show:
 **quality-gate.md:**
 - Added new check: "[check description]"
 
+**skills/learned/:**
+- Created: typescript-avoid-any.md
+
 ### Verification
 - [x] Rule synced across all target files
 - [x] No duplicates created
 - [x] Code examples generated
 - [x] Commands reviewed for related content
 - [x] Quality gate checklist updated (if applicable)
+- [x] Learned skill saved (if applicable)
 ```
 
 ## Usage Examples

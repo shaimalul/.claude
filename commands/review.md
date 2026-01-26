@@ -1,11 +1,14 @@
 ---
 description: Code Review - Review current branch changes with principal agents
 allowed-tools: Task, Bash, Read, Grep, Glob, TodoWrite
+skills: review-base
 ---
 
 # Code Review
 
 Comprehensive code review of **current branch changes** using all relevant principal agents in parallel.
+
+**Uses:** `review-base` skill for finding prefixes, agent routing, severity tiers, and learning feedback loop.
 
 ## Instructions
 
@@ -418,29 +421,14 @@ For each `[Blocker]`, `[Nice to have]`, or `[Suggestion]` finding:
 
 3. **Invoke the Skill tool** with:
    - skill: `improve-claude`
-   - args: `[category]: [concise rule description] - learned from branch [BRANCH_NAME]`
+   - args: `[category]: [concise rule description] --save-skill`
 
-### Step 3: Update Learning History
+The `/improve-claude` command will automatically:
+- Update relevant config files (CLAUDE.md, agents, skills)
+- Save the pattern as a reusable skill in `~/.claude/skills/learned/`
+- The `session-start.js` hook will notify of learned skills in future sessions
 
-After invoking improve-claude for all learnable patterns, append a new entry to `~/.claude/learning-history.md` using the Edit tool.
-
-Use this format (replace placeholders with actual values):
-
-```
-### [YYYY-MM-DD] - Branch Review: [BRANCH_NAME]
-
-**Source:** /review
-
-**Patterns Learned:**
-- [category]: [rule description]
-- [category]: [rule description]
-
----
-```
-
-If no learnable patterns were found (no `[Blocker]`, `[Nice to have]`, or `[Suggestion]` findings), skip this step.
-
-### Step 4: Report Learning Results
+### Step 3: Report Learning Results
 
 Include in your final output to the user:
 
@@ -449,8 +437,43 @@ Include in your final output to the user:
 
 **Patterns Found:** [count]
 **Rules Applied:** [list of rules added via improve-claude]
-
-Learning history updated: ~/.claude/learning-history.md
+**Skills Saved:** [list of skills saved to ~/.claude/skills/learned/]
 ```
 
 If no patterns were learned, report: "No learnable patterns identified in this review (no Blocker, Nice-to-have, or Suggestion findings)."
+
+---
+
+## Phase 7: Create Follow-up TODOs (Optional)
+
+If critical or high-priority issues were found, create TODO items to track resolution.
+
+### Step 1: Identify Actionable Items
+
+From the review findings, identify:
+- `[Blocker]` issues that need code changes
+- `[Nice to have]` improvements worth tracking
+- Technical debt items for future sprints
+
+### Step 2: Create TODOs
+
+Use TodoWrite to track each actionable item with:
+- Clear description of the fix needed
+- File and line reference
+- Priority based on severity tier (in_progress for blockers, pending for others)
+
+### Step 3: Report TODOs Created
+
+Include in your output:
+
+```markdown
+## Follow-up TODOs Created
+
+| Priority | Description | File |
+|----------|-------------|------|
+| High | Fix SQL injection vulnerability | src/api/users.ts:45 |
+| Medium | Extract duplicate validation logic | src/services/*.ts |
+| Low | Remove unused legacy alias | utils.ts:12 |
+```
+
+**Note:** If no actionable items found or all issues are minor style improvements, skip this phase.

@@ -80,7 +80,66 @@ prompt: |
   Return a checklist with Pass/Fail for each item and architectural concerns.
 ```
 
-### Phase 3: Generate Report
+### Phase 3: Predictive Analysis
+
+Use the **Task tool** to spawn prediction agents in parallel to identify potential future issues:
+
+**Security Risk Prediction:**
+```
+subagent_type: security-principal
+prompt: |
+  Predict potential security issues in the codebase.
+
+  Look for:
+  - Input validation gaps that will be exploited
+  - Authentication weaknesses
+  - Exposed secrets or credentials
+  - Authorization bypass opportunities
+  - Security patterns that won't scale
+
+  For each prediction:
+  - Risk level (Critical/High/Medium/Low)
+  - Likelihood and timeline
+  - Prevention recommendations
+```
+
+**Architecture Risk Prediction:**
+```
+subagent_type: architect-principal
+prompt: |
+  Predict architectural issues that will cause problems at scale.
+
+  Look for:
+  - Patterns that break at 10x, 100x scale
+  - Tight coupling blocking refactoring
+  - Single points of failure
+  - Technical debt accumulation
+
+  For each prediction:
+  - Risk level (Critical/High/Medium/Low)
+  - Scale threshold where this breaks
+  - Remediation recommendations
+```
+
+**Performance Risk Prediction:**
+```
+subagent_type: backend-principal (for backend) OR frontend-principal (for frontend)
+prompt: |
+  Predict performance issues that will degrade at scale.
+
+  Look for:
+  - O(n^2) algorithms in critical paths
+  - Memory leak patterns
+  - N+1 database queries
+  - Missing caching opportunities
+
+  For each prediction:
+  - Risk level and timeline
+  - Current vs 10x load impact
+  - Optimization recommendations
+```
+
+### Phase 4: Generate Report
 
 Aggregate all findings into a unified quality gate report.
 
@@ -127,6 +186,19 @@ Aggregate all findings into a unified quality gate report.
 |-------|--------|-------|
 | Layer separation | Pass/Fail | ... |
 | Query optimization | Pass/Fail | ... |
+
+### Predictive Analysis
+
+| Area | Risk | Timeline | Impact | Mitigation |
+|------|------|----------|--------|------------|
+| Security | ... | ... | ... | ... |
+| Architecture | ... | ... | ... | ... |
+| Performance | ... | ... | ... | ... |
+
+**Timeline View:**
+- **Now**: [Issues needing immediate attention]
+- **1-3 months**: [Issues emerging soon]
+- **3-6 months**: [Issues at growth scale]
 
 ### Recommendations
 1. [Critical fixes required]
