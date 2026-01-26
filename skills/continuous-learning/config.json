@@ -1,0 +1,29 @@
+{
+  "min_session_length": 10,
+  "extraction_threshold": "medium",
+  "learned_skills_path": "~/.claude/skills/learned",
+  "pattern_types": [
+    "error_resolution",
+    "debugging_techniques",
+    "workarounds",
+    "project_specific",
+    "user_corrections"
+  ],
+  "iterate_task": {
+    "session_log_path": "~/.claude/iterate-sessions",
+    "default_max_iterations": 0,
+    "prompt_template": "~/.claude/templates/iterate-prompt.md"
+  },
+  "extract_learning": {
+    "quality_threshold": 2,
+    "categories": [
+      "typescript",
+      "react",
+      "backend",
+      "security",
+      "devops",
+      "general"
+    ],
+    "auto_research": true
+  }
+}
