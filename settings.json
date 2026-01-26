@@ -20,6 +20,30 @@
   },
 
   "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node /Users/shaimalul/.claude/scripts/hooks/session-start.js",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node /Users/shaimalul/.claude/scripts/hooks/session-end.js",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [
@@ -27,6 +51,16 @@
             "type": "command",
             "command": "afplay /System/Library/Sounds/Submarine.aiff",
             "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node /Users/shaimalul/.claude/scripts/hooks/evaluate-session.js",
+            "timeout": 10
           }
         ]
       }
@@ -38,6 +72,16 @@
           {
             "type": "command",
             "command": "/Users/shaimalul/.claude/plugins/claude-notifier-plugin/scripts/notify.sh",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node /Users/shaimalul/.claude/scripts/hooks/suggest-compact.js",
             "timeout": 5
           }
         ]
