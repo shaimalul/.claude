@@ -37,7 +37,7 @@ The Claude Code setup follows a three-tier architecture where **Commands** orche
         ▼                       ▼                       ▼
 ┌───────────────┐       ┌───────────────┐       ┌────────────────┐
 │   COMMANDS    │       │    AGENTS     │       │    SKILLS      │
-│   (18 total)  │──────▶│  (10 total)   │──────▶│  (26 total)    │
+│   (18 total)  │──────▶│  (10 total)   │──────▶│  (26+ total)   │
 │               │       │               │       │                │
 │ User-facing   │       │ Specialist    │       │ Pattern        │
 │ workflows     │       │ principals    │       │ libraries      │
@@ -75,40 +75,53 @@ The Claude Code setup follows a three-tier architecture where **Commands** orche
 
 ## Hooks & Notifications
 
-The hooks system provides real-time notifications when Claude needs attention.
+The hooks system provides real-time notifications, session management, and continuous learning triggers.
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
-│                         HOOKS SYSTEM                                 │
+│                    COMPREHENSIVE HOOKS SYSTEM                        │
 ├──────────────────────────────────────────────────────────────────────┤
 │                                                                      │
 │  ┌─────────────────┐                                                 │
-│  │    Stop Hook    │                                                 │
-│  │  (when Claude   │                                                 │
-│  │   stops)        │                                                 │
-│  └────────┬────────┘                                                 │
-│           │                                                          │
-│           ▼                                                          │
-│  ┌────────────────────────────────────────────────────────────────┐  │
-│  │  afplay /System/Library/Sounds/Submarine.aiff                  │  │
-│  │  (Plays submarine sound when Claude finishes processing)       │  │
-│  └────────────────────────────────────────────────────────────────┘  │
+│  │ SessionStart    │──► session-start.js                             │
+│  │ Hook            │    • Loads recent sessions (7 days)             │
+│  │                 │    • Notifies of learned skills                 │
+│  │                 │    • Detects package manager                    │
+│  └─────────────────┘                                                 │
 │                                                                      │
 │  ┌─────────────────┐                                                 │
-│  │ PreToolUse Hook │                                                 │
-│  │  (before using  │                                                 │
-│  │   AskQuestion   │                                                 │
-│  │   or ExitPlan)  │                                                 │
-│  └────────┬────────┘                                                 │
-│           │                                                          │
-│           ▼                                                          │
-│  ┌────────────────────────────────────────────────────────────────┐  │
-│  │  notify.sh → HTTP POST to localhost:19847                      │  │
-│  │  (Sends notification to ClaudeNotifier menu bar app)           │  │ 
-│  └────────────────────────────────────────────────────────────────┘  │
+│  │ SessionEnd      │──► session-end.js                               │
+│  │ Hook            │    • Creates/updates session file               │
+│  │                 │    • Persists state to ~/.claude/sessions/      │
+│  └─────────────────┘                                                 │
+│                                                                      │
+│  ┌─────────────────┐                                                 │
+│  │ Stop Hook       │──► 1. Submarine sound (audio notification)      │
+│  │ (when Claude    │──► 2. evaluate-session.js                       │
+│  │  stops)         │       • Counts session messages                 │
+│  │                 │       • Signals if 10+ messages                 │
+│  │                 │       • Triggers learning extraction            │
+│  └─────────────────┘                                                 │
+│                                                                      │
+│  ┌─────────────────┐                                                 │
+│  │ PreToolUse      │──► 1. notify.sh (AskQuestion/ExitPlan)          │
+│  │ Hook            │       • Desktop notifications                   │
+│  │                 │──► 2. suggest-compact.js (Edit/Write)           │
+│  │                 │       • Suggests /compact at 50 calls           │
+│  │                 │       • Reminders every 25 calls                │
+│  └─────────────────┘                                                 │
 │                                                                      │
 └──────────────────────────────────────────────────────────────────────┘
 ```
+
+### Hook Scripts (Node.js - Cross-Platform)
+
+| Script | Location | Purpose |
+|--------|----------|---------|
+| `session-start.js` | `scripts/hooks/` | Load previous context on session start |
+| `session-end.js` | `scripts/hooks/` | Persist session state |
+| `evaluate-session.js` | `scripts/hooks/` | Trigger learning extraction at session end |
+| `suggest-compact.js` | `scripts/hooks/` | Strategic compaction suggestions |
 
 ### ClaudeNotifier Menu Bar App
 
@@ -126,12 +139,36 @@ The custom macOS menu bar app receives notifications via HTTP on port **19847**:
 ```json
 {
   "hooks": {
+    "SessionStart": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "node /Users/shaimalul/.claude/scripts/hooks/session-start.js",
+        "timeout": 10
+      }]
+    }],
+    "SessionEnd": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "node /Users/shaimalul/.claude/scripts/hooks/session-end.js",
+        "timeout": 10
+      }]
+    }],
     "Stop": [
       {
         "hooks": [{
           "type": "command",
           "command": "afplay /System/Library/Sounds/Submarine.aiff",
           "timeout": 5
+        }]
+      },
+      {
+        "matcher": "*",
+        "hooks": [{
+          "type": "command",
+          "command": "node /Users/shaimalul/.claude/scripts/hooks/evaluate-session.js",
+          "timeout": 10
         }]
       }
     ],
@@ -141,6 +178,14 @@ The custom macOS menu bar app receives notifications via HTTP on port **19847**:
         "hooks": [{
           "type": "command",
           "command": "/Users/shaimalul/.claude/plugins/claude-notifier-plugin/scripts/notify.sh",
+          "timeout": 5
+        }]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [{
+          "type": "command",
+          "command": "node /Users/shaimalul/.claude/scripts/hooks/suggest-compact.js",
           "timeout": 5
         }]
       }
@@ -153,7 +198,7 @@ The custom macOS menu bar app receives notifications via HTTP on port **19847**:
 
 ## Commands Reference
 
-### 18 Available Slash Commands
+### 20 Available Slash Commands
 
 | Command | Description | Spawns Agents |
 |---------|-------------|---------------|
@@ -165,20 +210,18 @@ The custom macOS menu bar app receives notifications via HTTP on port **19847**:
 | `/plan-task [description]` | Plan feature with mastermind | mastermind |
 | `/build-feature` | Execute planned feature | mastermind → specialists |
 | `/refactor` | Intelligent refactoring engine | frontend/backend principals |
+| `/iterate-task <prompt.md>` | Run task repeatedly until done (Ralph approach) | None |
 | **Quality & Analysis** |||
 | `/quality-gate` | Run comprehensive quality checks | security, architect |
 | `/find-bug [context]` | Debug and root cause analysis | bug-finder |
-| `/predict-issues` | Predictive code analysis | bug-finder |
 | **Git & Commits** |||
 | `/commit-all` | Group commits by Conventional Commits | None |
 | `/mr-description` | Generate MR description from changes | None |
 | **Consultation** |||
-| `/principal [domain]` | Consult specific principal engineer | Specified principal |
-| `/architect [topic]` | Get architecture guidance | architect-principal |
-| `/explain-like-senior` | Senior dev explanations | None |
+| `/consult [domain]` | Consult specific principal engineer | Specified principal |
 | **Utilities** |||
 | `/improve-claude [rule]` | Update Claude configuration | None |
-| `/create-todos` | Create smart TODO items | None |
+| `/extract-learning [topic]` | Extract session knowledge as reusable skill | None |
 | `/remove-comments` | Remove obvious comments | None |
 
 ### Command Details
@@ -260,6 +303,78 @@ Intelligent commit grouping following Conventional Commits.
 - `perf:` - Performance improvements
 - `ci:` - CI/CD changes
 - `style:` - Code style changes
+
+#### `/extract-learning [topic]` - Knowledge Extraction
+
+Extract reusable knowledge from your session and save it as a skill.
+
+**When to use:**
+- After fixing a non-obvious bug
+- After finding a workaround through trial-and-error
+- After discovering a useful pattern
+- After resolving an error where root cause wasn't obvious
+
+**Usage:**
+```bash
+/extract-learning                           # Review full session
+/extract-learning "prisma pooling fix"      # Extract specific topic
+```
+
+**What it does:**
+1. Reviews session for extractable knowledge
+2. Checks quality gates (reusable, non-trivial, verified)
+3. Checks for duplicates in `skills/learned/`
+4. Creates skill file with problem/solution/example
+5. Reports what was saved
+
+**Quality gates:**
+- Solution was verified to work
+- Description has specific triggers
+- Knowledge is reusable (not one-time fix)
+- No sensitive data
+
+**Output location:** `~/.claude/skills/learned/[category]-[description].md`
+
+#### `/iterate-task <prompt.md>` - Iterative Task Execution (Ralph Approach)
+
+Run a task repeatedly until complete, with prompt refinement between iterations.
+
+**Philosophy:** When things go wrong, **tune the prompt—not the code.**
+
+**Usage:**
+```bash
+/iterate-task path/to/PROMPT.md             # Iterate until done
+/iterate-task path/to/PROMPT.md --max=5     # Max 5 iterations
+```
+
+**What it does:**
+1. Reads your PROMPT.md task definition
+2. Executes the task
+3. Reports results
+4. If not complete: prompts you to refine PROMPT.md
+5. Repeats until success or max iterations
+
+**PROMPT.md format:**
+```markdown
+# Task: [Your Task]
+
+## Context
+[Project background]
+
+## Objective
+[What needs to be done]
+
+## Previous Attempts
+- Attempt 1: [What was tried] → [Result]
+
+## Current Focus
+[What to try this iteration]
+
+## Success Criteria
+[How to know when done]
+```
+
+**Template location:** `~/.claude/templates/iterate-prompt.md`
 
 ---
 
@@ -370,72 +485,85 @@ When mastermind encounters specific code patterns, it routes to the appropriate 
 
 ## Learning Loop
 
-The system continuously improves by learning from code reviews.
+The system continuously improves through session hooks and review commands, all unified through `/improve-claude`.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                        LEARNING LOOP                                │
+│                    UNIFIED LEARNING PIPELINE                        │
 ├─────────────────────────────────────────────────────────────────────┤
 │                                                                     │
-│    ┌─────────────────────────────────────────────────────────────┐  │
-│    │ 1. REVIEW RUNS                                              │  │
-│    │    /review or /gitlab-review                                │  │
-│    └─────────────────────────────────────────────────────────────┘  │
-│                              │                                      │
-│                              ▼                                      │
-│    ┌─────────────────────────────────────────────────────────────┐  │
-│    │ 2. AGENTS FIND ISSUES                                       │  │
-│    │    Critical • High • Medium • Low severity                  │  │
-│    └─────────────────────────────────────────────────────────────┘  │
-│                              │                                      │
-│                              ▼                                      │
-│    ┌─────────────────────────────────────────────────────────────┐  │
-│    │ 3. EXTRACT LEARNABLE PATTERNS                               │  │
-│    │    Filter: Critical + High + Suggestion severity            │  │
-│    │    Exclude: Project-specific bugs, questions                │  │
-│    └─────────────────────────────────────────────────────────────┘  │
-│                              │                                      │
-│                              ▼                                      │
-│    ┌─────────────────────────────────────────────────────────────┐  │
-│    │ 4. INVOKE /improve-claude                                   │  │
-│    │    Categorizes by domain:                                   │  │
-│    │    TypeScript • Frontend • Backend • Security • DevOps      │  │
-│    └─────────────────────────────────────────────────────────────┘  │
-│                              │                                      │
-│              ┌───────────────┼───────────────┐                      │
-│              │               │               │                      │
-│              ▼               ▼               ▼                      │
-│    ┌─────────────┐  ┌──────────────┐  ┌─────────────┐               │
-│    │  CLAUDE.md  │  │  agents/*.md │  │ skills/*.md │               │
-│    │  (if code   │  │  (if agent   │  │ (if pattern │               │
-│    │   standard) │  │   behavior)  │  │  library)   │               │
-│    └─────────────┘  └──────────────┘  └─────────────┘               │
-│                              │                                      │
-│                              ▼                                      │
-│    ┌─────────────────────────────────────────────────────────────┐  │
-│    │ 5. LOG TO learning-history.md                               │  │
-│    │    Records: Date, branch, patterns learned, rules applied   │  │
-│    └─────────────────────────────────────────────────────────────┘  │
+│  SESSION END                        REVIEW COMMANDS                 │
+│  ───────────                        ───────────────                 │
+│  evaluate-session.js                /review or /gitlab-review       │
+│       │                                    │                        │
+│       ▼                                    ▼                        │
+│  [ContinuousLearning]              Extract [Blocker]/[Nice to have] │
+│  "Session ready for extraction"    /[Suggestion] findings           │
+│       │                                    │                        │
+│       │                                    │                        │
+│       └──────────────────┬─────────────────┘                        │
+│                          ▼                                          │
+│                 ┌─────────────────┐                                 │
+│                 │ /improve-claude │                                 │
+│                 │ (unified cmd)   │                                 │
+│                 └────────┬────────┘                                 │
+│                          │                                          │
+│            ┌─────────────┼─────────────┐                            │
+│            ▼             ▼             ▼                            │
+│      CLAUDE.md    agents/*.md   skills/learned/                     │
+│      (rules)      (behavior)    [pattern].md                        │
 │                                                                     │
-│    RESULT: Claude gets smarter over time!                           │
+│                          │                                          │
+│                          ▼                                          │
+│                 ┌─────────────────┐                                 │
+│                 │  NEXT SESSION   │                                 │
+│                 │ session-start.js│                                 │
+│                 │ loads learned   │                                 │
+│                 │ skills          │                                 │
+│                 └─────────────────┘                                 │
+│                                                                     │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-### Learning History Format
+### Learning Triggers
 
-Entries are automatically added to `~/.claude/learning-history.md`:
+| Trigger | When | What Happens |
+|---------|------|--------------|
+| **Session End** | Claude stops (10+ messages) | `evaluate-session.js` analyzes transcript for extraction triggers, recommends `/extract-learning` if score >= 2 |
+| **Manual Extraction** | `/extract-learning [topic]` | Reviews session, extracts reusable knowledge, saves to `skills/learned/` |
+| **Review Commands** | `/review`, `/gitlab-review` | Extracts [Blocker]/[Nice to have]/[Suggestion] findings |
+| **Config Update** | `/improve-claude --save-skill` | Direct rule + skill creation |
+
+### Learning Outputs
+
+| Output | Location | Purpose |
+|--------|----------|---------|
+| **Learned Skills** | `~/.claude/skills/learned/` | Reusable patterns auto-loaded in future sessions |
+| **Rule Updates** | `CLAUDE.md`, `agents/`, `skills/` | Configuration improvements via `/improve-claude` |
+
+### Learned Skill File Format
+
+Skills saved to `~/.claude/skills/learned/[category]-[short-description].md`:
 
 ```markdown
-## 2026-01-15 - Review: feature/user-auth
+# [Pattern Name]
 
+**Extracted:** 2026-01-26
 **Source:** /review
-**Patterns Learned:** 3
+**Type:** blocker
+**Category:** react-component
 
-| Pattern | Category | Rule |
-|---------|----------|------|
-| useEffect missing deps | Frontend | Include all dependencies in useEffect array |
-| Raw status codes | Backend | Use http-status-codes package instead of magic numbers |
-| Hardcoded secrets | Security | Never commit secrets, use environment variables |
+## Problem
+[Specific issue found]
+
+## Solution
+[Fix or best practice]
+
+## Example
+[Code example if applicable]
+
+## When to Use
+[Trigger conditions]
 ```
 
 ---
@@ -742,28 +870,38 @@ Source of truth for code standards. Key rules:
 ~/.claude/
 │
 ├── CLAUDE.md                  # Code standards (source of truth)
-├── MEMORYBANK.md              # This documentation
+├── README.md                  # This documentation
 ├── settings.json              # Model, permissions, hooks
-├── learning-history.md        # Learning loop log
 ├── .secrets                   # GitLab token (gitignored)
 │
-├── commands/                  # 18 slash commands
+├── scripts/                   # Hook automation scripts
+│   ├── hooks/                 # Event-triggered scripts
+│   │   ├── session-start.js   # Loads context on session start
+│   │   ├── session-end.js     # Persists state on session end
+│   │   ├── evaluate-session.js# Triggers learning extraction
+│   │   └── suggest-compact.js # Token optimization suggestions
+│   └── lib/                   # Shared utilities
+│       ├── utils.js           # Common functions
+│       └── package-manager.js # Package manager detection
+│
+├── sessions/                  # Session state persistence
+│   └── YYYY-MM-DD-{id}.tmp    # Daily session files (7-day retention)
+│
+├── commands/                  # 20 slash commands
 │   ├── review.md              # Local code review
 │   ├── gitlab-review.md       # Remote MR review
 │   ├── gitlab-fix-comments.md # Apply MR fixes
 │   ├── plan-task.md           # Feature planning
 │   ├── build-feature.md       # Feature execution
+│   ├── iterate-task.md        # Iterative task execution (Ralph)
 │   ├── commit-all.md          # Smart commits
 │   ├── quality-gate.md        # Quality checks
-│   ├── principal.md           # Principal consultation
+│   ├── consult.md             # Principal consultation
 │   ├── find-bug.md            # Bug analysis
-│   ├── architect.md           # Architecture guidance
 │   ├── refactor.md            # Refactoring engine
-│   ├── improve-claude.md      # Config updates
+│   ├── improve-claude.md      # Config updates + pattern extraction
+│   ├── extract-learning.md    # Session knowledge extraction
 │   ├── mr-description.md      # MR description gen
-│   ├── predict-issues.md      # Predictive analysis
-│   ├── explain-like-senior.md # Senior explanations
-│   ├── create-todos.md        # TODO creation
 │   └── remove-comments.md     # Comment removal
 │
 ├── agents/                    # 10 principal engineers
@@ -778,7 +916,13 @@ Source of truth for code standards. Key rules:
 │   ├── bug-finder.md          # Debug expert
 │   └── gitlab-comment-fixer.md# MR fix expert
 │
-├── skills/                    # 26 pattern libraries
+├── skills/                    # Pattern libraries
+│   ├── learned/               # Auto-extracted patterns (from reviews/sessions)
+│   │   └── [category]-[desc].md
+│   ├── continuous-learning/   # Learning configuration
+│   │   └── config.json
+│   ├── extract-learning/      # Knowledge extraction skill
+│   │   └── SKILL.md
 │   ├── react-component/       # React patterns
 │   ├── refactoring-patterns/  # Code smell fixes
 │   ├── backend-patterns/      # Three-layer arch
@@ -787,10 +931,19 @@ Source of truth for code standards. Key rules:
 │   ├── openai-integration/    # OpenAI patterns
 │   └── ...                    # 20 more skills
 │
-├── rules/                     # Enforcement rules (.mdc)
-│   ├── zc-react-conventions.mdc
-│   ├── zc-typescript-conventions.mdc
-│   └── ...
+├── templates/                 # Reusable templates
+│   └── iterate-prompt.md      # Template for /iterate-task
+│
+├── iterate-sessions/          # Iteration session logs
+│   └── iterate-[timestamp].log
+│
+├── rules/                     # Always-follow guidelines
+│   ├── performance.md         # Model selection, token optimization
+│   ├── coding-style.md        # Immutability, file limits
+│   ├── testing.md             # TDD, coverage requirements
+│   ├── git-workflow.md        # Commit format, PR process
+│   ├── security.md            # OWASP, secret management
+│   └── agents.md              # Agent delegation rules
 │
 ├── plugins/
 │   └── claude-notifier-plugin/
@@ -820,6 +973,7 @@ Source of truth for code standards. Key rules:
 # Feature development
 /plan-task "implement X"      # Plan the feature
 /build-feature                # Execute the plan
+/iterate-task PROMPT.md       # Iterate until done (Ralph approach)
 /commit-all                   # Create grouped commits
 
 # Code review
@@ -829,9 +983,10 @@ Source of truth for code standards. Key rules:
 
 # Debugging
 /find-bug <context>           # Analyze bug
-/principal backend "question" # Ask expert
+/consult backend "question"   # Ask expert
 
-# Utilities
+# Learning & Utilities
+/extract-learning "topic"     # Save session knowledge as skill
 /improve-claude "rule"        # Add new standard
 /mr-description               # Generate MR desc
 ```
@@ -864,12 +1019,19 @@ This Claude Code setup provides:
 1. **Automated code reviews** with parallel principal agent analysis
 2. **GitLab integration** for remote MR reviews with draft comments
 3. **Feature orchestration** via mastermind → specialist delegation
-4. **Continuous learning** that improves configuration over time
-5. **Desktop notifications** when Claude needs attention
-6. **26 skill libraries** covering frontend, backend, security, DevOps, and AI
+4. **Continuous learning** via `/extract-learning` and session hooks that extract patterns to `skills/learned/`
+5. **Iterative task execution** via `/iterate-task` following the Ralph approach (tune the prompt, not the code)
+6. **Session persistence** via hooks that save/load context across sessions
+7. **Token optimization** with strategic `/compact` suggestions at 50+ edits
+8. **Desktop notifications** when Claude needs attention
+9. **26+ skill libraries** covering frontend, backend, security, DevOps, and AI (plus auto-learned skills)
+10. **6 rules files** for consistent enforcement of coding standards
 
-The system follows principal engineer standards defined in CLAUDE.md and continuously improves through the learning loop.
+The system follows principal engineer standards defined in CLAUDE.md and continuously improves through:
+- **`/extract-learning`** - Manual knowledge extraction from sessions
+- **`evaluate-session.js`** - Automatic trigger detection recommending extraction
+- **Review commands** - Learning loop that extracts patterns from code reviews
 
 ---
 
-*Last updated: 2026-01-25*
+*Last updated: 2026-01-26*

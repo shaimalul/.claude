@@ -197,18 +197,21 @@ Use specialized agents for principal-engineer level development:
 
 | Command | Agent | Expertise |
 |---------|-------|-----------|
-| `/principal frontend` | frontend-principal | React, TypeScript, components |
-| `/principal backend` | backend-principal | Node.js, NestJS, APIs |
-| `/principal ai` | ai-principal | OpenAI, prompts, RAG |
-| `/principal devops` | devops-principal | Docker, K8s, Terraform |
-| `/principal security` | security-principal | OWASP, auth, vulnerabilities |
-| `/principal architect` | architect-principal | System design, ADRs |
+| `/consult frontend` | frontend-principal | React, TypeScript, components |
+| `/consult backend` | backend-principal | Node.js, NestJS, APIs |
+| `/consult ai` | ai-principal | OpenAI, prompts, RAG |
+| `/consult devops` | devops-principal | Docker, K8s, Terraform |
+| `/consult security` | security-principal | OWASP, auth, vulnerabilities |
+| `/consult architect` | architect-principal | System design, ADRs |
+| `/consult ux` | ux-principal | WCAG, ARIA, accessibility |
 
 ### Key Commands
+- `/consult [domain] [topic]` - Consult a principal engineer for expert guidance
 - `/plan-task [description]` - Plan a task with the mastermind
 - `/build-feature` - Execute the planned feature
-- `/architect [topic]` - Get architecture guidance
-- `/quality-gate` - Run comprehensive quality checks
+- `/quality-gate` - Run comprehensive quality checks (includes predictive analysis)
+- `/review` - Review current branch changes with TODO creation
+- `/gitlab-review [url]` - Review GitLab MR and post draft comments
 
 ---
 
