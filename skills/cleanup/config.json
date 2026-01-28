@@ -1,0 +1,50 @@
+{
+  "min_session_length": 5,
+  "cleanup_threshold": 2,
+  "categories": {
+    "duplicate_types": {
+      "enabled": true,
+      "priority": "high",
+      "patterns": [
+        "interface\\s+\\w+",
+        "type\\s+\\w+\\s*=",
+        "enum\\s+\\w+"
+      ]
+    },
+    "multiple_approaches": {
+      "enabled": true,
+      "priority": "high",
+      "patterns": [
+        "export\\s+(const|function)\\s+\\w+(Date|Time|Format|Parse|Fetch|Get|Load)",
+        "similar function names"
+      ]
+    },
+    "backward_compat": {
+      "enabled": true,
+      "priority": "medium",
+      "patterns": [
+        "@deprecated",
+        "backward compat",
+        "legacy",
+        "// DEPRECATED"
+      ]
+    },
+    "dead_code": {
+      "enabled": true,
+      "priority": "medium",
+      "patterns": [
+        "unused export",
+        "if \\(false\\)",
+        "commented out code blocks"
+      ]
+    }
+  },
+  "auto_detect": true,
+  "dry_run_default": true,
+  "safety": {
+    "require_git_clean": false,
+    "create_checkpoint": true,
+    "run_tests_after": true,
+    "run_build_after": true
+  }
+}

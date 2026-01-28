@@ -234,6 +234,78 @@ if (status === EvaluationStatus.COMPL3TED) { ... }  // TypeScript error!
 - Refactoring support (rename propagates everywhere)
 - Self-documenting code
 
+## Type Inheritance Patterns (Single Source of Truth)
+
+Never duplicate types. Use indexed access types to derive from source types:
+
+### Indexed Access Types (`Type["property"]`)
+
+```typescript
+// Source type - single source of truth
+interface User {
+  id: string;
+  email: string;
+  role: UserRole;
+  createdAt: Date;
+}
+
+// Bad - duplicates the id type, breaks if User changes
+interface CreatePostParams {
+  authorId: string;  // If User.id becomes number, this breaks silently
+  title: string;
+}
+
+// Good - derives from source type
+interface CreatePostParams {
+  authorId: User["id"];  // Always matches User.id type
+  title: string;
+}
+
+// Good - function parameters
+function getUserPosts(userId: User["id"]): Promise<Post[]> { ... }
+function updateUserRole(userId: User["id"], role: User["role"]): Promise<void> { ... }
+```
+
+### Pick, Omit, Partial (For Multiple Properties)
+
+```typescript
+// Pick - select specific properties
+type UserPreview = Pick<User, "id" | "email">;
+
+// Omit - exclude properties
+type CreateUserInput = Omit<User, "id" | "createdAt">;
+
+// Partial - make all optional
+type UpdateUserInput = Partial<Omit<User, "id">>;
+```
+
+### When to Use Each Pattern
+
+| Pattern | Use Case | Example |
+|---------|----------|---------|
+| `Type["prop"]` | Single property type | `userId: User["id"]` |
+| `Pick<T, K>` | Subset of properties | `Pick<User, "id" \| "name">` |
+| `Omit<T, K>` | All except some properties | `Omit<User, "password">` |
+| `Partial<T>` | All properties optional | `Partial<UpdateInput>` |
+
+### Anti-Patterns to Avoid
+
+```typescript
+// Bad - separate type that duplicates structure
+type UserId = string;  // Disconnected from User.id
+
+// Bad - inline type that duplicates
+function getUser(id: string): User { ... }
+
+// Bad - redefining enum values
+const ACTIVE_STATUS = 'active';  // When enum exists
+
+// Good - always reference the source
+type UserId = User["id"];
+function getUser(id: User["id"]): User { ... }
+if (status === Status.ACTIVE) { ... }
+```
+
 ## Function Naming: get vs create/make/determine
 
 ```typescript

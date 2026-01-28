@@ -71,3 +71,5 @@ Before marking work complete:
 - [ ] No mutation (immutable patterns used)
 - [ ] Named exports only (no export default)
 - [ ] Direct imports (no barrel/index.ts files)
+- [ ] No duplicate types (use indexed access: `Type["property"]`)
+- [ ] Type inheritance from source types (Pick, Omit, Partial)

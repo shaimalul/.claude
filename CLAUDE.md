@@ -92,6 +92,14 @@ Controller Layer → Service Layer → Repository Layer
   // Bad: if (status === 'completed')
   // Good: if (status === EvaluationStatus.COMPLETED)
   ```
+- **Indexed access types**: Use `Type["property"]` for single source of truth
+  ```typescript
+  // Bad: Duplicates the type - breaks if User.id changes
+  function getUser(userId: string): Promise<User> { ... }
+
+  // Good: Single source of truth - always matches User.id
+  function getUser(userId: User["id"]): Promise<User> { ... }
+  ```
 
 ### Exports and Imports
 - **Always use named exports** - never `export default`
@@ -212,6 +220,7 @@ Use specialized agents for principal-engineer level development:
 - `/quality-gate` - Run comprehensive quality checks (includes predictive analysis)
 - `/review` - Review current branch changes with TODO creation
 - `/gitlab-review [url]` - Review GitLab MR and post draft comments
+- `/cleanup` - Detect and remove code debt (duplicates, legacy code, dead code)
 
 ---
 
@@ -234,3 +243,4 @@ For detailed patterns and code examples, refer to these skills:
 | DevOps (Docker, K8s, CI/CD) | `docker-patterns`, `kubernetes-patterns`, `cicd-patterns` |
 | AI/ML integration | `openai-integration`, `prompt-engineering` |
 | Self-documenting code, avoiding comments | `no-comments` |
+| Code debt cleanup (duplicates, dead code) | `cleanup` |

@@ -57,6 +57,8 @@ prompt: |
   - No `any` or `unknown` casting
   - Optional params use `?` not `| undefined`
   - Enums used instead of string literals for status comparisons
+  - No duplicate types (use indexed access patterns like `Type["property"]`)
+  - Type inheritance from source types (Pick, Omit, Partial)
   - No empty catch blocks (always log errors)
   - Use `void` for ignored promises (not eslint-disable)
   - No backward compatibility wrappers in new code
