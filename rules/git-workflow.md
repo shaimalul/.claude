@@ -8,7 +8,9 @@
 <optional body>
 ```
 
-Types: feat, fix, refactor, docs, test, chore, perf, ci
+Types: feat, fix, refactor, docs, test, chore, perf, ci, style, build
+
+Reference: [conventionalcommits.org](https://www.conventionalcommits.org)
 
 ## Pull Request Workflow
 
