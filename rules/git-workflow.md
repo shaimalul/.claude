@@ -74,7 +74,7 @@ Both `/gitlab-review` and `/gitlab-fix-comments` integrate with the continuous l
 
 1. **Pattern Detection**: Critical and recommended fixes are flagged as learnable
 2. **Auto-Extraction**: Patterns appearing 2+ times are prioritized
-3. **Skill Saving**: Run `/extract-learning` to save patterns to `~/.claude/skills/learned/`
-4. **Future Prevention**: Learned patterns are loaded in future sessions via `session-start.js`
+3. **Skill Integration**: Run `/extract-learning` to integrate patterns into existing domain skills
+4. **Future Prevention**: Patterns become part of the relevant skill (styling-rtl, react-component, etc.)
 
-This creates a feedback loop where every MR review improves future code quality.
+This creates a feedback loop where every MR review improves the skill files directly.

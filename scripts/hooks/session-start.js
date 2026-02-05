@@ -8,10 +8,8 @@
  * files and notifies Claude of available context to load.
  */
 
-const path = require('path');
 const {
   getSessionsDir,
-  getLearnedSkillsDir,
   findFiles,
   ensureDir,
   log
@@ -20,11 +18,9 @@ const { getPackageManager, getSelectionPrompt } = require('../lib/package-manage
 
 async function main() {
   const sessionsDir = getSessionsDir();
-  const learnedDir = getLearnedSkillsDir();
 
   // Ensure directories exist
   ensureDir(sessionsDir);
-  ensureDir(learnedDir);
 
   // Check for recent session files (last 7 days)
   // Match both old format (YYYY-MM-DD-session.tmp) and new format (YYYY-MM-DD-shortid-session.tmp)
@@ -36,12 +32,8 @@ async function main() {
     log(`[SessionStart] Latest: ${latest.path}`);
   }
 
-  // Check for learned skills
-  const learnedSkills = findFiles(learnedDir, '*.md');
-
-  if (learnedSkills.length > 0) {
-    log(`[SessionStart] ${learnedSkills.length} learned skill(s) available in ${learnedDir}`);
-  }
+  // Note: Skills are now loaded via the normal skill system.
+  // Learnings are integrated into existing domain skills (styling-rtl, react-component, etc.)
 
   // Detect and report package manager
   const pm = getPackageManager();

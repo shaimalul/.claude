@@ -29,6 +29,49 @@ Always use logical properties for RTL language support:
 }
 ```
 
+## RTL-Safe Prop and Variable Naming
+
+When naming props, variables, or CSS classes that relate to horizontal direction, always use `start`/`end` instead of `left`/`right`. This ensures the API is RTL-agnostic.
+
+```typescript
+// Bad - directional prop names break RTL mental model
+interface Props {
+  borderLeft?: boolean;
+  paddingRight?: number;
+  alignLeft?: boolean;
+}
+
+// Good - logical prop names work for both LTR and RTL
+interface Props {
+  borderStart?: boolean;
+  paddingEnd?: number;
+  alignStart?: boolean;
+}
+```
+
+```scss
+// Bad - directional class names
+.align-left { text-align: left; }
+.border-left { border-left: 2px solid blue; }
+
+// Good - logical class names with logical CSS
+.align-start { text-align: start; }
+.border-start { border-inline-start: 2px solid blue; }
+```
+
+**Naming conversion table:**
+
+| Physical (Avoid) | Logical (Use) |
+|------------------|---------------|
+| left | start |
+| right | end |
+| borderLeft | borderStart |
+| paddingRight | paddingEnd |
+| marginLeft | marginStart |
+| alignLeft | alignStart |
+
+**When to apply:** Any time you're naming props, variables, or CSS classes that involve horizontal positioning or alignment.
+
 ## Design System Colors
 
 Import and use common UI color variables:

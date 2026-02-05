@@ -23,7 +23,6 @@ When you provide an instruction, I will:
 | `~/.claude/rules/*.md` | Personal coding guidelines, security checklists, workflow patterns | Markdown |
 | `~/.claude/agents/*.md` | Specialized AI agent personalities with model assignments | Markdown + YAML frontmatter |
 | `~/.claude/skills/*/SKILL.md` | Domain-specific pattern libraries | Markdown + YAML frontmatter |
-| `~/.claude/skills/learned/*.md` | Auto-extracted knowledge from sessions | Markdown |
 | `~/.claude/scripts/hooks/*.js` | Session lifecycle automation hooks | JavaScript |
 | `~/.claude/scripts/lib/*.js` | Shared utility functions for scripts | JavaScript |
 | `~/.claude/templates/*.md` | Structured templates for iterative tasks | Markdown |
@@ -273,53 +272,46 @@ After updating the core configuration files, I'll review command files for relat
 If instruction is "never use console.log in production":
 - Add `- [ ] No console.log in production code` to quality-gate.md's Code Standards section
 
-## Phase 7: Save to Learned Skills (Pattern Extraction)
+## Phase 7: Integrate Learnings into Existing Skills
 
-When processing rules from code reviews or session learning, I also save patterns as reusable skills in `~/.claude/skills/learned/`.
+When processing rules from code reviews or session learning, I **integrate patterns into existing skill files** rather than creating separate files. This maintains single source of truth.
 
 **This happens automatically when:**
 - Rule comes from a review (`/review`, `/gitlab-review`)
 - Pattern is marked as [Blocker], [Nice to have], or [Suggestion]
-- `--save-skill` flag is used
+- `/extract-learning` command is used
 
-**Skill File Creation:**
+**Integration Process:**
 
-1. **Filename:** `[category]-[short-description].md` (kebab-case)
-   - Example: `typescript-avoid-any-type.md`
-   - Example: `react-missing-useeffect-deps.md`
+1. **Identify target skill:** Match the learning to the appropriate domain skill
+   - RTL/CSS patterns → `skills/styling-rtl/SKILL.md`
+   - React patterns → `skills/react-component/SKILL.md`
+   - TypeScript patterns → `skills/typescript-types/SKILL.md`
+   - Backend patterns → `skills/backend-patterns/SKILL.md`
 
-2. **Location:** `~/.claude/skills/learned/`
+2. **Search for duplicates:** Check if similar pattern already exists in target skill
 
-3. **Format:**
+3. **Add or update:** Integrate the new pattern into the appropriate section
+
+**Format for new patterns:**
+
 ```markdown
-# [Descriptive Pattern Name]
+## [Pattern Name]
 
-**Extracted:** [YYYY-MM-DD]
-**Source:** [/improve-claude | /review | /gitlab-review]
-**Type:** [rule|blocker|nice-to-have|suggestion]
-**Category:** [typescript-types|react-component|backend-patterns|security-patterns|general]
+[Problem description with specific triggers]
 
-## Problem
-[What issue this pattern addresses - be specific]
+```[language]
+// Bad - [what causes the problem]
+[problematic code]
 
-## Solution
-[The fix or best practice to apply]
-
-## Example
-```typescript
-// Bad
-[problematic code pattern]
-
-// Good
-[correct code pattern]
+// Good - [the fix]
+[correct code]
 ```
 
-## When to Use
-[Trigger conditions - when this skill should activate]
+**When to apply:** [Trigger conditions]
 ```
 
-**Automatic Loading:**
-The `session-start.js` hook notifies Claude of available learned skills at the start of each session.
+**Important:** Do NOT create separate files in a `learned/` folder. All learnings belong in existing domain skills.
 
 ## Phase 8: Report Results
 
@@ -375,8 +367,8 @@ After applying changes, I'll show:
 **quality-gate.md:**
 - Added new check: "[check description]"
 
-**skills/learned/:**
-- Created: typescript-avoid-any.md
+**skills/[domain]/SKILL.md:**
+- Updated: [skill-name] with new pattern
 
 ### Verification
 - [x] Rule synced across all target files
@@ -387,7 +379,7 @@ After applying changes, I'll show:
 - [x] Rules files updated (if applicable)
 - [x] Scripts referenced (if applicable)
 - [x] Templates updated (if applicable)
-- [x] Learned skill saved (if applicable)
+- [x] Learning integrated into existing skill (if applicable)
 ```
 
 ## File Format Reference

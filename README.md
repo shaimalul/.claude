@@ -85,8 +85,8 @@ The hooks system provides real-time notifications, session management, and conti
 │  ┌─────────────────┐                                                 │
 │  │ SessionStart    │──► session-start.js                             │
 │  │ Hook            │    • Loads recent sessions (7 days)             │
-│  │                 │    • Notifies of learned skills                 │
 │  │                 │    • Detects package manager                    │
+│  │                 │                                                 │
 │  └─────────────────┘                                                 │
 │                                                                      │
 │  ┌─────────────────┐                                                 │
@@ -323,9 +323,9 @@ Extract reusable knowledge from your session and save it as a skill.
 **What it does:**
 1. Reviews session for extractable knowledge
 2. Checks quality gates (reusable, non-trivial, verified)
-3. Checks for duplicates in `skills/learned/`
-4. Creates skill file with problem/solution/example
-5. Reports what was saved
+3. Identifies the appropriate domain skill (styling-rtl, react-component, etc.)
+4. Integrates the pattern into the existing skill file
+5. Reports what was updated
 
 **Quality gates:**
 - Solution was verified to work
@@ -333,7 +333,7 @@ Extract reusable knowledge from your session and save it as a skill.
 - Knowledge is reusable (not one-time fix)
 - No sensitive data
 
-**Output location:** `~/.claude/skills/learned/[category]-[description].md`
+**Output location:** Integrated into existing `~/.claude/skills/[domain]/SKILL.md`
 
 #### `/iterate-task <prompt.md>` - Iterative Task Execution (Ralph Approach)
 
@@ -510,16 +510,16 @@ The system continuously improves through session hooks and review commands, all 
 │                          │                                          │
 │            ┌─────────────┼─────────────┐                            │
 │            ▼             ▼             ▼                            │
-│      CLAUDE.md    agents/*.md   skills/learned/                     │
-│      (rules)      (behavior)    [pattern].md                        │
+│      CLAUDE.md    agents/*.md   skills/[domain]/                    │
+│      (rules)      (behavior)    SKILL.md                            │
 │                                                                     │
 │                          │                                          │
 │                          ▼                                          │
 │                 ┌─────────────────┐                                 │
 │                 │  NEXT SESSION   │                                 │
-│                 │ session-start.js│                                 │
-│                 │ loads learned   │                                 │
-│                 │ skills          │                                 │
+│                 │  Skills loaded  │                                 │
+│                 │  via normal     │                                 │
+│                 │  skill system   │                                 │
 │                 └─────────────────┘                                 │
 │                                                                     │
 └─────────────────────────────────────────────────────────────────────┘
@@ -530,7 +530,7 @@ The system continuously improves through session hooks and review commands, all 
 | Trigger | When | What Happens |
 |---------|------|--------------|
 | **Session End** | Claude stops (10+ messages) | `evaluate-session.js` analyzes transcript for extraction triggers, recommends `/extract-learning` if score >= 2 |
-| **Manual Extraction** | `/extract-learning [topic]` | Reviews session, extracts reusable knowledge, saves to `skills/learned/` |
+| **Manual Extraction** | `/extract-learning [topic]` | Reviews session, extracts reusable knowledge, integrates into existing domain skills |
 | **Review Commands** | `/review`, `/gitlab-review` | Extracts [Blocker]/[Nice to have]/[Suggestion] findings |
 | **Config Update** | `/improve-claude --save-skill` | Direct rule + skill creation |
 
@@ -538,12 +538,12 @@ The system continuously improves through session hooks and review commands, all 
 
 | Output | Location | Purpose |
 |--------|----------|---------|
-| **Learned Skills** | `~/.claude/skills/learned/` | Reusable patterns auto-loaded in future sessions |
+| **Domain Skills** | `~/.claude/skills/[domain]/SKILL.md` | Patterns integrated into existing domain skills |
 | **Rule Updates** | `CLAUDE.md`, `agents/`, `skills/` | Configuration improvements via `/improve-claude` |
 
-### Learned Skill File Format
+### Learning Integration Format
 
-Skills saved to `~/.claude/skills/learned/[category]-[short-description].md`:
+Patterns are added to existing domain skill files (e.g., `~/.claude/skills/react-component/SKILL.md`):
 
 ```markdown
 # [Pattern Name]
@@ -916,9 +916,7 @@ Source of truth for code standards. Key rules:
 │   ├── bug-finder.md          # Debug expert
 │   └── gitlab-comment-fixer.md# MR fix expert
 │
-├── skills/                    # Pattern libraries
-│   ├── learned/               # Auto-extracted patterns (from reviews/sessions)
-│   │   └── [category]-[desc].md
+├── skills/                    # Pattern libraries (learnings integrated here)
 │   ├── continuous-learning/   # Learning configuration
 │   │   └── config.json
 │   ├── extract-learning/      # Knowledge extraction skill
@@ -1019,12 +1017,12 @@ This Claude Code setup provides:
 1. **Automated code reviews** with parallel principal agent analysis
 2. **GitLab integration** for remote MR reviews with draft comments
 3. **Feature orchestration** via mastermind → specialist delegation
-4. **Continuous learning** via `/extract-learning` and session hooks that extract patterns to `skills/learned/`
+4. **Continuous learning** via `/extract-learning` that integrates patterns into existing domain skills
 5. **Iterative task execution** via `/iterate-task` following the Ralph approach (tune the prompt, not the code)
 6. **Session persistence** via hooks that save/load context across sessions
 7. **Token optimization** with strategic `/compact` suggestions at 50+ edits
 8. **Desktop notifications** when Claude needs attention
-9. **26+ skill libraries** covering frontend, backend, security, DevOps, and AI (plus auto-learned skills)
+9. **26+ skill libraries** covering frontend, backend, security, DevOps, and AI (learnings integrated directly)
 10. **6 rules files** for consistent enforcement of coding standards
 
 The system follows principal engineer standards defined in CLAUDE.md and continuously improves through:

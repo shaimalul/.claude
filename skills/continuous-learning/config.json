@@ -1,7 +1,6 @@
 {
   "min_session_length": 10,
   "extraction_threshold": "medium",
-  "learned_skills_path": "~/.claude/skills/learned",
   "pattern_types": [
     "error_resolution",
     "debugging_techniques",

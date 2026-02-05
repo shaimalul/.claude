@@ -35,10 +35,19 @@ function getSessionsDir() {
 }
 
 /**
- * Get the learned skills directory
+ * Get the skills directory
+ */
+function getSkillsDir() {
+  return path.join(getClaudeDir(), 'skills');
+}
+
+/**
+ * DEPRECATED: Learnings now integrate into existing domain skills.
+ * Use getSkillsDir() instead.
+ * @deprecated
  */
 function getLearnedSkillsDir() {
-  return path.join(getClaudeDir(), 'skills', 'learned');
+  return getSkillsDir();
 }
 
 /**
@@ -365,7 +374,8 @@ module.exports = {
   getHomeDir,
   getClaudeDir,
   getSessionsDir,
-  getLearnedSkillsDir,
+  getSkillsDir,
+  getLearnedSkillsDir, // deprecated
   getTempDir,
   ensureDir,
 

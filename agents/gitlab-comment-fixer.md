@@ -210,7 +210,7 @@ Remember: The goal is to automatically handle the simple, repetitive fixes that 
 
 ## Learning Extraction
 
-After applying fixes, identify patterns that should be saved as learned skills to prevent recurring issues.
+After applying fixes, identify patterns that should be integrated into existing domain skills to prevent recurring issues.
 
 ### Pattern Detection
 
@@ -364,9 +364,9 @@ After Analysis Complete:
     ↓
 User runs /extract-learning
     ↓
-Skill saved to ~/.claude/skills/learned/typescript-optional-chaining.md
+Pattern integrated into ~/.claude/skills/typescript-types/SKILL.md
     ↓
-Future sessions: Pattern automatically detected
+Future sessions: Pattern applied via normal skill system
 ```
 
 This ensures that every fix contributes to the learning system, making future reviews more efficient and preventing recurring issues.

@@ -903,8 +903,7 @@ Skill invocation:
 This will:
 1. Analyze the applied fixes from `$LEARNING_FILE`
 2. Verify each pattern passes quality gates (verified solution, reusable, no sensitive data)
-3. Save patterns as skills to `~/.claude/skills/learned/`
-4. The `session-start.js` hook will load these in future sessions
+3. Integrate patterns into appropriate existing domain skills (styling-rtl, react-component, etc.)
 
 ### Step 4: Report Learning Results
 
@@ -914,11 +913,11 @@ Include in the final output:
 ## Learning Feedback Loop
 
 **Patterns Found:** [count]
-**Skills Saved:**
-- ~/.claude/skills/learned/typescript-[description].md
-- ~/.claude/skills/learned/react-[description].md
+**Skills Updated:**
+- ~/.claude/skills/typescript-types/SKILL.md
+- ~/.claude/skills/react-component/SKILL.md
 
-**Impact:** These patterns will be automatically loaded in future sessions to prevent similar issues.
+**Impact:** These patterns are now part of the domain skills and will be applied in future sessions.
 ```
 
 ### Error-Based Learning

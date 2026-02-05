@@ -1319,8 +1319,7 @@ For each `[Blocker]`, `[Nice to have]`, or `[Suggestion]` finding:
 
 The `/improve-claude` command will automatically:
 - Update relevant config files (CLAUDE.md, agents, skills)
-- Save the pattern as a reusable skill in `~/.claude/skills/learned/`
-- The `session-start.js` hook will notify of learned skills in future sessions
+- Integrate the pattern into the appropriate existing domain skill (styling-rtl, react-component, etc.)
 
 ### Step 3: Report Learning Results
 
@@ -1331,7 +1330,7 @@ Include in your final output to the user:
 
 **Patterns Found:** [count]
 **Rules Applied:** [list of rules added via improve-claude]
-**Skills Saved:** [list of skills saved to ~/.claude/skills/learned/]
+**Skills Updated:** [list of domain skills updated]
 ```
 
 If no patterns were learned, report: "No learnable patterns identified in this review (no Blocker, Nice-to-have, or Suggestion findings)."

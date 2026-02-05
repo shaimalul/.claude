@@ -11,8 +11,6 @@
 const path = require('path');
 const fs = require('fs');
 const {
-  getLearnedSkillsDir,
-  ensureDir,
   readFile,
   countInFile,
   log
@@ -85,7 +83,6 @@ async function main() {
   // Default configuration
   let minSessionLength = 10;
   let qualityThreshold = 2;
-  let learnedSkillsPath = getLearnedSkillsDir();
 
   // Load config if exists
   const configContent = readFile(configFile);
@@ -94,18 +91,10 @@ async function main() {
       const config = JSON.parse(configContent);
       minSessionLength = config.min_session_length || 10;
       qualityThreshold = config.extract_learning?.quality_threshold || 2;
-
-      if (config.learned_skills_path) {
-        // Handle ~ in path
-        learnedSkillsPath = config.learned_skills_path.replace(/^~/, require('os').homedir());
-      }
     } catch {
       // Invalid config, use defaults
     }
   }
-
-  // Ensure learned skills directory exists
-  ensureDir(learnedSkillsPath);
 
   // Get transcript path from environment (set by Claude Code)
   const transcriptPath = process.env.CLAUDE_TRANSCRIPT_PATH;
@@ -155,7 +144,7 @@ async function main() {
     log(`[ContinuousLearning] Session appears routine, no extraction recommended`);
   }
 
-  log(`[ContinuousLearning] Learned skills saved to: ${learnedSkillsPath}`);
+  log(`[ContinuousLearning] Run /extract-learning to integrate patterns into existing domain skills`);
 
   process.exit(0);
 }
