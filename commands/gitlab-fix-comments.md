@@ -1,10 +1,13 @@
 ---
 description: Analyze GitLab MR comments and intelligently apply necessary fixes with detailed reporting
-argument-hint: <project-id> <mr-id>
-allowed-tools: Bash, WebFetch, Task, TodoWrite, Edit, MultiEdit, Read, Grep, Glob
+argument-hint: <mr-url>
+allowed-tools: Bash, WebFetch, Task, TodoWrite, Edit, MultiEdit, Read, Grep, Glob, Skill
+skills: extract-learning
 ---
 
 # GitLab MR Comments Intelligent Analyzer & Fixer
+
+**Uses:** `extract-learning` skill for continuous learning feedback loop.
 
 ## Prerequisites
 
@@ -12,15 +15,12 @@ allowed-tools: Bash, WebFetch, Task, TodoWrite, Edit, MultiEdit, Read, Grep, Glo
    ```bash
    export GITLAB_TOKEN='token'
    ```
-2. Ensure your token has the `read_api` scope for accessing private projects
+2. Ensure your token has the `api` scope for accessing private projects and posting comments
 3. The current project and branch should match the MR being analyzed
 
 I'll analyze GitLab merge request comments and intelligently determine which fixes to apply, generating a detailed report of all decisions.
 
-Project ID: $1
-MR ID: $2
-
-Let me fetch and analyze the MR discussions and comments.
+Let me fetch and analyze the MR discussions and comments from the provided URL.
 
 ```bash
 # Source secrets file if it exists
@@ -28,25 +28,60 @@ if [ -f "$HOME/.claude/.secrets" ]; then
   source "$HOME/.claude/.secrets"
 fi
 
-# Parse project ID and MR ID from arguments
-ARGS="$ARGUMENTS"
-PROJECT_ID=$(echo "$ARGS" | awk '{print $1}')
-MR_ID=$(echo "$ARGS" | awk '{print $2}')
+# Parse MR URL from arguments
+MR_URL="$ARGUMENTS"
 
-if [ -z "$PROJECT_ID" ] || [ -z "$MR_ID" ]; then
-  echo "Error: Missing required arguments"
-  echo "Usage: /gitlab-fix-comments <project-id> <mr-id>"
-  echo "Example: /gitlab-fix-comments 65438965 416"
+if [ -z "$MR_URL" ]; then
+  echo "Error: Missing MR URL"
+  echo "Usage: /gitlab-fix-comments <mr-url>"
+  echo "Example: /gitlab-fix-comments https://gitlab.com/group/project/-/merge_requests/123"
   exit 1
 fi
 
-# Validate that both are numeric
-if ! [[ "$PROJECT_ID" =~ ^[0-9]+$ ]] || ! [[ "$MR_ID" =~ ^[0-9]+$ ]]; then
-  echo "Error: Both project ID and MR ID must be numeric"
-  echo "Project ID: $PROJECT_ID"
-  echo "MR ID: $MR_ID"
+# Validate URL format
+if ! [[ "$MR_URL" =~ gitlab\.com.*merge_requests ]]; then
+  echo "Error: Invalid GitLab MR URL format"
+  echo "Expected: https://gitlab.com/<project-path>/-/merge_requests/<mr-id>"
+  echo "Got: $MR_URL"
   exit 1
 fi
+
+# Extract project path and MR ID using sed (same as gitlab-review.md)
+PROJECT_PATH=$(echo "$MR_URL" | sed -n 's|https://gitlab\.com/\(.*\)/-/merge_requests/.*|\1|p')
+MR_ID=$(echo "$MR_URL" | sed -n 's|.*/-/merge_requests/\([0-9]*\).*|\1|p')
+
+if [ -z "$PROJECT_PATH" ] || [ -z "$MR_ID" ]; then
+  echo "Error: Could not parse project path or MR ID from URL"
+  echo "URL: $MR_URL"
+  exit 1
+fi
+
+echo "Project Path: $PROJECT_PATH"
+echo "MR ID: $MR_ID"
+
+# Check for GitLab token first
+if [ -z "$GITLAB_TOKEN" ]; then
+  echo "Error: GITLAB_TOKEN environment variable not set"
+  echo "Please set your GitLab personal access token: export GITLAB_TOKEN=your_token"
+  exit 1
+fi
+
+# Get numeric project ID from GitLab API (same as gitlab-review.md)
+ENCODED_PATH=$(echo "$PROJECT_PATH" | sed 's|/|%2F|g')
+echo "Fetching project ID for: $PROJECT_PATH"
+
+PROJECT_INFO=$(curl -s -H "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+  "https://gitlab.com/api/v4/projects/$ENCODED_PATH")
+
+PROJECT_ID=$(echo "$PROJECT_INFO" | jq -r '.id // empty')
+
+if [ -z "$PROJECT_ID" ]; then
+  echo "Error: Could not find project. Check URL and token permissions."
+  echo "$PROJECT_INFO" | jq -r '.message // .'
+  exit 1
+fi
+
+echo "Project ID: $PROJECT_ID"
 
 echo "=========================================="
 echo "GitLab MR Comment Intelligent Analyzer"
@@ -741,3 +776,188 @@ The agent ensures that:
 - Every decision is justified and documented
 
 This approach provides transparency and accountability for all automated fixes while preventing blind application of potentially harmful suggestions.
+
+## Phase 3: Continuous Learning Integration
+
+After applying fixes, extract learnable patterns to prevent recurring issues in future code reviews.
+
+### Learning Triggers
+
+Fixes in these categories trigger learning extraction:
+- **Critical Fixes** (bugs, security) → ALWAYS extract
+- **Recommended Fixes** (best practices) → Extract if pattern appears 2+ times
+- **Errors during fix application** → Extract to prevent future failures
+- **User-requested learning** → Extract when explicitly asked
+
+### Step 1: Analyze Applied Fixes
+
+```bash
+# === CONTINUOUS LEARNING INTEGRATION ===
+
+echo ""
+echo "=========================================="
+echo "CONTINUOUS LEARNING ANALYSIS"
+echo "=========================================="
+echo ""
+
+# Check if any critical or recommended fixes were applied
+if [ -f "$DECISION_LOG" ]; then
+  CRITICAL_FIXES=$(jq '[.[] | select(.category == "critical")] | length' "$DECISION_LOG" 2>/dev/null || echo "0")
+  RECOMMENDED_FIXES=$(jq '[.[] | select(.category == "recommended")] | length' "$DECISION_LOG" 2>/dev/null || echo "0")
+else
+  CRITICAL_FIXES=0
+  RECOMMENDED_FIXES=0
+fi
+
+echo "Critical fixes applied: $CRITICAL_FIXES"
+echo "Recommended fixes applied: $RECOMMENDED_FIXES"
+echo ""
+
+# Generate learning extraction file
+LEARNING_FILE="$SESSION_DIR/learnings_to_extract.json"
+TOTAL_LEARNABLE=$((CRITICAL_FIXES + RECOMMENDED_FIXES))
+
+if [ "$TOTAL_LEARNABLE" -gt 0 ]; then
+  echo "Learnable patterns detected!"
+  echo ""
+
+  # Extract patterns from decision log
+  if [ -f "$DECISION_LOG" ]; then
+    jq '[.[] | select(.category == "critical" or .category == "recommended") | {
+      problem: .comment_body,
+      solution: .fix_applied,
+      file_type: (.file_path | split(".") | last // "unknown"),
+      category: .category,
+      reasoning: .reasoning,
+      file_path: .file_path
+    }]' "$DECISION_LOG" > "$LEARNING_FILE" 2>/dev/null || echo "[]" > "$LEARNING_FILE"
+  else
+    echo "[]" > "$LEARNING_FILE"
+  fi
+
+  echo "Learning patterns saved to: $LEARNING_FILE"
+  echo ""
+
+  # Add learning summary to report
+  echo "" >> "$REPORT_FILE"
+  echo "---" >> "$REPORT_FILE"
+  echo "" >> "$REPORT_FILE"
+  echo "## Continuous Learning" >> "$REPORT_FILE"
+  echo "" >> "$REPORT_FILE"
+  echo "**Learnable Patterns Found:** $TOTAL_LEARNABLE" >> "$REPORT_FILE"
+  echo "- Critical fixes: $CRITICAL_FIXES" >> "$REPORT_FILE"
+  echo "- Recommended fixes: $RECOMMENDED_FIXES" >> "$REPORT_FILE"
+  echo "" >> "$REPORT_FILE"
+  echo "### Patterns to Extract:" >> "$REPORT_FILE"
+  echo "" >> "$REPORT_FILE"
+
+  # List each learnable pattern
+  if [ -f "$LEARNING_FILE" ]; then
+    jq -r '.[] | "- **\(.category | ascii_upcase)**: \(.problem // "No description")[" + (.file_path // "unknown") + "]"' "$LEARNING_FILE" >> "$REPORT_FILE" 2>/dev/null
+  fi
+
+  echo "" >> "$REPORT_FILE"
+  echo "Run \`/extract-learning \"patterns from MR #$MR_ID\"\` to save as reusable skills." >> "$REPORT_FILE"
+else
+  echo "No critical or recommended fixes - no learning extraction needed."
+  echo "" >> "$REPORT_FILE"
+  echo "## Continuous Learning" >> "$REPORT_FILE"
+  echo "" >> "$REPORT_FILE"
+  echo "No learnable patterns identified (no critical or recommended fixes applied)." >> "$REPORT_FILE"
+fi
+
+echo ""
+echo "=========================================="
+echo "FIX ANALYSIS COMPLETE"
+echo "=========================================="
+echo ""
+echo "Report saved to: $REPORT_FILE"
+echo "Session assets: $SESSION_DIR"
+echo "MR URL: $MR_URL"
+```
+
+### Step 2: Extract Learning Patterns
+
+For each learnable pattern, determine the category and invoke the learning system:
+
+**Category Detection:**
+| Pattern Keywords | Category |
+|------------------|----------|
+| `any`, `casting`, `type`, `TypeScript`, `interface` | `typescript` |
+| `useEffect`, `useState`, `hook`, `React`, `component` | `react` |
+| `controller`, `service`, `repository`, `API`, `endpoint` | `backend` |
+| `injection`, `XSS`, `secret`, `auth`, `security`, `OWASP` | `security` |
+| `Docker`, `K8s`, `terraform`, `CI/CD`, `pipeline` | `devops` |
+| Other patterns | `general` |
+
+### Step 3: Invoke Learning Extraction
+
+After the analysis is complete, use the **Skill tool** to invoke `/extract-learning`:
+
+```markdown
+Skill invocation:
+  skill: "extract-learning"
+  args: "patterns from MR #<MR_ID> - <brief description of fixes>"
+```
+
+This will:
+1. Analyze the applied fixes from `$LEARNING_FILE`
+2. Verify each pattern passes quality gates (verified solution, reusable, no sensitive data)
+3. Save patterns as skills to `~/.claude/skills/learned/`
+4. The `session-start.js` hook will load these in future sessions
+
+### Step 4: Report Learning Results
+
+Include in the final output:
+
+```markdown
+## Learning Feedback Loop
+
+**Patterns Found:** [count]
+**Skills Saved:**
+- ~/.claude/skills/learned/typescript-[description].md
+- ~/.claude/skills/learned/react-[description].md
+
+**Impact:** These patterns will be automatically loaded in future sessions to prevent similar issues.
+```
+
+### Error-Based Learning
+
+When a fix fails or encounters an error:
+
+1. **Capture the error context:**
+   - Error message
+   - File path and line number
+   - Attempted fix
+   - Why it failed
+
+2. **Create error prevention skill:**
+   ```markdown
+   # [Error Type] Prevention
+
+   **Extracted:** YYYY-MM-DD
+   **Source:** /gitlab-fix-comments (error during fix)
+   **Type:** error-resolution
+   **Category:** [category]
+
+   ## Problem
+   [Exact error message and context]
+
+   ## Solution
+   [What should be done instead]
+
+   ## When to Use
+   Trigger on similar error patterns
+   ```
+
+3. **Invoke improve-claude:**
+   ```
+   Skill invocation:
+     skill: "improve-claude"
+     args: "[category]: [rule to prevent this error] --save-skill"
+   ```
+
+This ensures that:
+- Every error becomes a learning opportunity
+- Future sessions can avoid the same mistakes
+- The configuration continuously improves based on real-world usage

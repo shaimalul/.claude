@@ -2,6 +2,7 @@
 name: gitlab-comment-fixer
 description: Analyze GitLab MR comments and automatically apply suggested code fixes
 agent-type: general-purpose
+skills: extract-learning
 ---
 
 # GitLab Comment Fixer Agent
@@ -206,3 +207,166 @@ Apply fixes in this priority:
 More complex changes should be noted but not automatically applied.
 
 Remember: The goal is to automatically handle the simple, repetitive fixes that reviewers commonly request, saving developers time while maintaining code quality and safety.
+
+## Learning Extraction
+
+After applying fixes, identify patterns that should be saved as learned skills to prevent recurring issues.
+
+### Pattern Detection
+
+For each applied fix, check if it matches common mistake patterns:
+
+| Pattern Type | Keywords/Indicators | Category |
+|-------------|---------------------|----------|
+| Missing null checks | `null`, `undefined`, `?.`, optional chaining | `typescript` |
+| Type annotation issues | `any`, `unknown`, type casting, generics | `typescript` |
+| Security vulnerabilities | `injection`, `XSS`, `secret`, hardcoded values | `security` |
+| Performance anti-patterns | `useEffect`, missing deps, re-renders | `react` |
+| Error handling gaps | `try/catch`, unhandled promise, error boundary | `backend` |
+| Architecture violations | layer skipping, tight coupling, circular deps | `general` |
+
+### Output Format
+
+Add learnable patterns to `$ASSETS_DIR/learnings.json`:
+
+```json
+{
+  "patterns": [
+    {
+      "type": "error-prevention",
+      "category": "typescript",
+      "problem": "Missing optional chaining on potentially null object",
+      "solution": "Use optional chaining (?.) when accessing nested properties",
+      "example_bad": "user.profile.name",
+      "example_good": "user?.profile?.name",
+      "frequency": 3,
+      "files_affected": ["handler.ts", "service.ts", "utils.ts"],
+      "severity": "critical"
+    }
+  ],
+  "summary": {
+    "total_patterns": 5,
+    "critical": 2,
+    "recommended": 3,
+    "by_category": {
+      "typescript": 2,
+      "react": 1,
+      "security": 1,
+      "backend": 1
+    }
+  }
+}
+```
+
+### Learning Triggers
+
+Flag patterns for learning extraction when:
+
+1. **Same pattern appears 2+ times** in the MR
+   - Track pattern frequency across all comments
+   - If a pattern repeats, it's worth learning
+
+2. **Pattern is security-related**
+   - Always extract security patterns
+   - These prevent future vulnerabilities
+
+3. **Pattern caused a build/test failure**
+   - Capture error context
+   - Document the resolution
+
+4. **User explicitly requests learning**
+   - When user says "learn this" or "remember this"
+   - Extract as high-priority pattern
+
+5. **Fix required multiple attempts**
+   - Document what didn't work
+   - Capture the successful approach
+
+### Decision Log Format
+
+For each comment analyzed, add to `$ASSETS_DIR/decisions.json`:
+
+```json
+{
+  "id": "comment_123",
+  "category": "critical|recommended|style|invalid|already_correct",
+  "comment_body": "Original comment text",
+  "file_path": "src/file.ts",
+  "line_number": 42,
+  "fix_applied": "Description of fix applied (or null if skipped)",
+  "reasoning": "Why this decision was made",
+  "learnable": true,
+  "learning_category": "typescript",
+  "error_encountered": null
+}
+```
+
+### Error Handling and Learning
+
+When a fix fails:
+
+1. **Log the error:**
+   ```json
+   {
+     "error_type": "File not found|Code mismatch|Parse error|Permission denied",
+     "error_message": "Detailed error message",
+     "attempted_fix": "What was attempted",
+     "context": "Surrounding context that might help"
+   }
+   ```
+
+2. **Create error prevention entry:**
+   - Extract the error pattern
+   - Document what should be checked first
+   - Add to learnings.json with `type: "error-prevention"`
+
+3. **Suggest resolution:**
+   - If the error is recoverable, suggest alternative approach
+   - If not, flag for manual review
+
+### Integration with Continuous Learning
+
+After completing all fixes:
+
+1. **Generate learning summary:**
+   - Count patterns by category
+   - Identify recurring patterns
+   - Calculate severity distribution
+
+2. **Prepare for extraction:**
+   - Save `learnings.json` to session directory
+   - Include all learnable patterns
+   - Add metadata for `/extract-learning` command
+
+3. **Recommend next steps:**
+   - If learnable patterns found: suggest running `/extract-learning`
+   - If errors occurred: suggest reviewing error patterns
+   - If patterns repeat: highlight for config update
+
+### Example Learning Workflow
+
+```
+Comment Analysis
+    ↓
+Fix Applied (Critical: missing null check)
+    ↓
+Pattern Detected: Same issue in 3 files
+    ↓
+Add to learnings.json:
+  - category: "typescript"
+  - type: "error-prevention"
+  - problem: "Missing optional chaining"
+  - frequency: 3
+    ↓
+After Analysis Complete:
+  "3 learnable patterns detected"
+  "Run /extract-learning to save as skills"
+    ↓
+User runs /extract-learning
+    ↓
+Skill saved to ~/.claude/skills/learned/typescript-optional-chaining.md
+    ↓
+Future sessions: Pattern automatically detected
+```
+
+This ensures that every fix contributes to the learning system, making future reviews more efficient and preventing recurring issues.

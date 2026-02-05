@@ -44,6 +44,35 @@ When creating PRs:
 
 ## GitLab Integration
 
-- Use `/gitlab-review <url>` for remote MR reviews
-- Use `/gitlab-fix-comments` to apply MR suggestions
-- Use `/mr-description` to generate MR descriptions
+### Commands
+
+| Command | Usage | Description |
+|---------|-------|-------------|
+| `/gitlab-review` | `/gitlab-review <mr-url>` | Review MR, post draft comments |
+| `/gitlab-fix-comments` | `/gitlab-fix-comments <mr-url>` | Apply MR comment suggestions |
+| `/mr-description` | `/mr-description` | Generate MR description from changes |
+
+### Example Workflow
+
+```bash
+# 1. Review an MR (posts draft comments)
+/gitlab-review https://gitlab.com/group/project/-/merge_requests/123
+
+# 2. After receiving feedback, fix the comments
+/gitlab-fix-comments https://gitlab.com/group/project/-/merge_requests/123
+
+# 3. Learnable patterns are automatically detected
+# Run extract-learning if prompted
+/extract-learning "patterns from MR #123"
+```
+
+### Continuous Learning Integration
+
+Both `/gitlab-review` and `/gitlab-fix-comments` integrate with the continuous learning system:
+
+1. **Pattern Detection**: Critical and recommended fixes are flagged as learnable
+2. **Auto-Extraction**: Patterns appearing 2+ times are prioritized
+3. **Skill Saving**: Run `/extract-learning` to save patterns to `~/.claude/skills/learned/`
+4. **Future Prevention**: Learned patterns are loaded in future sessions via `session-start.js`
+
+This creates a feedback loop where every MR review improves future code quality.
