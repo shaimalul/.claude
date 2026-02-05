@@ -190,20 +190,13 @@ Copy this comment:
 
 [Blocker] This section needs to be filled out
 
-I noticed this section is empty. Since we're adding interactive, loading, and disabled states, we need to define the accessibility behavior:
+I noticed this section is empty. Since we're adding interactive, loading, and disabled states, we need to define the accessibility behavior.
 
-For interactive cards:
-- What ARIA role should we use? (role="button"? article?)
-- Should they be focusable with tabIndex={0}?
-- What keyboard shortcuts activate them?
+For interactive cards, we need to decide on the ARIA role (role="button" or article?), whether they should be focusable with tabIndex={0}, and what keyboard shortcuts activate them.
 
-For disabled:
-- Use aria-disabled="true"
-- Remove from tab order with tabIndex={-1}
+For disabled state, use aria-disabled="true" and remove from tab order with tabIndex={-1}.
 
-For loading:
-- Use aria-busy="true"
-- Consider aria-live="polite" for announcements
+For loading state, use aria-busy="true" and consider aria-live="polite" for announcements.
 
 Could you add specs for these?
 
@@ -225,10 +218,7 @@ Copy this comment:
 
 Quick question - the TD adds a new `padding` prop but we already have `standardBodyPadding`. How do they work together?
 
-A few things to clarify:
-1. What happens if both are set?
-2. Should we deprecate standardBodyPadding?
-3. Maybe padding="none" could replace standardBodyPadding={false}?
+A few things to clarify: What happens if both are set? Should we deprecate standardBodyPadding? Maybe padding="none" could replace standardBodyPadding={false}?
 
 ---
 ### Section: Implementation Details - States
@@ -237,10 +227,7 @@ Copy this comment:
 
 [Required] Define combined state behavior
 
-What happens when multiple states are active? For example:
-- interactive + disabled: I assume disabled wins and we skip hover styles?
-- interactive + loading: Loading probably takes over?
-- loading + disabled: Both apply?
+What happens when multiple states are active? For example, with interactive + disabled I assume disabled wins and we skip hover styles? With interactive + loading, loading probably takes over? And loading + disabled - do both apply?
 
 Could you add a quick table showing the expected behavior?
 
@@ -251,11 +238,7 @@ Copy this comment:
 
 [Suggestion] Add combined state tests
 
-The test list looks good for individual props. Consider also testing:
-- interactive + disabled together
-- interactive with onClick handler
-- loading content replacement
-- aria-disabled and aria-busy attributes
+The test list looks good for individual props. Consider also testing interactive + disabled together, interactive with onClick handler, loading content replacement, and the aria-disabled and aria-busy attributes.
 
 ---
 ### Section: borderLeft prop
@@ -323,12 +306,7 @@ Copy this comment:
 
 [Required] Add ARIA specs for hierarchical mode
 
-I noticed the hierarchical mode changes how selection works, but we don't have ARIA specs for it. Could you add:
-
-- role="tree" for the container
-- role="treeitem" for each option
-- aria-expanded for parent items
-- Arrow key navigation (up/down for siblings, right to expand, left to collapse)
+I noticed the hierarchical mode changes how selection works, but we don't have ARIA specs for it. Could you add role="tree" for the container, role="treeitem" for each option, aria-expanded for parent items, and arrow key navigation (up/down for siblings, right to expand, left to collapse)?
 
 ---
 ### Section: Type Definitions
@@ -350,10 +328,7 @@ Copy this comment:
 
 [Suggestion] Document keyboard shortcuts for hierarchy
 
-This would be helpful to add - how should arrow keys work for navigating the hierarchy? I'd suggest:
-- Up/Down: move between siblings
-- Right: expand parent / enter children
-- Left: collapse / go to parent
+This would be helpful to add - how should arrow keys work for navigating the hierarchy? I'd suggest Up/Down to move between siblings, Right to expand parent or enter children, and Left to collapse or go to parent.
 
 ---
 ```
