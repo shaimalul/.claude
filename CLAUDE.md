@@ -221,6 +221,7 @@ Use specialized agents for principal-engineer level development:
 - `/review` - Review current branch changes with TODO creation
 - `/gitlab-review [url]` - Review GitLab MR and post draft comments
 - `/cleanup` - Detect and remove code debt (duplicates, legacy code, dead code)
+- `/cui-td-review [notion-url]` - Review Common-UI Technical Designs before implementation
 
 ---
 
