@@ -23,11 +23,19 @@ function updateUser(user, name) {
 ## File Organization
 
 MANY SMALL FILES > FEW LARGE FILES:
-- **Files:** Max 150 lines
-- **Functions:** Max 30 lines
-- **Classes:** Max 200 lines
+- Files: Max 150 lines
+- Functions: Max 30 lines
+- Classes: Max 200 lines
 - Extract utilities from large components
 - Organize by feature/domain, not by type
+
+## Markdown Formatting
+
+Use simple, consistent markdown:
+- Use `-` (hyphen) for bullet points, never `•` (bullet character)
+- Never use bold (`**text**`) - use plain text or headers for emphasis
+- Use triple backticks with language identifier for code blocks
+- Use `#` notation for headers, not underlines
 
 ## Error Handling
 
@@ -73,3 +81,5 @@ Before marking work complete:
 - [ ] Direct imports (no barrel/index.ts files)
 - [ ] No duplicate types (use indexed access: `Type["property"]`)
 - [ ] Type inheritance from source types (Pick, Omit, Partial)
+- [ ] Markdown uses `-` for bullets (never `•`)
+- [ ] Markdown has no bold text (`**`)

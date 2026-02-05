@@ -6,21 +6,21 @@ allowed-tools: Bash, Task, TodoWrite, Read, Grep, Glob
 
 # Common-UI Technical Design Review
 
-Review a Technical Design (TD) for the Common-UI design system before implementation. This command acts as a **Principal Frontend Architect** reviewing cross-company design system changes.
+Review a Technical Design (TD) for the Common-UI design system before implementation. This command acts as a Principal Frontend Architect reviewing cross-company design system changes.
 
 ## What This Command Does
 
-1. **Fetches the TD** from Notion using the provided URL
-2. **Understands the context** by examining the Common-UI repo
-3. **Searches for existing usage** across GitLab to detect breaking changes
-4. **Reviews the TD** against quality, accessibility, and design system standards
-5. **Generates a detailed report** with findings and recommendations
+1. Fetches the TD from Notion using the provided URL
+2. Understands the context by examining the Common-UI repo
+3. Searches for existing usage across GitLab to detect breaking changes
+4. Reviews the TD against quality, accessibility, and design system standards
+5. Generates a detailed report with findings and recommendations
 
 ## Prerequisites
 
-1. **Notion Token**: Stored in `~/.claude/.secrets` as `NOTION_TOKEN`
-2. **GitLab Token**: Stored in `~/.claude/.secrets` as `GITLAB_TOKEN`
-3. **Common-UI Repo**: Available at `/Users/shaimalul/Documents/Dev/common-ui`
+1. Notion Token: Stored in `~/.claude/.secrets` as `NOTION_TOKEN`
+2. GitLab Token: Stored in `~/.claude/.secrets` as `GITLAB_TOKEN`
+3. Common-UI Repo: Available at `/Users/shaimalul/Documents/Dev/common-ui`
 
 ## Usage
 
@@ -34,7 +34,7 @@ I'll analyze the TD using the following workflow.
 
 ### Step 1: Fetch and Parse TD
 
-Use the **mcp__notion__notion-fetch** tool to retrieve the TD content:
+Use the mcp__notion__notion-fetch tool to retrieve the TD content:
 
 ```
 Tool: mcp__notion__notion-fetch
@@ -42,13 +42,13 @@ Parameters: { "id": "$ARGUMENTS" }
 ```
 
 The TD should contain these sections:
-- **Component Overview** - What and why
-- **Rationale** - Problem being solved
-- **Design** - Figma links, visual changes
-- **Implementation Details** - Requirements, dependencies, code examples
-- **Testing** - Unit test scenarios
-- **Storybook** - Stories configuration
-- **Accessibility** - A11y requirements
+- Component Overview - What and why
+- Rationale - Problem being solved
+- Design - Figma links, visual changes
+- Implementation Details - Requirements, dependencies, code examples
+- Testing - Unit test scenarios
+- Storybook - Stories configuration
+- Accessibility - A11y requirements
 
 ### Step 2: Understand Common-UI Context
 
@@ -88,24 +88,24 @@ Key patterns to search for:
 
 ### Step 4: Invoke TD Reviewer Agent
 
-Use the **Task tool** to invoke the specialized TD reviewer agent:
+Use the Task tool to invoke the specialized TD reviewer agent:
 
 ```
 subagent_type: cui-td-reviewer
 prompt: |
   Review this Common-UI Technical Design:
 
-  **TD Content:**
+  TD Content:
   [Fetched TD content]
 
-  **Current Component (if exists):**
+  Current Component (if exists):
   [Current implementation]
 
-  **Cross-Company Usage:**
+  Cross-Company Usage:
   - Found in X repositories
   - Usage patterns: [list]
 
-  **Review Focus:**
+  Review Focus:
   1. Check all TD sections against the review checklist
   2. Identify breaking changes
   3. Verify design system alignment
@@ -120,8 +120,8 @@ prompt: |
 
 The output includes TWO parts:
 
-1. **Summary Table** - Quick overview (verdict, issue counts)
-2. **Ready-to-Paste Comments** - Individual comments by TD section, written like a colleague would write them
+1. Summary Table - Quick overview (verdict, issue counts)
+2. Ready-to-Paste Comments - Individual comments by TD section, written like a colleague would write them
 
 #### Part 1: Summary Table
 
@@ -142,7 +142,7 @@ Good additive changes overall, but accessibility section is empty and the paddin
 
 Each comment is written in a natural, human tone and can be pasted directly into Notion.
 
-**Format for each comment:**
+Format for each comment:
 
 ```
 ---
@@ -159,14 +159,14 @@ Copy this comment:
 ---
 ```
 
-**Severity tags (no emojis):**
+Severity tags (no emojis):
 - `[Blocker]` - Must fix before approval
 - `[Breaking]` - Introduces breaking change
 - `[Required]` - Must address
 - `[Suggestion]` - Nice to have improvement
 - `[Question]` - Needs clarification
 
-**Example output:**
+Example output:
 
 ```
 Summary:
