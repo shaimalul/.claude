@@ -1,7 +1,5 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
-  "model": "claude-opus-4-5-20251101",
-
   "permissions": {
     "allow": [
       "mcp__chrome-devtools__*",
@@ -11,15 +9,12 @@
       "Edit(**)",
       "Skill(**)",
       "Bash",
-      "WebSearch"
+      "WebSearch",
+      "mcp__notion__notion-fetch"
     ],
     "defaultMode": "bypassPermissions"
   },
-  "alwaysThinkingEnabled": true,
-  "feedbackSurveyState": {
-    "lastShownTime": 1753951833330
-  },
-
+  "model": "claude-opus-4-5-20251101",
   "hooks": {
     "Stop": [
       {
@@ -44,5 +39,9 @@
         ]
       }
     ]
+  },
+  "alwaysThinkingEnabled": true,
+  "feedbackSurveyState": {
+    "lastShownTime": 1753951833330
   }
 }
