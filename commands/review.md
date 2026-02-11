@@ -52,6 +52,31 @@ Group files by type to determine which agents to spawn:
 
 Use the **Task tool** to spawn multiple agents simultaneously based on changed files.
 
+### Shared Agent Output Format
+
+**IMPORTANT:** When constructing each agent prompt below, always append this full output format section to the prompt text sent to the agent.
+
+```
+OUTPUT FORMAT - Return findings as JSON array:
+[
+  {
+    "prefix": "[Blocker]",
+    "file_path": "src/path/to/file.ts",
+    "code_pattern": "the exact code snippet you're commenting on (5-50 chars)",
+    "comment": "Concise, paste-ready feedback. Jump straight to the issue.",
+    "explanation": "Detailed explanation: why this is a problem, what could go wrong, and how to fix it with a code example. Include impact estimate for improvements."
+  }
+]
+
+RULES:
+- prefix: Use [Blocker], [Nice to have], [Suggestion], [Need to check], or [Question]
+- code_pattern: Copy the EXACT code from the diff (5-50 chars) that you're commenting on
+- comment: Keep concise and natural-sounding, ready to paste into a PR comment
+- explanation: Provide extra context - why it matters, impact, remediation with code example
+- DO NOT describe what the code does - jump straight to the feedback
+- DO NOT post positive/complimentary comments - only actionable feedback
+```
+
 **ALWAYS spawn these agents:**
 
 **Security Review (ALWAYS):**
@@ -76,11 +101,7 @@ prompt: |
   - Authentication/authorization issues
   - Insecure dependencies
 
-  For each issue found, provide:
-  - Exact file and line number
-  - Severity (Critical/High/Medium/Low)
-  - Description of the vulnerability
-  - Remediation steps with code example
+  Include the Shared Agent Output Format in this prompt.
 ```
 
 **Architecture & Code Quality Review (ALWAYS):**
@@ -113,13 +134,7 @@ prompt: |
   - File minimization (can large files be split? can small related files be consolidated?)
   - Better approaches (simpler patterns, more idiomatic solutions, modern alternatives)
 
-  For each issue found, provide:
-  - Exact file and line number
-  - Severity (Critical/High/Medium/Low)
-  - Description of the issue
-  - Recommended fix with code example
-
-  For improvement opportunities, also estimate impact (e.g., "-30 lines", "simpler logic", "removes tech debt")
+  Include the Shared Agent Output Format in this prompt.
 ```
 
 **Spawn these agents IF relevant files exist:**
@@ -155,11 +170,7 @@ prompt: |
   - Testing considerations
   - Missing test coverage for critical paths
 
-  For each issue found, provide:
-  - Exact file and line number
-  - Severity (Critical/High/Medium/Low)
-  - Description with "Do/Don't" example
-  - Impact estimate for improvements (e.g., "-20 lines", "simpler")
+  Include the Shared Agent Output Format in this prompt.
 ```
 
 **UX/Accessibility Review (if frontend files):**
@@ -182,11 +193,7 @@ prompt: |
   - Focus management
   - Loading states and error handling UX
 
-  For each issue found, provide:
-  - Exact file and line number
-  - Severity (Critical/High/Medium/Low)
-  - Description of the issue
-  - Accessible implementation example
+  Include the Shared Agent Output Format in this prompt.
 ```
 
 **Backend Review (if backend .ts files):**
@@ -221,11 +228,7 @@ prompt: |
   - Are there simpler patterns available?
   - Modern alternatives to deprecated approaches?
 
-  For each issue found, provide:
-  - Exact file and line number
-  - Severity (Critical/High/Medium/Low)
-  - Description with code example
-  - Impact estimate for improvements
+  Include the Shared Agent Output Format in this prompt.
 ```
 
 **DevOps Review (if .tf/.yaml/Dockerfile files):**
@@ -257,11 +260,7 @@ prompt: |
   - Simplification opportunities
   - Deprecated patterns or images
 
-  For each issue found, provide:
-  - Exact file and line number
-  - Severity (Critical/High/Medium/Low)
-  - Description with secure example
-  - Impact estimate for improvements
+  Include the Shared Agent Output Format in this prompt.
 ```
 
 **AI/ML Review (if AI-related files):**
@@ -294,28 +293,29 @@ prompt: |
   - Simplification opportunities
   - Deprecated API usage
 
-  For each issue found, provide:
-  - Exact file and line number
-  - Severity (Critical/High/Medium/Low)
-  - Description with recommended pattern
-  - Impact estimate for improvements
+  Include the Shared Agent Output Format in this prompt.
 ```
 
 ### Step 4: Aggregate Results
 
-Combine findings from all agents into a prioritized report:
+Combine findings from all agents and group by prefix. Each finding should have:
+- A concise **comment** (paste-ready for PR/MR)
+- A detailed **explanation** (extra context, why it matters, how to fix)
 
-1. **Critical** - Security vulnerabilities, data exposure (BLOCKING - must fix)
-2. **High** - Architecture violations, major bugs (should fix before merge)
-3. **Medium** - Code quality issues, patterns (recommended to fix)
-4. **Low** - Style, minor improvements (nice to have)
-5. **Improvement Opportunities** - Non-blocking suggestions (cleanup, simplification, better approaches)
+Group findings by prefix in this order:
+1. `[Blocker]` - MUST fix before merge
+2. `[Nice to have]` - SHOULD fix
+3. `[Suggestion]` - Consider fixing
+4. `[Need to check]` - Verify/explain
+5. `[Question]` - Needs clarification
 
 ### Step 5: Create Todo List
 
-Use TodoWrite to track issues found for resolution.
+Use TodoWrite to track [Blocker] and [Nice to have] issues for resolution.
 
 ## Output Format
+
+The output must use the same prefix format as `/gitlab-review`, but with extra explanation for each finding. Comments should be ready to copy-paste into a PR/MR.
 
 ```markdown
 ## Code Review Report
@@ -336,42 +336,88 @@ Use TodoWrite to track issues found for resolution.
 - security-principal
 - architect-principal
 - frontend-principal
-- ux-principal
 - [list only agents that were spawned]
 
 ### Summary
-- Critical issues: X
-- High priority: X
-- Medium priority: X
-- Low priority: X
+- [Blocker]: X
+- [Nice to have]: X
+- [Suggestion]: X
+- [Need to check]: X
+- [Question]: X
 
-### Critical Issues (BLOCKING)
-| File | Line | Issue | Agent | Fix |
-|------|------|-------|-------|-----|
-| ... | ... | ... | security-principal | ... |
+---
 
-### High Priority Issues
-| File | Line | Issue | Agent |
-|------|------|-------|-------|
-| ... | ... | ... | ... |
+### [Blocker] - Must fix before merge
 
-### Medium Priority Issues
-| File | Line | Issue | Agent |
-|------|------|-------|-------|
-| ... | ... | ... | ... |
+---
 
-### Low Priority Issues
+**File**: `src/services/userService.ts`
+**Code**: `return user as UserDTO`
+
+**Comment (ready to paste):**
+> [Blocker] Type guard instead of casting here - `as` bypasses type safety.
+
+**Explanation:** Using `as` type casting skips runtime type checking. If the shape of `user` doesn't match `UserDTO`, bugs will surface at runtime instead of compile time. Create a type guard function like `isUserDTO(user)` that validates the object structure.
+
+```typescript
+// Instead of:
+return user as UserDTO;
+
+// Use a type guard:
+function isUserDTO(obj: unknown): obj is UserDTO {
+  return typeof obj === 'object' && obj !== null && 'id' in obj;
+}
+if (!isUserDTO(user)) throw new Error('Invalid user shape');
+return user;
+```
+
+---
+
+**File**: `src/api/handler.ts`
+**Code**: `req.query.userId`
+
+**Comment (ready to paste):**
+> [Blocker] Validate and sanitize `userId` before using in DB query - SQL injection risk.
+
+**Explanation:** User input from query params flows directly into a database query without validation. Use Zod schema validation at the handler boundary.
+
+---
+
+### [Nice to have] - Should fix
+
+---
+
+**File**: `src/components/UserList.tsx`
+**Code**: `const [users, setUsers] = useState([])`
+
+**Comment (ready to paste):**
+> [Nice to have] Add explicit type: `useState<User[]>([])` - avoids `never[]` inference.
+
+**Explanation:** Without explicit generic type, TypeScript infers `never[]` which causes issues when trying to push/map items later. Providing `User[]` ensures correct inference throughout the component.
+
+---
+
+### [Suggestion] - Consider fixing
+
+---
+
+**File**: `src/utils/format.ts`
+**Code**: `_.map(items, fn)`
+
+**Comment (ready to paste):**
+> [Suggestion] Use native `items.map(fn)` instead of lodash - same result, no dependency.
+
+**Explanation:** Modern JavaScript `Array.map()` handles this case. Removes unnecessary lodash import and reduces bundle size.
+
+---
+
+### [Need to check] - Verify/explain
+
 [List if any]
 
-### Improvement Opportunities (Non-Blocking)
-Suggestions for cleaner code, reduced duplication, and better approaches:
+### [Question] - Needs clarification
 
-| File | Current State | Suggestion | Impact |
-|------|---------------|------------|--------|
-| service.ts:45-60 | Duplicate validation logic | Extract to `validators/shared.ts` | -30 lines |
-| utils.ts:12 | Legacy alias `oldFunctionName` | Remove (no usages found) | Cleanup |
-| component.tsx | Class component | Convert to functional with hooks | Modern pattern |
-| api.ts:100 | Backward-compat endpoint `/v1/old` | Remove (deprecated 6+ months) | Cleanup |
+[List if any]
 
 ### Key Recommendations
 1. [Most important action item]
