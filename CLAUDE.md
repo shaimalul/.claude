@@ -218,8 +218,7 @@ Use specialized agents for principal-engineer level development:
 - `/plan-task [description]` - Plan a task with the mastermind
 - `/build-feature` - Execute the planned feature
 - `/quality-gate` - Run comprehensive quality checks (includes predictive analysis)
-- `/review` - Review current branch changes with TODO creation
-- `/gitlab-review [url]` - Review GitLab MR and post draft comments
+- `/review` - Review local branch changes or GitLab MR (`/review` or `/review <mr-url> [context]`)
 - `/cleanup` - Detect and remove code debt (duplicates, legacy code, dead code)
 - `/cui-td-review [notion-url]` - Review Common-UI Technical Designs before implementation
 

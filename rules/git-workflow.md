@@ -50,7 +50,8 @@ When creating PRs:
 
 | Command | Usage | Description |
 |---------|-------|-------------|
-| `/gitlab-review` | `/gitlab-review <mr-url>` | Review MR, post draft comments |
+| `/review` | `/review [context]` | Review local branch changes |
+| `/review` | `/review <mr-url> [context]` | Review GitLab MR, post draft comments |
 | `/gitlab-fix-comments` | `/gitlab-fix-comments <mr-url>` | Apply MR comment suggestions |
 | `/mr-description` | `/mr-description` | Generate MR description from changes |
 
@@ -58,7 +59,7 @@ When creating PRs:
 
 ```bash
 # 1. Review an MR (posts draft comments)
-/gitlab-review https://gitlab.com/group/project/-/merge_requests/123
+/review https://gitlab.com/group/project/-/merge_requests/123
 
 # 2. After receiving feedback, fix the comments
 /gitlab-fix-comments https://gitlab.com/group/project/-/merge_requests/123
@@ -70,7 +71,7 @@ When creating PRs:
 
 ### Continuous Learning Integration
 
-Both `/gitlab-review` and `/gitlab-fix-comments` integrate with the continuous learning system:
+Both `/review` and `/gitlab-fix-comments` integrate with the continuous learning system:
 
 1. **Pattern Detection**: Critical and recommended fixes are flagged as learnable
 2. **Auto-Extraction**: Patterns appearing 2+ times are prioritized

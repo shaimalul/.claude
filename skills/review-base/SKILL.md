@@ -5,7 +5,7 @@ description: Shared code review framework with finding prefixes, agent routing, 
 
 # Code Review Framework
 
-Shared patterns for code review commands (`/review`, `/gitlab-review`).
+Shared patterns for the `/review` command (local branch and GitLab MR modes).
 
 ## Finding Prefixes
 
@@ -232,22 +232,42 @@ args: [category]: [concise rule description] --save-skill
 
 If no patterns were learned, report: "No learnable patterns identified in this review (no Blocker, Nice-to-have, or Suggestion findings)."
 
-## JSON Findings Format (for gitlab-review)
+## JSON Findings Format (for GitLab mode)
 
-When posting findings to GitLab, use this JSON structure:
+When posting findings to GitLab, use one of these JSON structures:
 
+**Inline finding** (on a specific changed line):
 ```json
 {
   "type": "inline",
   "prefix": "[Suggestion]",
   "file_path": "src/foo.ts",
-  "code_pattern": "exact code snippet 5-50 chars",
+  "code_pattern": "exact code snippet 5-50 chars from a + line",
   "comment": "Your feedback here."
 }
 ```
 
-**code_pattern rules:**
-- Copy the EXACT code snippet from the diff (5-50 chars)
+**General finding** (file-level, cross-cutting, or issue in unchanged code):
+```json
+{
+  "type": "general",
+  "prefix": "[Blocker]",
+  "file_path": "src/foo.ts",
+  "comment": "Your feedback here."
+}
+```
+
+**type rules:**
+- `"inline"`: Comment on a specific added/modified line. Requires `code_pattern` from a `+` line in the diff.
+- `"general"`: File-level concern, cross-cutting pattern, or issue in unchanged surrounding code. Does NOT require `code_pattern`.
+
+**code_pattern rules (inline only):**
+- Copy the EXACT code snippet from a `+` (added/modified) line in the diff (5-50 chars)
+- Do NOT use code from context (unchanged) lines
 - Use a unique snippet that appears only once in the file
 - If code appears multiple times, include more context to make it unique
 - Line numbers will be calculated automatically from code_pattern
+
+**Cross-cutting rules:**
+- If the same issue appears in multiple files, produce ONE general finding listing all file paths in the comment
+- Do NOT produce separate findings for each occurrence of the same pattern
