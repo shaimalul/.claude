@@ -379,6 +379,54 @@ switch (state.status) {
 - Multi-step workflows (step1 → step2 → step3 → complete)
 - Authentication states (anonymous → authenticating → authenticated/failed)
 
+## Non-Null Assertion Guard Pattern
+
+Replace non-null assertions (`!`) with early validation guards:
+
+```typescript
+// Bad - non-null assertion crashes at runtime if value is undefined
+function processRequest(request: { user?: User; jwt?: string }) {
+  const userId = request.user!.id;
+  const token = request.jwt!;
+}
+
+// Good - early validation with descriptive errors
+function processRequest(request: { user?: User; jwt?: string }) {
+  if (!request.user) {
+    throw new Error('User information is required');
+  }
+  if (!request.jwt) {
+    throw new Error('JWT token is required');
+  }
+  const { user, jwt } = request;
+  // Now user and jwt are narrowed to non-optional types
+  const userId = user.id;
+}
+```
+
+When to apply: Any function that uses `!` on optional properties, especially in handlers/services where the optional field should always be present at runtime.
+
+## Error Type Narrowing in Catch Blocks
+
+Always narrow the `unknown` error type in catch blocks:
+
+```typescript
+// Bad - error is unknown, passing directly to typed functions
+catch (error) {
+  logger.error('Failed', error);
+  await logToSlack({ error });  // Type mismatch
+}
+
+// Good - narrow first, then use
+catch (error) {
+  const errorObj = error instanceof Error ? error : new Error(String(error));
+  logger.error('Failed', errorObj);
+  await logToSlack({ error: errorObj });
+}
+```
+
+When to apply: Every catch block that uses the error value beyond just logging.
+
 ## Never Use
 - Type casting with `as Type`
 - `any` type
@@ -387,3 +435,4 @@ switch (state.status) {
 - Optional fields for discrimination
 - `get` prefix for non-data-fetching functions
 - Multiple booleans for mutually exclusive states
+- Non-null assertions (`!`) - use type guards or early validation instead
