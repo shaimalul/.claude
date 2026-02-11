@@ -63,18 +63,50 @@ OUTPUT FORMAT - Return findings as JSON array:
     "prefix": "[Blocker]",
     "file_path": "src/path/to/file.ts",
     "code_pattern": "the exact code snippet you're commenting on (5-50 chars)",
-    "comment": "Concise, paste-ready feedback. Jump straight to the issue.",
-    "explanation": "Detailed explanation: why this is a problem, what could go wrong, and how to fix it with a code example. Include impact estimate for improvements."
+    "comment": "Full paste-ready review comment. Written as if YOU are the reviewer. Include the issue, why it matters, and a concrete fix with code example if applicable. This should be a complete, self-contained comment ready to copy-paste into a PR."
   }
 ]
 
 RULES:
 - prefix: Use [Blocker], [Nice to have], [Suggestion], [Need to check], or [Question]
 - code_pattern: Copy the EXACT code from the diff (5-50 chars) that you're commenting on
-- comment: Keep concise and natural-sounding, ready to paste into a PR comment
-- explanation: Provide extra context - why it matters, impact, remediation with code example
-- DO NOT describe what the code does - jump straight to the feedback
+- comment: Write the COMPLETE reviewer comment - no separate explanation needed. Include:
+  - What's wrong (jump straight to it, don't describe what the code does)
+  - Why it matters (impact, risk)
+  - How to fix it (concrete code suggestion using markdown code blocks when applicable)
+- Write as if YOU are the reviewer - natural, human, professional tone
 - DO NOT post positive/complimentary comments - only actionable feedback
+```
+
+### Comment Style Guidelines
+
+- Sound natural and human, not robotic
+- Keep it concise and professional
+- Relaxed grammar is fine if it improves flow
+- Skip the emojis
+- DO NOT repeat what the code is doing - jump straight to the feedback
+- DO NOT post positive/complimentary comments - only actionable feedback
+- Include code suggestions inline using markdown code blocks when applicable
+
+**Bad:** `[Suggestion] Duration conversion logic - could extract to a constant`
+**Good:** `[Suggestion] Could extract to a named constant for clarity.`
+
+**Bad (split):**
+```
+Comment: Type guard instead of casting
+Explanation: Using `as` bypasses type safety...
+```
+
+**Good (single paste-ready comment):**
+```
+[Blocker] Use a type guard instead of `as` casting here. This bypasses type safety -
+if `user` doesn't match `UserDTO`, bugs will only surface at runtime.
+
+\`\`\`typescript
+function isUserDTO(obj: unknown): obj is UserDTO {
+  return typeof obj === 'object' && obj !== null && 'id' in obj;
+}
+\`\`\`
 ```
 
 **ALWAYS spawn these agents:**
@@ -298,9 +330,7 @@ prompt: |
 
 ### Step 4: Aggregate Results
 
-Combine findings from all agents and group by prefix. Each finding should have:
-- A concise **comment** (paste-ready for PR/MR)
-- A detailed **explanation** (extra context, why it matters, how to fix)
+Combine findings from all agents and group by prefix. Each finding should have a single complete **comment** - the full paste-ready reviewer comment (no separate explanation needed).
 
 Group findings by prefix in this order:
 1. `[Blocker]` - MUST fix before merge
@@ -315,7 +345,7 @@ Use TodoWrite to track [Blocker] and [Nice to have] issues for resolution.
 
 ## Output Format
 
-The output must use the same prefix format as `/gitlab-review`, but with extra explanation for each finding. Comments should be ready to copy-paste into a PR/MR.
+The output must use the same prefix format and comment style as `/gitlab-review`. Each finding has a single paste-ready blockquote - the complete reviewer comment, written as if the reviewer themselves wrote it. No separate "Explanation" section.
 
 ```markdown
 ## Code Review Report
@@ -351,35 +381,23 @@ The output must use the same prefix format as `/gitlab-review`, but with extra e
 
 ---
 
-**File**: `src/services/userService.ts`
-**Code**: `return user as UserDTO`
+**`src/services/userService.ts`** | `return user as UserDTO`
 
-**Comment (ready to paste):**
-> [Blocker] Type guard instead of casting here - `as` bypasses type safety.
-
-**Explanation:** Using `as` type casting skips runtime type checking. If the shape of `user` doesn't match `UserDTO`, bugs will surface at runtime instead of compile time. Create a type guard function like `isUserDTO(user)` that validates the object structure.
-
-```typescript
-// Instead of:
-return user as UserDTO;
-
-// Use a type guard:
-function isUserDTO(obj: unknown): obj is UserDTO {
-  return typeof obj === 'object' && obj !== null && 'id' in obj;
-}
-if (!isUserDTO(user)) throw new Error('Invalid user shape');
-return user;
-```
+> [Blocker] Use a type guard instead of `as` casting here. This bypasses type safety - if `user` doesn't match `UserDTO`, bugs will only surface at runtime.
+>
+> ```typescript
+> function isUserDTO(obj: unknown): obj is UserDTO {
+>   return typeof obj === 'object' && obj !== null && 'id' in obj;
+> }
+> if (!isUserDTO(user)) throw new Error('Invalid user shape');
+> return user;
+> ```
 
 ---
 
-**File**: `src/api/handler.ts`
-**Code**: `req.query.userId`
+**`src/api/handler.ts`** | `req.query.userId`
 
-**Comment (ready to paste):**
-> [Blocker] Validate and sanitize `userId` before using in DB query - SQL injection risk.
-
-**Explanation:** User input from query params flows directly into a database query without validation. Use Zod schema validation at the handler boundary.
+> [Blocker] Validate and sanitize `userId` before passing to the DB query - this is a SQL injection risk. Use a Zod schema at the handler boundary to parse query params.
 
 ---
 
@@ -387,13 +405,9 @@ return user;
 
 ---
 
-**File**: `src/components/UserList.tsx`
-**Code**: `const [users, setUsers] = useState([])`
+**`src/components/UserList.tsx`** | `const [users, setUsers] = useState([])`
 
-**Comment (ready to paste):**
-> [Nice to have] Add explicit type: `useState<User[]>([])` - avoids `never[]` inference.
-
-**Explanation:** Without explicit generic type, TypeScript infers `never[]` which causes issues when trying to push/map items later. Providing `User[]` ensures correct inference throughout the component.
+> [Nice to have] Add an explicit type here: `useState<User[]>([])`. Without it TypeScript infers `never[]`, which causes issues when mapping or pushing items later.
 
 ---
 
@@ -401,13 +415,9 @@ return user;
 
 ---
 
-**File**: `src/utils/format.ts`
-**Code**: `_.map(items, fn)`
+**`src/utils/format.ts`** | `_.map(items, fn)`
 
-**Comment (ready to paste):**
-> [Suggestion] Use native `items.map(fn)` instead of lodash - same result, no dependency.
-
-**Explanation:** Modern JavaScript `Array.map()` handles this case. Removes unnecessary lodash import and reduces bundle size.
+> [Suggestion] Native `items.map(fn)` does the same thing here. Removes the lodash dependency and reduces bundle size.
 
 ---
 
