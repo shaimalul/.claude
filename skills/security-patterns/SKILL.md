@@ -151,6 +151,27 @@ if (!result.success) {
 }
 ```
 
+## Error Message Information Leakage
+
+Never expose internal error details to clients:
+
+```typescript
+// Bad - leaks internal details to client
+catch (error) {
+  res.status(500).json({ message: error.message });
+  // Could expose: "ECONNREFUSED 127.0.0.1:5432" or "relation users does not exist"
+}
+
+// Good - generic message for client, detailed log for operators
+catch (error) {
+  const errorObj = error instanceof Error ? error : new Error(String(error));
+  logger.error('Internal error', errorObj);
+  res.status(500).json({ message: 'An error occurred processing your request' });
+}
+```
+
+This applies to SSE events, WebSocket messages, and any client-facing response.
+
 ## Checklist
 
 - [ ] Parameterized queries (no SQL injection)
@@ -163,3 +184,4 @@ if (!result.success) {
 - [ ] Input validation on all endpoints
 - [ ] Dependencies regularly updated
 - [ ] Security logging enabled
+- [ ] Error messages to clients are generic (no internal details)

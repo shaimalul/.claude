@@ -296,6 +296,73 @@ export const useDataItemService = () => {
 };
 ```
 
+## Feature Parity Checklist (Dual Code Paths)
+
+When adding a new code path alongside a legacy path (e.g., feature flag branches):
+
+```
+// Before shipping a new path, verify feature parity:
+// [ ] Text/data streaming
+// [ ] Chart extraction
+// [ ] Tool execution tracking
+// [ ] Tool prefix application
+// [ ] Error handling (type guards, generic client messages)
+// [ ] Logging (correct levels, no sensitive data)
+// [ ] Correlation ID propagation
+```
+
+When to apply: Any time you add a new implementation behind a feature flag while keeping the legacy path.
+
+## Error Message Security
+
+Never leak internal error details to clients:
+
+```typescript
+// Bad - leaks internal details
+const errorEvent = {
+  message: error.message,  // Could expose "ECONNREFUSED to db:5432"
+};
+
+// Good - generic message for client, detailed log for ops
+logger.error('Request failed', errorObj);  // Internal
+const errorEvent = {
+  message: ERROR_MESSAGES.PROCESSING_ERROR,  // Generic for client
+};
+```
+
+## Avoid Duplicate Expensive Calls
+
+Cache results of expensive operations within the same request flow:
+
+```typescript
+// Bad - calls the same API twice
+const config = await getConfig(token, customerId);
+const messages = buildMessages(config.prompt);
+const tools = (await getConfig(token, customerId)).tools;  // DUPLICATE
+
+// Good - reuse result
+const config = await getConfig(token, customerId);
+const messages = buildMessages(config.prompt);
+const tools = config.tools;  // REUSE
+```
+
+## Immutable Request/Response Objects
+
+Never mutate shared request or response objects. Use adapters:
+
+```typescript
+// Bad - mutates shared Express response object
+request.streamWriter.write = interceptor.intercept.bind(interceptor);
+
+// Good - Proxy-based adapter
+const interceptedWriter = new Proxy(request.streamWriter, {
+  get(target, prop) {
+    if (prop === 'write') return interceptor.intercept.bind(interceptor);
+    return Reflect.get(target, prop);
+  },
+});
+```
+
 ## Checklist
 
 - [ ] Controller only handles HTTP, delegates to service
@@ -308,3 +375,7 @@ export const useDataItemService = () => {
 - [ ] Config/secrets loaded from environment variables
 - [ ] HTTP status codes use `http-status-codes` package
 - [ ] Interfaces defined for testability (DI pattern)
+- [ ] No non-null assertions (!) - use early validation guards
+- [ ] Error messages to clients are generic (no internal details)
+- [ ] Dual code paths have feature parity
+- [ ] No duplicate expensive API/DB calls in same flow
