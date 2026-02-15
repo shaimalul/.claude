@@ -268,52 +268,103 @@ Use the **Task tool** to spawn multiple agents simultaneously based on changed f
 OUTPUT FORMAT - Return findings as JSON array:
 [
   {
+    "type": "inline",
     "prefix": "[Blocker]",
     "file_path": "src/path/to/file.ts",
-    "code_pattern": "the exact code snippet you're commenting on (5-50 chars)",
-    "comment": "Full paste-ready review comment. Written as if YOU are the reviewer. Include the issue, why it matters, and a concrete fix with code example if applicable. This should be a complete, self-contained comment ready to copy-paste into a PR."
+    "code_pattern": "exact code snippet from a + line (5-50 chars)",
+    "comment": "Single-paragraph concise feedback. No multi-section format."
+  },
+  {
+    "type": "general",
+    "prefix": "[Nice to have]",
+    "file_path": "src/path/to/file.ts",
+    "comment": "File-level or architectural concern."
   }
 ]
 
 RULES:
+- type: "inline" for comments on specific changed lines, "general" for file-level/cross-cutting/architectural concerns
 - prefix: Use [Blocker], [Nice to have], [Suggestion], [Need to check], or [Question]
-- code_pattern: Copy the EXACT code from the diff (5-50 chars) that you're commenting on
-- comment: Write the COMPLETE reviewer comment - no separate explanation needed. Include:
-  - What's wrong (jump straight to it, don't describe what the code does)
-  - Why it matters (impact, risk)
-  - How to fix it (concrete code suggestion using markdown code blocks when applicable)
+- code_pattern (inline only): Copy EXACT code from a PLUS LINE (+ prefix) in the diff (5-50 chars)
+  - CRITICAL: ONLY from + lines (added/modified). NEVER from context/unchanged lines
+  - Use a unique snippet that appears only once in the file
+  - Omit code_pattern entirely for "general" type findings
+- comment: Write concise, single-paragraph feedback:
+  - Jump straight to the feedback (NO intro restating what code does)
+  - Brief reason only if not obvious (don't belabor the point)
+  - Code examples ONLY for complex fixes (high-level guidance, not full solution)
+  - NO code examples for simple changes (moving files, renaming, extracting constants)
+  - NO multi-section format (no separate "Why:", "Suggestion:", "Question:" subsections)
 - Write as if YOU are the reviewer - natural, human, professional tone
 - DO NOT post positive/complimentary comments - only actionable feedback
+
+TEST COVERAGE RULE:
+- Flag critical paths (business logic, error handling, edge cases) that lack test coverage
+- Not demanding 100% coverage - focus on core logic that could break silently
+- Use a "general" type finding to note missing tests
+
+UNCHANGED CODE RULE:
+- NEVER create inline findings for unchanged/context lines in the diff
+- For architectural concerns about existing code, create ONE "general" type finding summarizing all observations
+- Example: "Several services duplicate validation logic (UserService, OrderService). Consider extracting to shared validators/"
 ```
 
 ### Comment Style Guidelines
 
 - Sound natural and human, not robotic
-- Keep it concise and professional
+- Keep it concise - single paragraph strongly preferred
 - Relaxed grammar is fine if it improves flow
 - Skip the emojis
 - DO NOT repeat what the code is doing - jump straight to the feedback
 - DO NOT post positive/complimentary comments - only actionable feedback
-- Include code suggestions inline using markdown code blocks when applicable
+- Code examples ONLY for complex fixes (high-level guidance, not complete solution)
+- NO multi-section format (no separate "Why:", "Suggestion:", "Question:" subsections)
 
-**Bad:** `[Suggestion] Duration conversion logic - could extract to a constant`
-**Good:** `[Suggestion] Could extract to a named constant for clarity.`
-
-**Bad (split):**
+**GOOD (concise, single paragraph):**
 ```
-Comment: Type guard instead of casting
-Explanation: Using `as` bypasses type safety...
+[Nice to have] Consider moving ServiceModule enum to a shared types file, those enums used across multiple domains.
 ```
 
-**Good (single paste-ready comment):**
+**GOOD (question, straight to the point):**
 ```
-[Blocker] Use a type guard instead of `as` casting here. This bypasses type safety -
-if `user` doesn't match `UserDTO`, bugs will only surface at runtime.
+[Question] Is losing the original error type intentional here? Consider attaching the original as cause.
+```
+
+**GOOD (complex fix deserving code example - high level):**
+```
+[Blocker] Use a type guard instead of `as` casting here - bypasses type safety and bugs surface only at runtime.
 
 \`\`\`typescript
 function isUserDTO(obj: unknown): obj is UserDTO {
   return typeof obj === 'object' && obj !== null && 'id' in obj;
 }
+\`\`\`
+```
+
+**BAD (multi-section verbose format - DO NOT USE):**
+```
+[Nice to have] Consider moving ServiceModule enum to a shared types file.
+
+Why: Enums used across multiple domains should be centralized.
+
+Suggestion:
+\`\`\`typescript
+// types/services.ts
+export enum ServiceModule { USERS, ORDERS }
+\`\`\`
+```
+
+**BAD (redundant intro restating what code does):**
+```
+[Suggestion] This code converts duration from milliseconds to seconds. Consider extracting to a constant.
+```
+
+**BAD (unnecessary code example for simple change):**
+```
+[Suggestion] Consider renaming getUserData to fetchUser.
+
+\`\`\`typescript
+const fetchUser = async (id: string) => { ... }
 \`\`\`
 ```
 
@@ -387,6 +438,11 @@ prompt: |
   - File minimization (can large files be split? can small related files be consolidated?)
   - Better approaches (simpler patterns, more idiomatic solutions, modern alternatives)
 
+  **Test Coverage:**
+  - Check if new/modified business logic has corresponding test files
+  - Flag critical paths (error handling, branching logic, edge cases) that lack tests
+  - Not demanding 100% - just core logic that could break silently
+
   [Append Shared Agent Output Format]
 ```
 
@@ -402,6 +458,7 @@ prompt: |
   - Race conditions
   - Null/undefined risks
   - Off-by-one errors
+  - Edge cases that should have test coverage but likely don't
 
   [Append Shared Agent Output Format]
 ```
@@ -479,6 +536,10 @@ prompt: |
   - Are there simpler patterns available?
   - Modern alternatives to deprecated approaches?
 
+  **Testing:**
+  - Missing test coverage for service/controller logic
+  - Critical paths (error handling, business logic) without tests
+
   [Append Shared Agent Output Format]
 ```
 
@@ -539,7 +600,16 @@ prompt: |
 
 ### Phase 4: Aggregate Results
 
-Combine findings from all agents and group by prefix. Each finding should have a single complete **comment** - the full paste-ready reviewer comment (no separate explanation needed).
+Collect findings from all spawned agents (from their Task outputs) and aggregate into a unified findings list.
+
+**CRITICAL: Use Bash (echo/jq) for all findings.json file operations** - do NOT use Write/Read tools for intermediate data files (this avoids permission prompts). Only use Write for the final report in Phase 6.
+
+```bash
+# Merge all agent JSON outputs into findings.json using jq
+# Example: jq -s 'add' <(echo "$SECURITY_FINDINGS") <(echo "$ARCHITECT_FINDINGS") > "$FINDINGS_FILE"
+```
+
+**Merge same-region findings** before proceeding. If multiple agents produced findings for the same `file_path` with overlapping `code_pattern`, combine them into a single finding with merged comments (separated by `\n\n---\n\n`).
 
 Group findings by prefix in this order:
 1. `[Blocker]` - MUST fix before merge
@@ -547,8 +617,6 @@ Group findings by prefix in this order:
 3. `[Suggestion]` - Consider fixing
 4. `[Need to check]` - Verify/explain
 5. `[Question]` - Needs clarification
-
-Deduplicate findings by file_path + code_pattern.
 
 ---
 
@@ -571,29 +639,48 @@ diffs_dir = os.path.join(assets_dir, 'diffs')
 findings_file = os.path.join(assets_dir, 'findings.json')
 
 def find_line_in_diff(diff_content, pattern):
-    """Find the new file line number for a code pattern in a diff."""
+    """Find the new file line number for a code pattern in a diff.
+    Uses exact match first, then falls back to fuzzy matching."""
     if not pattern or not pattern.strip():
         return None
 
-    current_new_line = 0
     pattern_clean = pattern.strip()
+    pattern_normalized = ' '.join(pattern_clean.split())
 
-    for line in diff_content.split('\n'):
-        if line.startswith('@@'):
-            match = re.search(r'\+(\d+)', line)
-            if match:
-                current_new_line = int(match.group(1))
-            continue
+    def scan_diff(match_fn):
+        current_new_line = 0
+        for line in diff_content.split('\n'):
+            if line.startswith('@@'):
+                m = re.search(r'\+(\d+)', line)
+                if m:
+                    current_new_line = int(m.group(1))
+                continue
+            if line.startswith('-') and not line.startswith('---'):
+                continue
+            line_content = line[1:] if line.startswith('+') or line.startswith(' ') else line
+            if match_fn(line_content):
+                return current_new_line
+            if line.startswith('+') or line.startswith(' ') or (not line.startswith('-') and not line.startswith('\\') and not line.startswith('@@')):
+                current_new_line += 1
+        return None
 
-        if line.startswith('-') and not line.startswith('---'):
-            continue
+    # Pass 1: Exact match
+    result = scan_diff(lambda lc: pattern_clean in lc)
+    if result is not None:
+        return result
 
-        line_content = line[1:] if line.startswith('+') or line.startswith(' ') else line
-        if pattern_clean in line_content:
-            return current_new_line
+    # Pass 2: Whitespace-normalized match
+    result = scan_diff(lambda lc: pattern_normalized in ' '.join(lc.split()))
+    if result is not None:
+        return result
 
-        if line.startswith('+') or line.startswith(' ') or (not line.startswith('-') and not line.startswith('\\') and not line.startswith('@@')):
-            current_new_line += 1
+    # Pass 3: Stripped syntax match for longer patterns
+    if len(pattern_clean) >= 15:
+        pattern_core = pattern_clean.strip('(){};,').strip()
+        if pattern_core:
+            result = scan_diff(lambda lc: pattern_core in lc)
+            if result is not None:
+                return result
 
     return None
 
@@ -633,12 +720,101 @@ with open(findings_file, 'w') as f:
 print(f"Processed {len(updated_findings)} findings")
 PYTHON_EOF
 
-# Deduplicate findings
-ORIGINAL_COUNT=$(jq 'length' "$FINDINGS_FILE")
-UNIQUE_FINDINGS=$(jq 'unique_by(.file_path + ":" + (.code_pattern // ""))' "$FINDINGS_FILE")
-echo "$UNIQUE_FINDINGS" > "$FINDINGS_FILE"
+# Validate findings: ensure inline code_patterns are on + lines only, then deduplicate by line
+python3 << 'VALIDATE_DEDUP_EOF'
+import json
+import os
+import re
+from collections import defaultdict
+
+assets_dir = os.environ.get('ASSETS_DIR', '')
+diffs_dir = os.path.join(assets_dir, 'diffs')
+findings_file = os.path.join(assets_dir, 'findings.json')
+
+try:
+    with open(findings_file, 'r') as f:
+        findings = json.load(f)
+except (FileNotFoundError, json.JSONDecodeError):
+    findings = []
+
+original_count = len(findings)
+
+def code_is_on_plus_line(diff_content, pattern):
+    """Check if code pattern appears on a + line (added/modified), not context."""
+    if not pattern or not pattern.strip():
+        return False
+    pattern_clean = pattern.strip()
+    for line in diff_content.split('\n'):
+        if line.startswith('+') and not line.startswith('+++'):
+            if pattern_clean in line[1:]:
+                return True
+    return False
+
+# Step 1: Validate inline findings - convert unchanged-code findings to general
+converted_count = 0
+for finding in findings:
+    file_path = finding.get('file_path', '')
+    code_pattern = finding.get('code_pattern', '')
+    finding_type = finding.get('type', 'inline')
+
+    if finding_type == 'general' or not code_pattern:
+        continue
+
+    if not file_path:
+        continue
+
+    safe_filename = file_path.replace('/', '_') + '.diff'
+    diff_file = os.path.join(diffs_dir, safe_filename)
+
+    if not os.path.exists(diff_file):
+        continue
+
+    with open(diff_file, 'r') as f:
+        diff_content = f.read()
+
+    if not code_is_on_plus_line(diff_content, code_pattern):
+        finding['type'] = 'general'
+        finding['code_pattern'] = ''
+        finding['line_number'] = None
+        converted_count += 1
+
+if converted_count > 0:
+    print(f"Converted {converted_count} findings to general (code on unchanged lines)")
+
+# Step 2: Deduplicate by file_path + line_number (merge same-line findings)
+grouped = defaultdict(list)
+for finding in findings:
+    file_path = finding.get('file_path', '')
+    line_number = finding.get('line_number')
+
+    if not line_number or line_number == 'null' or line_number is None:
+        key = f"general:{id(finding)}"
+    else:
+        key = f"{file_path}:{line_number}"
+
+    grouped[key].append(finding)
+
+deduplicated = []
+for key, group in grouped.items():
+    if len(group) == 1:
+        deduplicated.append(group[0])
+    else:
+        base = group[0].copy()
+        unique_comments = []
+        for f in group:
+            c = f.get('comment', '')
+            if c and c not in unique_comments:
+                unique_comments.append(c)
+        base['comment'] = '\n\n---\n\n'.join(unique_comments)
+        deduplicated.append(base)
+
+with open(findings_file, 'w') as f:
+    json.dump(deduplicated, f, indent=2)
+
+print(f"Deduplicated: {original_count} -> {len(deduplicated)} findings")
+VALIDATE_DEDUP_EOF
+
 FINDINGS_COUNT=$(jq 'length' "$FINDINGS_FILE")
-echo "Deduplicated: $ORIGINAL_COUNT -> $FINDINGS_COUNT findings"
 
 # Post each finding as a draft note
 post_draft_note() {
@@ -689,23 +865,13 @@ if [ "$FINDINGS_COUNT" -gt 0 ]; then
 
     # Build note content
     if [ "$line_number" = "null" ] || [ -z "$line_number" ]; then
-      if [ -n "$file_path" ] && [ "$file_path" != "null" ]; then
-        if [ -n "$code_pattern" ] && [ "$code_pattern" != "null" ]; then
-          note="$prefix **File**: \`$file_path\`
-**Code**: \`$code_pattern\`
-
-$comment"
-        else
-          note="$prefix **File**: \`$file_path\`
-
-$comment"
-        fi
-        file_path=""
-        line_number=""
-      else
-        note="$prefix $comment"
-      fi
+      # Line calculation failed - post as clean general comment
+      # Do NOT include file/code references (confusing in general section)
+      note="$prefix $comment"
+      file_path=""
+      line_number=""
     else
+      # Successful inline comment
       note="$prefix $comment"
     fi
 

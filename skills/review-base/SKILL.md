@@ -22,15 +22,21 @@ Use these standardized prefixes for all review findings:
 ## Comment Style Guidelines
 
 - Sound natural and human, not robotic
-- Keep it concise and professional
+- Keep it concise - single paragraph strongly preferred
 - Relaxed grammar is fine if it improves flow
 - Skip the emojis
 - DO NOT repeat what the code is doing - jump straight to the feedback
 - DO NOT post positive/complimentary comments - only actionable feedback
 - DO NOT add AI attribution or signatures
+- Code examples ONLY for complex fixes (high-level guidance, not complete solution)
+- NO multi-section format (no separate "Why:", "Suggestion:", "Question:" subsections)
 
-**Bad example:** `[Suggestion] Duration conversion logic - could extract to a constant`
-**Good example:** `[Suggestion] Could extract to a named constant for clarity.`
+**Good:** `[Nice to have] Consider moving ServiceModule enum to a shared types file, those enums used across multiple domains.`
+**Good:** `[Question] Is losing the original error type intentional here? Consider attaching the original as cause.`
+
+**Bad (multi-section):** Separate "Why:", "Suggestion:", code block subsections
+**Bad (redundant intro):** Restating what the code does before giving feedback
+**Bad (unnecessary code):** Full code solution for simple suggestions (renaming, moving files)
 
 ## Agent Routing Table
 
@@ -259,14 +265,20 @@ When posting findings to GitLab, use one of these JSON structures:
 
 **type rules:**
 - `"inline"`: Comment on a specific added/modified line. Requires `code_pattern` from a `+` line in the diff.
-- `"general"`: File-level concern, cross-cutting pattern, or issue in unchanged surrounding code. Does NOT require `code_pattern`.
+- `"general"`: File-level concern, cross-cutting pattern, or architectural observation about existing code. Does NOT require `code_pattern`.
 
 **code_pattern rules (inline only):**
 - Copy the EXACT code snippet from a `+` (added/modified) line in the diff (5-50 chars)
-- Do NOT use code from context (unchanged) lines
+- CRITICAL: ONLY copy code from + lines (added/modified). NEVER from context/unchanged lines
 - Use a unique snippet that appears only once in the file
 - If code appears multiple times, include more context to make it unique
 - Line numbers will be calculated automatically from code_pattern
+
+**Architectural concerns about existing/unchanged code:**
+- For observations about existing code patterns, create ONE "general" type finding
+- Summarize all architectural observations in a single general comment
+- Do NOT create separate inline findings for unchanged code
+- Example: "Several services duplicate validation logic (UserService, OrderService). Consider extracting to shared validators/"
 
 **Cross-cutting rules:**
 - If the same issue appears in multiple files, produce ONE general finding listing all file paths in the comment
