@@ -102,9 +102,12 @@
       }
     ]
   },
+  "enabledPlugins": {
+    "babysitter@a5c.ai": true
+  },
   "alwaysThinkingEnabled": true,
+  "skipDangerousModePermissionPrompt": true,
   "feedbackSurveyState": {
     "lastShownTime": 1753951833330
-  },
-  "skipDangerousModePermissionPrompt": true
+  }
 }
