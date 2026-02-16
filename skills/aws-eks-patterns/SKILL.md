@@ -1,6 +1,6 @@
 ---
 name: aws-eks-patterns
-description: AWS EKS cluster patterns including cluster setup, node groups, IRSA, networking, add-ons, and autoscaling
+description: AWS EKS cluster patterns including cluster setup, node groups, IRSA, networking, add-ons, and autoscaling. Use when setting up or configuring AWS EKS clusters, node groups, IRSA, networking, or cluster autoscaling.
 ---
 
 # AWS EKS Patterns

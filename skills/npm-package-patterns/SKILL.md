@@ -1,6 +1,6 @@
 ---
 name: npm-package-patterns
-description: NPM package export patterns including subpath exports, named exports, and JSDoc documentation
+description: NPM package export patterns including subpath exports, named exports, and JSDoc documentation. Use when configuring NPM package exports, subpath exports, or documenting packages with JSDoc.
 globs: "**/package.json,**/index.ts"
 ---
 

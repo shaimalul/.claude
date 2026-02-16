@@ -1,6 +1,6 @@
 ---
 name: backend-patterns
-description: Node.js/Express and NestJS backend patterns including three-layer architecture, service patterns, and repository patterns
+description: Node.js/Express and NestJS backend patterns including three-layer architecture, service patterns, and repository patterns. Use when writing or reviewing Node.js backend code including controllers, services, repositories, or API endpoints.
 ---
 
 # Backend Patterns Skill

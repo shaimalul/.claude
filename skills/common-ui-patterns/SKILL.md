@@ -1,6 +1,6 @@
 ---
 name: common-ui-patterns
-description: Zencity Common UI design system guidelines including ZCD components, colors, and component conventions
+description: Zencity Common UI design system guidelines including ZCD components, colors, and component conventions. Use when using Zencity Common UI (ZCD) components, applying design system colors, or following component conventions.
 globs: "**/*.tsx,**/*.scss"
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: cicd-patterns
-description: CI/CD pipeline patterns for GitHub Actions and GitLab CI including testing, building, and deployment stages
+description: CI/CD pipeline patterns for GitHub Actions and GitLab CI including testing, building, and deployment stages. Use when writing CI/CD pipelines for GitHub Actions or GitLab CI, including test, build, and deployment stages.
 ---
 
 # CI/CD Patterns Skill

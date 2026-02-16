@@ -1,6 +1,6 @@
 ---
 name: storybook-story
-description: Storybook story conventions with StorybookPage wrapper, interaction tests, and argTypes documentation
+description: Storybook story conventions with StorybookPage wrapper, interaction tests, and argTypes documentation. Use when writing Storybook stories, adding interaction tests, or documenting component argTypes.
 globs: "**/*.stories.tsx"
 ---
 

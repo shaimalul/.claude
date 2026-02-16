@@ -1,6 +1,6 @@
 ---
 name: typescript-types
-description: TypeScript naming conventions, discriminated unions, and type patterns
+description: TypeScript naming conventions, discriminated unions, and type patterns. Use when defining types, interfaces, enums, or reviewing TypeScript type usage for correctness and conventions.
 globs: "**/*.ts,**/*.tsx"
 ---
 

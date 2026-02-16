@@ -1,6 +1,6 @@
 ---
 name: testing-patterns
-description: Testing conventions with behavior-driven tests, analytics tracking, and proper mocking
+description: Testing conventions with behavior-driven tests, analytics tracking, and proper mocking. Use when writing or reviewing test files, setting up mocks, or implementing behavior-driven test patterns.
 globs: "**/*.test.ts,**/*.test.tsx,**/*.spec.ts,**/*.spec.tsx"
 ---
 

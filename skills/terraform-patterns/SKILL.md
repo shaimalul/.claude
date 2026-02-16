@@ -1,6 +1,6 @@
 ---
 name: terraform-patterns
-description: Terraform modules for AWS, GCP, and Azure infrastructure including networking, compute, and managed services
+description: Terraform modules for AWS, GCP, and Azure infrastructure including networking, compute, and managed services. Use when writing Terraform modules for cloud infrastructure, networking, compute resources, or managed services.
 ---
 
 # Terraform Patterns Skill

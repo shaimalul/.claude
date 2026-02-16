@@ -1,6 +1,6 @@
 ---
 name: no-comments
-description: Guidelines for writing self-documenting code without excessive comments
+description: Guidelines for writing self-documenting code without excessive comments. Use when reviewing code for unnecessary comments, or writing self-documenting code with clear naming and structure.
 globs: "**/*.ts,**/*.tsx,**/*.js,**/*.jsx"
 ---
 

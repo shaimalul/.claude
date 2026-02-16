@@ -1,6 +1,6 @@
 ---
 name: react-component
-description: React component patterns, hooks, state management, and Context usage for clean architecture
+description: React component patterns, hooks, state management, and Context usage for clean architecture. Use when writing or reviewing React components, custom hooks, or state management code in .tsx files.
 globs: "**/*.tsx"
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: cleanup
-description: Code debt detection and cleanup patterns for duplicates, legacy code, and dead code
+description: Code debt detection and cleanup patterns for duplicates, legacy code, and dead code. Use when detecting or removing duplicate types, dead code, deprecated exports, or multiple approaches to the same functionality.
 globs: "**/*.ts,**/*.tsx,**/*.js,**/*.jsx"
 ---
 

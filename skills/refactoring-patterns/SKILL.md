@@ -1,6 +1,6 @@
 ---
 name: refactoring-patterns
-description: Frontend refactoring patterns for extracting services, hooks, and utilities from React components. Use when reviewing code or fixing code smells.
+description: Frontend refactoring patterns for extracting services, hooks, and utilities from React components. Use when refactoring React components, extracting hooks or services, or identifying and fixing code smells in frontend code.
 globs: "**/*.tsx,**/*.ts"
 ---
 

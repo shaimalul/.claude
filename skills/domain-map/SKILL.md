@@ -1,6 +1,6 @@
 ---
 name: domain-map
-description: Domain mapping patterns for generating Memory Bank and Overview documentation to reduce cognitive debt
+description: Domain mapping patterns for generating Memory Bank and Overview documentation to reduce cognitive debt. Use when generating MEMORY_BANK.md or OVERVIEW.md files for a code domain, or analyzing codebase architecture for documentation.
 ---
 
 # Domain Map Skill

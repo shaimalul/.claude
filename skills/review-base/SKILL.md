@@ -1,6 +1,6 @@
 ---
 name: review-base
-description: Shared code review framework with finding prefixes, agent routing, severity tiers, and learning feedback loop
+description: Shared code review framework with finding prefixes, agent routing, severity tiers, and learning feedback loop. Use when performing code reviews, routing review findings to specialist agents, or formatting review comments.
 ---
 
 # Code Review Framework

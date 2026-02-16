@@ -1,6 +1,6 @@
 ---
 name: accessibility-patterns
-description: WCAG 2.1 AA accessibility patterns including semantic HTML, ARIA, keyboard navigation, and focus management
+description: WCAG 2.1 AA accessibility patterns including semantic HTML, ARIA, keyboard navigation, and focus management. Use when implementing accessible UI components, adding ARIA attributes, keyboard navigation, or reviewing for WCAG 2.1 AA compliance.
 globs: "**/*.tsx,**/*.jsx"
 ---
 

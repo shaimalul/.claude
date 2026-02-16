@@ -1,6 +1,6 @@
 ---
 name: prompt-engineering
-description: Prompt engineering patterns for OpenAI including system prompts, few-shot learning, chain-of-thought, and output formatting
+description: Prompt engineering patterns for OpenAI including system prompts, few-shot learning, chain-of-thought, and output formatting. Use when designing prompts for LLMs, implementing few-shot learning, chain-of-thought reasoning, or structured output formatting.
 ---
 
 # Prompt Engineering Skill

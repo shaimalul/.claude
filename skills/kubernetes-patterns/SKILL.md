@@ -1,6 +1,6 @@
 ---
 name: kubernetes-patterns
-description: Kubernetes manifests and Helm charts for deploying Node.js applications
+description: Kubernetes manifests and Helm charts for deploying Node.js applications. Use when writing Kubernetes manifests, Helm charts, or configuring deployments for Node.js applications.
 ---
 
 # Kubernetes Patterns Skill

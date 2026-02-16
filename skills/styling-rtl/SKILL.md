@@ -1,6 +1,6 @@
 ---
 name: styling-rtl
-description: CSS/SCSS conventions with RTL support, logical properties, and design tokens
+description: CSS/SCSS conventions with RTL support, logical properties, and design tokens. Use when writing CSS/SCSS styles, implementing RTL support with logical properties, or applying design tokens.
 globs: "**/*.css,**/*.scss"
 ---
 

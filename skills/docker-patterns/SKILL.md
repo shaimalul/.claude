@@ -1,6 +1,6 @@
 ---
 name: docker-patterns
-description: Docker best practices including multi-stage builds, security, optimization, and Compose patterns
+description: Docker best practices including multi-stage builds, security, optimization, and Compose patterns. Use when writing Dockerfiles, docker-compose configurations, or reviewing container setup for security and optimization.
 ---
 
 # Docker Patterns Skill

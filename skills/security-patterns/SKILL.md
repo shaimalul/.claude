@@ -1,6 +1,6 @@
 ---
 name: security-patterns
-description: Application security patterns including OWASP Top 10 prevention, authentication, and secrets management
+description: Application security patterns including OWASP Top 10 prevention, authentication, and secrets management. Use when implementing authentication, input validation, secrets management, or reviewing code for security vulnerabilities.
 ---
 
 # Security Patterns Skill
