@@ -1,6 +1,6 @@
 ---
 name: find-bug
-description: Bug detection patterns for analyzing error logs, stack traces, and code to identify root causes and suggest fixes
+description: Bug detection patterns for analyzing error logs, stack traces, and code to identify root causes and suggest fixes. Use when debugging errors, analyzing stack traces, or investigating runtime failures in TypeScript, JavaScript, or Python code.
 globs: "**/*.ts,**/*.tsx,**/*.js,**/*.jsx,**/*.py"
 ---
 
@@ -275,54 +275,6 @@ if (isUser(apiResponse)) {
 
 ---
 
-## Python Bug Patterns
-
-### AttributeError: NoneType
-
-```python
-# Error: AttributeError: 'NoneType' object has no attribute 'x'
-
-# Before (buggy) - function returns None implicitly
-def find_user(user_id):
-    for user in users:
-        if user.id == user_id:
-            return user
-    # Implicit return None!
-
-user = find_user(123)
-print(user.name)  # Crashes if not found
-
-# After (fixed) - explicit handling
-def find_user(user_id) -> User | None:
-    for user in users:
-        if user.id == user_id:
-            return user
-    return None
-
-user = find_user(123)
-if user is not None:
-    print(user.name)
-```
-
-### ImportError: Circular Import
-
-```python
-# Error: ImportError: cannot import name 'X' from partially initialized module
-
-# Fixes:
-# 1. Import inside function (lazy import)
-def my_function():
-    from module_b import helper  # Import when needed
-    return helper()
-
-# 2. Use TYPE_CHECKING for type-only imports
-from typing import TYPE_CHECKING
-if TYPE_CHECKING:
-    from module_b import SomeClass  # Only for type hints
-```
-
----
-
 ## Database Bug Patterns
 
 ### N+1 Query Problem
@@ -382,4 +334,3 @@ async function transfer(fromId, toId, amount) {
 | Cannot update while rendering | setState in render | Move to useEffect |
 | Deadlock | Transaction ordering | Lock in consistent order |
 | N+1 queries | Missing eager load | Use relations or JOIN |
-| Circular import | Module dependency | Restructure or lazy import |

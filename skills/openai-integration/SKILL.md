@@ -1,6 +1,6 @@
 ---
 name: openai-integration
-description: OpenAI API integration patterns for Chat, Embeddings, and Function Calling with streaming and error handling
+description: OpenAI API integration patterns for Chat, Embeddings, and Function Calling with streaming and error handling. Use when integrating OpenAI APIs, implementing chat completions, streaming responses, function calling, or embedding generation.
 ---
 
 # OpenAI Integration Skill
@@ -185,26 +185,6 @@ class CachedOpenAI {
       .update(JSON.stringify(messages))
       .digest('hex');
   }
-}
-```
-
-## Cost Estimation
-
-```typescript
-import { encoding_for_model } from 'tiktoken';
-
-function countTokens(text: string): number {
-  const encoding = encoding_for_model('gpt-4o');
-  const tokens = encoding.encode(text);
-  encoding.free();
-  return tokens.length;
-}
-
-// GPT-4o pricing (check current rates)
-function estimateCost(inputTokens: number, outputTokens: number): number {
-  const inputCost = (inputTokens / 1000) * 0.005;
-  const outputCost = (outputTokens / 1000) * 0.015;
-  return inputCost + outputCost;
 }
 ```
 
