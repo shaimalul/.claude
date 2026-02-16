@@ -6,8 +6,9 @@ description: |
   (2) "save this as a skill" or "extract what we learned"
   (3) After debugging with non-obvious solutions
   Integrates learnings into existing domain skill files.
-author: Claude Code
-version: 2.0.0
+metadata:
+  author: Claude Code
+  version: 2.0.0
 allowed-tools:
   - Read
   - Write
