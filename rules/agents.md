@@ -39,6 +39,19 @@ Launch 3 agents in parallel:
 First agent 1, then agent 2, then agent 3
 ```
 
+## MCP-First Tool Routing
+
+Before using generic tools, check if an MCP server handles the task:
+
+| Task | Use MCP | Not |
+|------|---------|-----|
+| Library docs lookup | Context7 `query-docs` | WebSearch/WebFetch |
+| Notion pages | Notion MCP | WebFetch |
+| Jira/Confluence | Jira MCP `search`, `getJiraIssue` | WebFetch, `gh` |
+| General web info | WebSearch/WebFetch | (fallback) |
+
+This applies to all agents - when a principal engineer needs docs, route through Context7 first.
+
 ## Multi-Perspective Analysis
 
 For complex problems, the mastermind routes to appropriate specialists:

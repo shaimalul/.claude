@@ -44,6 +44,36 @@ Focus on SOLID principles, testability, clean architecture, and maintainability.
 
 ---
 
+## MCP-First Tool Routing (IMPORTANT)
+
+Prefer MCP servers over built-in tools when the task matches an MCP's capabilities. Route to the right MCP before falling back to generic tools.
+
+| Need | MCP Server | Tools | When to Use |
+|------|-----------|-------|-------------|
+| Up-to-date library docs | Context7 | `resolve-library-id`, `query-docs` | Fetching current API docs, code examples, migration guides for any library/framework |
+| Notion read/write | Notion | `search`, `read-page`, `create-page`, `update-page` | Reading specs, writing docs, managing knowledge base in Notion |
+| Jira issues | Jira (built-in) | `searchJiraIssuesUsingJql`, `getJiraIssue`, `createJiraIssue` | Issue tracking, sprint work, task management |
+| Confluence pages | Jira (built-in) | `getConfluencePage`, `searchConfluenceUsingCql`, `createConfluencePage` | Wiki docs, technical specs, team documentation |
+| Jira + Confluence search | Jira (built-in) | `search` (Rovo) | General search across both Jira and Confluence |
+
+### Routing Rules
+
+1. Need current library/framework documentation? Use Context7 `query-docs` (not WebSearch/WebFetch)
+2. Need to read/write Notion pages? Use Notion MCP (not WebFetch)
+3. Need Jira/Confluence content? Use the Jira MCP tools (not WebFetch or `gh`)
+4. Need general web information? Fall back to WebSearch/WebFetch
+5. Always add "use context7" mentally when working with external libraries
+
+### Context7 Usage Pattern
+
+```
+Step 1: resolve-library-id("react-query")  → get library ID
+Step 2: query-docs(libraryId, "useQuery")   → get current docs
+Step 3: Write code using up-to-date API
+```
+
+---
+
 ## Core Principles
 
 ### Three-Layer Architecture
