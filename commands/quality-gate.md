@@ -52,6 +52,7 @@ prompt: |
   - Three-layer architecture followed
   - Named exports (no default exports)
   - No barrel files (index.ts)
+  - All imports at file top (no dynamic import() or require() inside functions/blocks)
   - http-status-codes package used (no magic numbers)
   - No type casting with `as`
   - No `any` or `unknown` casting

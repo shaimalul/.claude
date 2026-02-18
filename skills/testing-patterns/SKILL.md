@@ -196,6 +196,7 @@ it('displays success message when form is submitted', async () => {
 - Write tests that pass when code is broken
 - Ignore async operations (use waitFor)
 - Write only basic render tests
+- Use dynamic imports or require() inside test bodies - keep all imports at file top
 
 ## Assertions
 ```typescript

@@ -134,6 +134,7 @@ Controller Layer → Service Layer → Repository Layer
 ### Exports and Imports
 - **Always use named exports** - never `export default`
 - **Never use index.ts barrel files** - import directly from source files
+- **All imports at file top** - never use dynamic `import()` or `require()` inside functions, test bodies, or code blocks
 - **Declare constants outside component functions** - centralize in `constants.ts` files
 
 ### Never Use
@@ -142,6 +143,7 @@ Controller Layer → Service Layer → Repository Layer
 - Raw HTTP status numbers - use `http-status-codes` package
 - `console.log` in production - use proper logging service
 - `uuid()` as React list keys - use stable IDs from data
+- Dynamic `import()` or `require()` inside functions/blocks - put all imports at the top of the file
 - Empty catch blocks - always log errors even when returning fallback values
 - `eslint-disable` for floating promises - use `void asyncFn()` instead
 - Backward compatibility wrappers in new code - write clean code directly
