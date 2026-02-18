@@ -308,6 +308,35 @@ Apply these patterns for WCAG 2.1 AA compliance.
 </div>
 ```
 
+## Icon-Only Interactive Elements
+
+Icon-only buttons, tabs, and links must always have an accessible name via `aria-label`.
+
+```tsx
+// Bad - contradictory condition (iconOnly means label is falsy)
+const iconOnly = !label;
+// iconOnly && label is ALWAYS false - aria-label never applied
+{iconOnly && label && <span aria-label={label} />}
+
+// Bad - aria-label derived from the missing label
+<button aria-label={label}>{icon}</button> // label is undefined in icon-only mode
+
+// Good - require explicit aria-label prop for icon-only mode
+interface Props {
+  label?: string;
+  icon?: ReactNode;
+  'aria-label'?: string; // Required when label is omitted
+}
+
+const accessibleName = label || ariaLabel;
+if (!accessibleName) {
+  console.warn('Icon-only element missing accessible name');
+}
+<button aria-label={!label ? ariaLabel : undefined}>{icon}</button>
+```
+
+When to apply: Any component that can render without visible text (icon-only buttons, icon tabs, icon links).
+
 ## Focus Management
 
 ### Visible Focus Styles
