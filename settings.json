@@ -67,6 +67,15 @@
             "timeout": 10
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/shaimalul/.claude/plugins/claude-notifier-plugin/scripts/notify.sh",
+            "timeout": 5
+          }
+        ]
       }
     ],
     "PreToolUse": [
