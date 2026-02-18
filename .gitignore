@@ -28,3 +28,6 @@ stats-cache.json
 sessions/
 
 .a5c/
+
+.credentials.json
+.update.lock
