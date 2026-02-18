@@ -44,6 +44,40 @@ When creating PRs:
    - Follow conventional commits format
    - Use `/commit-all` for grouped commits
 
+## Split & Merge Review Workflow
+
+For large changes spanning multiple domains:
+
+1. Complete all changes on a feature branch
+2. Run `/commit-all` to organize commits
+3. Run `/split-changes` to split into domain branches
+   - Add `--push --mr` to also push and create GitLab MRs
+4. Developers review each domain MR independently
+5. Address review feedback on each domain branch
+6. Run `/merge-branches <branch1> <branch2> ... --mr` to:
+   - Merge all reviewed branches into integration branch
+   - Create final MR to master
+
+### Commands
+
+| Command | Usage | Description |
+|---------|-------|-------------|
+| `/split-changes` | `/split-changes [--dry-run] [--push] [--mr]` | Split current branch into domain branches |
+| `/merge-branches` | `/merge-branches <branches...> [--name <name>] [--push] [--mr]` | Merge branches into integration branch |
+
+### Example Workflow
+
+```bash
+# 1. Organize and commit all changes
+/commit-all
+
+# 2. Split into domain branches and create MRs
+/split-changes --push --mr
+
+# 3. After all domain MRs are reviewed and approved:
+/merge-branches split/feature/user-auth split/feature/api-config split/feature/ui-updates --mr
+```
+
 ## GitLab Integration
 
 ### Commands
