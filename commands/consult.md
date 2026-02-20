@@ -24,6 +24,7 @@ Route requests to the appropriate specialist agent for expert-level guidance.
 | security | security-principal | security-patterns | OWASP, auth, vulnerabilities |
 | architect | architect-principal | architect | System design, ADRs, scalability |
 | ux | ux-principal | accessibility-patterns, interaction-design | WCAG, ARIA, accessibility |
+| product | product-principal | product-management | Product strategy, prioritization, metrics, enterprise PM |
 
 ## Instructions
 
@@ -31,7 +32,7 @@ Route requests to the appropriate specialist agent for expert-level guidance.
 
 Extract domain from first argument. If not recognized, default to `architect`.
 
-Recognized domains: `frontend`, `backend`, `ai`, `devops`, `security`, `architect`, `ux`
+Recognized domains: `frontend`, `backend`, `ai`, `devops`, `security`, `architect`, `ux`, `product`
 
 ### Step 2: Spawn Specialist Agent
 
@@ -68,6 +69,12 @@ prompt: |
   - ADR draft if significant decision
   - NFR analysis (non-functional requirements) if applicable
   - Alternative options with trade-offs table
+
+  **For Product Topics (product domain):**
+  - PRD draft if feature planning is needed
+  - Prioritization analysis with RICE scoring
+  - Success metrics with measurement plan
+  - Enterprise readiness assessment if B2B context
 
   Follow CLAUDE.md standards and your specialized skills.
 ```
@@ -113,6 +120,13 @@ Return the specialist's full response to the user.
 /consult ux Review accessibility patterns in this component
 /consult ux How to implement keyboard navigation for this modal?
 /consult ux Analyze form UX and suggest improvements
+
+# Product strategy
+/consult product Should we build this feature for enterprise customers?
+/consult product How should we prioritize our Q2 roadmap?
+/consult product Write a PRD for user onboarding improvements
+/consult product What metrics should we track for this feature?
+/consult product Evaluate product-market fit for this idea
 
 # Senior-level explanations (replaces /explain-like-senior)
 /consult architect Explain why this pattern was chosen

@@ -21,6 +21,7 @@ You have access to the following principal engineers via the Task tool:
 | **AI** | `ai-principal` | OpenAI, prompt engineering, RAG, AI features |
 | **DevOps** | `devops-principal` | Docker, Kubernetes, Terraform, CI/CD |
 | **Security** | `security-principal` | OWASP, auth, security review, vulnerability assessment |
+| **Product** | `product-principal` | Product strategy, prioritization, metrics, enterprise PM, PRDs |
 
 ## Skill Routing Table
 
@@ -48,6 +49,7 @@ When reviewing code or implementing features, load appropriate skills based on t
 | Accessibility, ARIA, WCAG | `accessibility-patterns` | ux-principal |
 | UI interactions, loading states, toasts | `interaction-design` | ux-principal |
 | Testing, mocking, React Query tests | `testing-patterns` | frontend-principal |
+| Product planning, PRDs, prioritization, metrics | `product-management` | product-principal |
 | Storybook, interaction tests | `storybook-story` | frontend-principal |
 | CSS, SCSS, RTL support | `styling-rtl` | frontend-principal |
 
@@ -64,6 +66,7 @@ When delegating to specialists, ensure they load relevant skills:
 | **security-principal** | `security-patterns` |
 | **architect-principal** | `architect` |
 | **ux-principal** | `accessibility-patterns`, `interaction-design` |
+| **product-principal** | `product-management` |
 
 ## Core Responsibilities
 
@@ -118,9 +121,9 @@ When analyzing a new feature, consider:
                          ▼
 ┌─────────────────────────────────────────────────────────┐
 │               DOMAIN BREAKDOWN                          │
-├──────────┬──────────┬──────────┬──────────┬────────────┤
-│ Frontend │ Backend  │   AI     │ DevOps   │ Security   │
-└──────────┴──────────┴──────────┴──────────┴────────────┘
+├──────────┬──────────┬──────────┬──────────┬────────────┬──────────┤
+│ Frontend │ Backend  │   AI     │ DevOps   │ Security   │ Product  │
+└──────────┴──────────┴──────────┴──────────┴────────────┴──────────┘
 ```
 
 ## Task Delegation Template
@@ -166,6 +169,7 @@ When a user asks to plan a feature:
    - AI: Are there AI-powered features?
    - DevOps: What infrastructure changes?
    - Security: What security considerations?
+   - Product: What is the product strategy? Who is the target user? What are the success metrics?
 
 3. **Create Task List**
    ```
@@ -278,6 +282,7 @@ When presenting plans or delegating:
 - [ ] AI
 - [ ] DevOps
 - [ ] Security
+- [ ] Product
 
 ### Task Breakdown
 
@@ -313,7 +318,8 @@ When uncertain about domain assignment:
 4. **LLM/AI features** → AI Principal
 5. **Infrastructure/Deployment** → DevOps Principal
 6. **Auth/Vulnerabilities** → Security Principal
-7. **Cross-cutting concerns** → Consult multiple specialists
+7. **Product strategy/Prioritization/Metrics** → Product Principal
+8. **Cross-cutting concerns** → Consult multiple specialists
 
 ## Quality Standards
 

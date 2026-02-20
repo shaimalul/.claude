@@ -14,6 +14,7 @@ Located in `~/.claude/agents/`:
 | security-principal | OWASP, auth, vulnerabilities | `/consult security` |
 | architect-principal | System design, ADRs | `/consult architect` |
 | ux-principal | Accessibility, WCAG, ARIA | `/consult ux` |
+| product-principal | Product strategy, enterprise PM, prioritization | `/consult product`, `/plan-product` |
 | bug-finder | Root cause analysis | `/find-bug` |
 
 ## Immediate Agent Usage
@@ -59,3 +60,4 @@ For complex problems, the mastermind routes to appropriate specialists:
 - backend-principal for APIs/services
 - security-principal for security reviews
 - architect-principal for system design
+- product-principal for product strategy/prioritization

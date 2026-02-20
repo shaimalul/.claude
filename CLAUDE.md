@@ -244,6 +244,7 @@ Use specialized agents for principal-engineer level development:
 | `/consult security` | security-principal | OWASP, auth, vulnerabilities |
 | `/consult architect` | architect-principal | System design, ADRs |
 | `/consult ux` | ux-principal | WCAG, ARIA, accessibility |
+| `/consult product` | product-principal | Product strategy, prioritization, enterprise PM |
 
 ### Key Commands
 - `/consult [domain] [topic]` - Consult a principal engineer for expert guidance
@@ -253,6 +254,7 @@ Use specialized agents for principal-engineer level development:
 - `/review` - Review local branch changes or GitLab MR (`/review` or `/review <mr-url> [context]`)
 - `/cleanup` - Detect and remove code debt (duplicates, legacy code, dead code)
 - `/domain-map <path>` - Generate Memory Bank (AI) + Overview (Human) files for a code domain
+- `/plan-product [idea]` - Plan a product feature with the product-principal
 - `/cui-td-review [notion-url]` - Review Common-UI Technical Designs before implementation
 
 ---
@@ -277,3 +279,4 @@ For detailed patterns and code examples, refer to these skills:
 | AI/ML integration | `openai-integration`, `prompt-engineering` |
 | Self-documenting code, avoiding comments | `no-comments` |
 | Code debt cleanup (duplicates, dead code) | `cleanup` |
+| Product management, prioritization, PRDs | `product-management` |
