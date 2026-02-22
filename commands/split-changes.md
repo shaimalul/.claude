@@ -1,7 +1,7 @@
 ---
 description: Split branch changes into domain-specific branches for focused MR review
 argument-hint: "[--dry-run] [--push] [--mr]"
-allowed-tools: Read, Grep, Glob, Bash, TodoWrite
+allowed-tools: Read, Edit, Write, Grep, Glob, Bash, TodoWrite
 model: opus
 ---
 
@@ -210,7 +210,69 @@ git commit -m "<prefix>: <message under 60 chars>"
 - Lowercase prefix (`feat:` not `Feat:`)
 - Use simple `-m` flag
 
-### 4.4 Return to Original Branch
+### 4.4 Verify Branch
+
+Each domain branch MUST pass verification before moving to the next. This ensures every split branch is independently buildable and testable.
+
+**Step 1: Detect project tooling**
+
+Check `package.json` (or `yarn.lock` / `pnpm-lock.yaml`) to determine:
+- Package manager: `npm`, `yarn`, or `pnpm`
+- Available scripts: `build`, `test`, `lint`
+- TypeScript project: presence of `tsconfig.json`
+
+**Step 2: Install dependencies**
+
+```bash
+npm install   # or yarn install / pnpm install
+```
+
+**Step 3: Run verification checks in order**
+
+```bash
+# 1. Build
+npm run build
+
+# 2. TypeScript (if tsconfig.json exists)
+npx tsc --noEmit
+
+# 3. Tests
+npm test
+
+# 4. Lint (if lint script exists)
+npm run lint
+```
+
+**Step 4: Fix-and-retry loop (max 3 attempts)**
+
+If any check fails:
+1. Analyze the error output to identify the root cause
+2. Common issues when splitting branches:
+   - Missing imports (file exists in another domain branch, not this one)
+   - Type errors from missing dependencies
+   - Broken references to deleted/moved files
+   - Test failures due to missing fixtures or mocks
+3. Fix the issue using `Edit` or `Write` tools
+4. Stage the fix and amend the relevant commit:
+   ```bash
+   git add <fixed-files>
+   git commit --amend --no-edit
+   ```
+5. Re-run ALL verification checks from the beginning
+6. Repeat until all checks pass or 3 attempts are exhausted
+
+**Step 5: Handle persistent failures**
+
+If verification still fails after 3 fix attempts, use `AskUserQuestion`:
+- Question: "Branch split/<ORIGINAL_BRANCH>/<domain-slug> failed verification after 3 attempts. How to proceed?"
+- Header: "Verify"
+- Options:
+  1. "Skip" - "Mark branch as unverified and continue to next domain"
+  2. "Abort" - "Stop splitting and return to original branch"
+
+Track verification result (pass/fail/skipped) for the summary report.
+
+### 4.5 Return to Original Branch
 
 After ALL domains are processed:
 
@@ -277,10 +339,10 @@ Files: X changed | +N/-M lines
 
 Created M domain branches from <ORIGINAL_BRANCH>:
 
-| # | Branch | Domain | Files | Commits | MR |
-|---|--------|--------|-------|---------|-----|
-| 1 | split/<orig>/user-auth | User Auth | 5 | 2 | !123 |
-| 2 | split/<orig>/api-config | API Config | 3 | 1 | !124 |
+| # | Branch | Domain | Files | Commits | Verified | MR |
+|---|--------|--------|-------|---------|----------|-----|
+| 1 | split/<orig>/user-auth | User Auth | 5 | 2 | PASS | !123 |
+| 2 | split/<orig>/api-config | API Config | 3 | 1 | PASS | !124 |
 
 Next steps:
 - Review each MR independently
@@ -306,3 +368,4 @@ Or push manually:
 - **Git operation fails:** Show error message, attempt to return to original branch with `git checkout <ORIGINAL_BRANCH>`
 - **Branch already exists:** "Branch split/<name> already exists. Delete it first or use a different name."
 - **No GITLAB_TOKEN (when --mr):** "GITLAB_TOKEN not found in ~/.claude/.secrets. Cannot create MRs."
+- **Verification failed (after 3 attempts):** Show the failing check output, ask user to Skip (continue to next domain) or Abort (return to original branch). Mark branch as "FAIL" in the summary report.
