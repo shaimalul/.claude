@@ -82,5 +82,6 @@ Before marking work complete:
 - [ ] All imports at file top (no dynamic imports or require inside code blocks)
 - [ ] No duplicate types (use indexed access: `Type["property"]`)
 - [ ] Type inheritance from source types (Pick, Omit, Partial)
+- [ ] Test written first for new logic (RGR: RED before GREEN)
 - [ ] Markdown uses `-` for bullets (never `•`)
 - [ ] Markdown has no bold text (`**`)

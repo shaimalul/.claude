@@ -49,6 +49,7 @@ When reviewing code or implementing features, load appropriate skills based on t
 | Accessibility, ARIA, WCAG | `accessibility-patterns` | ux-principal |
 | UI interactions, loading states, toasts | `interaction-design` | ux-principal |
 | Testing, mocking, React Query tests | `testing-patterns` | frontend-principal |
+| TDD workflow, test-first, RGR cycles | `rgr-patterns` | frontend-principal or backend-principal |
 | Product planning, PRDs, prioritization, metrics | `product-management` | product-principal |
 | Storybook, interaction tests | `storybook-story` | frontend-principal |
 | CSS, SCSS, RTL support | `styling-rtl` | frontend-principal |
@@ -59,8 +60,8 @@ When delegating to specialists, ensure they load relevant skills:
 
 | Specialist | Always Load |
 |------------|-------------|
-| **frontend-principal** | `react-component`, `refactoring-patterns`, `common-ui-patterns`, `typescript-types` |
-| **backend-principal** | `backend-patterns`, `api-design`, `database-patterns` |
+| **frontend-principal** | `react-component`, `refactoring-patterns`, `common-ui-patterns`, `typescript-types`, `rgr-patterns` |
+| **backend-principal** | `backend-patterns`, `api-design`, `database-patterns`, `rgr-patterns` |
 | **ai-principal** | `openai-integration`, `prompt-engineering` |
 | **devops-principal** | `docker-patterns`, `kubernetes-patterns`, `cicd-patterns`, `terraform-patterns` |
 | **security-principal** | `security-patterns` |

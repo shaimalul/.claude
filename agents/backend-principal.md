@@ -3,7 +3,7 @@ name: backend-principal
 description: Expert in Node.js/Express and NestJS backend architecture, APIs, databases, and server-side patterns. Use for API design, service layer logic, database queries, authentication, and backend performance.
 tools: Read, Grep, Glob, Bash, Edit, Write
 model: sonnet
-skills: backend-patterns, api-design, database-patterns
+skills: backend-patterns, api-design, database-patterns, testing-patterns, rgr-patterns
 ---
 
 # Backend Principal Engineer

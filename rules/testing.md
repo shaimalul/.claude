@@ -7,15 +7,34 @@ Test Types (ALL required):
 2. **Integration Tests** - API endpoints, database operations
 3. **E2E Tests** - Critical user flows (Playwright)
 
-## Test-Driven Development
+## Test-Driven Development (RGR)
 
-MANDATORY workflow:
-1. Write test first (RED)
-2. Run test - it should FAIL
-3. Write minimal implementation (GREEN)
-4. Run test - it should PASS
-5. Refactor (IMPROVE)
-6. Verify coverage (80%+)
+MANDATORY workflow for new logic, bug fixes, and behavior changes:
+
+1. RED: Write a failing test for the desired behavior
+2. Run test - verify it FAILS (confirms test is meaningful)
+3. GREEN: Write the minimum code to make the test pass
+4. Run ALL tests - verify they PASS
+5. REFACTOR: Improve code structure while keeping tests green
+6. Run ALL tests again - verify they STILL PASS
+7. Verify coverage (80%+)
+
+Load `rgr-patterns` skill for detailed RED/GREEN/REFACTOR patterns.
+
+### When to Use RGR
+
+- New functions, hooks, services, components with logic
+- Bug fixes (reproduce the bug with a failing test first)
+- API endpoint implementation
+- Significant refactors that change behavior
+
+### When to Skip RGR
+
+- Config/env changes only
+- Documentation-only changes
+- Styling-only (CSS/SCSS with no logic)
+- Renaming/moving files with no behavior change
+- Adding types/interfaces with no runtime code
 
 ## Behavior-Driven Tests
 

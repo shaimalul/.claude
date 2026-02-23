@@ -22,6 +22,7 @@ For detailed patterns, invoke skills: `refactoring-patterns`, `react-component`,
 Search the codebase first. Before creating types, utilities, constants:
 - Search `types/`, `utils/`, `constants/` for existing implementations
 - Extend existing types with `Pick`, `Omit`, `Partial` rather than duplicating
+- For new logic or bug fixes: follow RGR (write failing test first, implement minimally, then refactor). Load `rgr-patterns` skill.
 
 ---
 
