@@ -1,6 +1,6 @@
 ---
 description: Split branch changes into domain-specific branches for focused MR review
-argument-hint: "[--dry-run] [--push] [--mr]"
+argument-hint: "[--dry-run] [--push] [--mr] [context...]"
 allowed-tools: Read, Edit, Write, Grep, Glob, Bash, TodoWrite
 model: opus
 ---
@@ -13,6 +13,27 @@ Analyze all changes on the current feature branch, group them by domain/feature,
 - `--dry-run`: Preview the split plan without creating branches
 - `--push`: Push all created branches to remote
 - `--mr`: Create GitLab MRs for each branch (implies --push)
+- Any remaining text after flags is treated as **context** - free-form instructions that guide the split
+
+### Parsing Arguments
+
+Extract flags (`--dry-run`, `--push`, `--mr`) from `$ARGUMENTS`. Everything else is the **user context**.
+
+Examples:
+- `/split-changes --push name the auth branch "login-revamp"` -> flags: `--push`, context: `name the auth branch "login-revamp"`
+- `/split-changes keep API and frontend changes separate, focus on the new payments feature` -> flags: none, context: `keep API and frontend changes separate, focus on the new payments feature`
+- `/split-changes --mr use branches: auth-flow, data-layer, ui-polish` -> flags: `--mr`, context: `use branches: auth-flow, data-layer, ui-polish`
+
+### Using Context
+
+When user context is provided, apply it throughout the process:
+- **Domain grouping** - Use context to influence how files are grouped (e.g., "keep tests separate" overrides the default of co-locating tests)
+- **Branch naming** - If the user specifies branch names or naming hints, use those instead of auto-generated slugs
+- **Commit messages** - Context may hint at how to describe changes
+- **Attention areas** - If the user says "focus on X" or "pay attention to Y", prioritize those concerns in analysis
+- **Split strategy** - Context like "split by layer" or "split by feature" overrides the default heuristics
+
+If context conflicts with the default grouping rules, the user context takes precedence.
 
 ## Phase 1: Validate & Analyze
 
