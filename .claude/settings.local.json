@@ -10,7 +10,9 @@
       "Skill(**)",
       "Bash",
       "WebSearch",
-      "mcp__notion__notion-fetch"
+      "mcp__notion__notion-fetch",
+      "mcp__notion__notion-search",
+      "mcp__notion__notion-move-pages"
     ],
     "defaultMode": "bypassPermissions"
   },

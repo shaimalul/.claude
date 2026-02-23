@@ -32,3 +32,4 @@ sessions/
 .credentials.json
 .update.lock
 backups/
+review-assets/
