@@ -47,6 +47,64 @@ export const ComponentName: React.FC<ComponentProps> = ({ title, onAction }) => 
 };
 ```
 
+### Presentational / Container Split
+
+Separate UI from logic. Presentational components receive data via props; container components manage state and side effects.
+
+```typescript
+function UserForm({ formData, onInputChange, onSubmit }: UserFormProps) {
+  return (
+    <form onSubmit={onSubmit}>
+      <ZCDInput name="name" value={formData.name} onChange={onInputChange} />
+      <ZCDInput name="email" value={formData.email} onChange={onInputChange} />
+      <ZCDButton type="submit" text="Save" />
+    </form>
+  );
+}
+
+function UserFormContainer() {
+  const [formData, setFormData] = useState({ name: '', email: '' });
+
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) =>
+    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    userService.update(formData);
+  };
+
+  return <UserForm formData={formData} onInputChange={handleInputChange} onSubmit={handleSubmit} />;
+}
+```
+
+## Project Structure
+
+One component per file. Each component gets its own folder with co-located tests.
+
+```
+src/
+├── components/           # Shared across screens
+│   └── UserCard/
+│       ├── UserCard.tsx
+│       ├── UserCard.spec.tsx
+│       └── helpers.ts
+├── screens/
+│   └── HomeScreen/
+│       ├── HomeScreen.tsx
+│       └── components/   # Screen-specific only
+├── hooks/                # Shared custom hooks
+├── contexts/             # Context providers
+├── services/             # API clients
+└── common/               # Cross-domain shared code
+    ├── hooks/
+    └── contexts/
+```
+
+- Screen-specific components live in `screens/ScreenName/components/`
+- Shared components live in `src/components/`
+- Feature-specific hooks/contexts stay in their feature directory
+- Promote to `common/` only when used across 3+ features
+
 ## State Management
 
 ### React Query for Server State
@@ -61,9 +119,38 @@ const { data, isLoading } = useQuery({
 });
 ```
 
-### Context for DI Only
+### Context: Provider + Custom Hook
+
+Use Context when the same state is needed in 3+ components. Always split into a Provider and a custom hook with an error guard.
+
 ```typescript
-// Good - dependency injection
+const UserContext = createContext<UserContextValue | undefined>(undefined);
+
+export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const handleUserChange = (newUser: User | null) => setUser(newUser);
+
+  return (
+    <UserContext.Provider value={{ user, onUserChange: handleUserChange }}>
+      {children}
+    </UserContext.Provider>
+  );
+};
+
+export const useUser = () => {
+  const context = useContext(UserContext);
+  if (!context) throw new Error('useUser must be used within UserProvider');
+  return context;
+};
+```
+
+Context guidelines:
+- Don't use Context for state local to 1-2 components (use props)
+- Don't create one monolithic context for the entire app
+- Create separate, focused contexts per domain
+- For dependency injection / testing overrides:
+
+```typescript
 const DependencyContext = createContext<Dependencies | null>(null);
 
 export const DependencyProvider: React.FC<{
@@ -76,7 +163,74 @@ export const DependencyProvider: React.FC<{
 );
 ```
 
+### useState vs useReducer
+
+**useState** for simple, independent values:
+```typescript
+const [count, setCount] = useState(0);
+const [name, setName] = useState('');
+```
+
+**useReducer** for complex state or when next state depends on previous:
+```typescript
+const initialState = { name: '', age: '', email: '' };
+
+const reducer = (state: typeof initialState, action: FormAction) => {
+  switch (action.type) {
+    case 'updateField':
+      return { ...state, [action.field]: action.value };
+    case 'reset':
+      return initialState;
+    default:
+      return state;
+  }
+};
+
+const [state, dispatch] = useReducer(reducer, initialState);
+```
+
+### Storage Service (No Direct localStorage)
+
+Never access `localStorage`/`sessionStorage` directly. Use a typed service:
+
+```typescript
+export const storageService = {
+  get: <T>(key: string): T | null => {
+    try {
+      const item = localStorage.getItem(key);
+      return item ? JSON.parse(item) : null;
+    } catch { return null; }
+  },
+  set: <T>(key: string, value: T): boolean => {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+      return true;
+    } catch (e) {
+      if (e instanceof DOMException && e.name === 'QuotaExceededError') return false;
+      throw e;
+    }
+  },
+  remove: (key: string) => localStorage.removeItem(key),
+};
+```
+
 ## Patterns
+
+### Event Handler Naming
+
+- **Internal handlers**: `handle` prefix -- `handleClick`, `handleSubmit`
+- **Callback props**: `on` prefix -- `onClick`, `onSubmit`
+
+```typescript
+function Parent() {
+  const handleItemSelect = (item: Item) => { setSelected(item); };
+  return <ItemList onItemSelect={handleItemSelect} />;
+}
+
+function ItemList({ onItemSelect }: { onItemSelect: (item: Item) => void }) {
+  return items.map(item => <li key={item.id} onClick={() => onItemSelect(item)} />);
+}
+```
 
 ### Never Pass setState to Children
 ```typescript
@@ -95,12 +249,7 @@ const handleItemSelect = (item: Item) => {
 ### Avoid Prop Explosion (10+ Props)
 ```typescript
 // Bad - 10+ props is a code smell
-<Form
-  name={name} onNameChange={setName}
-  email={email} onEmailChange={setEmail}
-  phone={phone} onPhoneChange={setPhone}
-  /* ...10 more props */
-/>
+<Form name={name} onNameChange={setName} email={email} onEmailChange={setEmail} />
 
 // Good - group into custom hook
 const formState = useContactForm();
@@ -108,8 +257,25 @@ const formState = useContactForm();
 
 // Good - use Context for shared state
 <FormProvider>
-  <Form /> {/* reads from context */}
+  <Form />
 </FormProvider>
+```
+
+### Constants Outside Component
+
+Declare constants outside the component function. Use constant objects instead of inline string literals.
+
+```typescript
+const TRANSLATION_PATH = 'forms.inputFields';
+
+const BUTTON_VARIANT = {
+  PRIMARY: 'primary',
+  SECONDARY: 'secondary',
+} as const;
+
+export function MyButton({ variant }: { variant: string }) {
+  if (variant === BUTTON_VARIANT.PRIMARY) { /* ... */ }
+}
 ```
 
 ### Extract Business Logic to Utils
@@ -134,16 +300,13 @@ className={classNames('card', { selected: isSelected })}
 
 ### Const-Driven Types
 ```typescript
-// Define options once
 export const SORT_OPTIONS = [
   { value: 'date', label: 'Sort by Date' },
   { value: 'name', label: 'Sort by Name' },
 ] as const;
 
-// Derive type
 export type SortKey = (typeof SORT_OPTIONS)[number]['value'];
 
-// Type guard
 export const isSortKey = (value: string): value is SortKey =>
   SORT_OPTIONS.some((opt) => opt.value === value);
 ```
@@ -192,85 +355,38 @@ return <div>Hello</div>;
 
 ### Prefer Early Return
 ```typescript
-// Bad - nested conditions
-function Component({ user }) {
-  if (user) {
-    if (user.isActive) {
-      return <ActiveUser />;
-    }
-  }
-  return null;
-}
-
-// Good - flat structure
-function Component({ user }) {
+function Component({ user }: { user?: User }) {
   if (!user) return null;
   if (!user.isActive) return <InactiveUser />;
-  return <ActiveUser />;
+  return <ActiveUser user={user} />;
 }
 ```
 
 ### Don't Copy Props to State with useEffect
 ```typescript
-// Bad - duplicates source of truth, causes extra renders
+// Bad - duplicates source of truth
 function MyComponent({ propValue }) {
   const [value, setValue] = useState();
-
-  useEffect(() => {
-    setValue(manipulate(propValue));  // Avoid!
-  }, [propValue]);
-
+  useEffect(() => { setValue(manipulate(propValue)); }, [propValue]);
   return <div>{value}</div>;
 }
 
 // Good - derive directly from props
 function MyComponent({ propValue }) {
-  const value = manipulate(propValue);  // Computed on each render
+  const value = manipulate(propValue);
   return <div>{value}</div>;
 }
 ```
 
 ### Extract Complex Conditions to Named Variables
 ```typescript
-// Bad - hard to understand
-if (!selectedSurveyGroup?.id || !cyclesDataBySurveyGroup || !cyclesDataBySurveyGroup[selectedSurveyGroup.id]) {
-  return;
-}
+// Bad
+if (!selectedGroup?.id || !cyclesData || !cyclesData[selectedGroup.id]) { return; }
 
-// Good - self-documenting
-const selectedGroupId = selectedSurveyGroup?.id;
-const hasCyclesData = selectedGroupId && cyclesDataBySurveyGroup?.[selectedGroupId];
-
-if (!hasCyclesData) {
-  return;
-}
-```
-
-### useState vs useReducer
-
-**Use useState** for simple, independent state:
-```typescript
-const [count, setCount] = useState(0);
-const [name, setName] = useState('');
-```
-
-**Use useReducer** for complex state or when next state depends on previous:
-```typescript
-// Good - related state, predictable updates
-const initialState = { name: '', age: '', email: '' };
-
-const reducer = (state, action) => {
-  switch (action.type) {
-    case 'updateField':
-      return { ...state, [action.field]: action.value };
-    case 'reset':
-      return initialState;
-    default:
-      return state;
-  }
-};
-
-const [state, dispatch] = useReducer(reducer, initialState);
+// Good
+const selectedGroupId = selectedGroup?.id;
+const hasCyclesData = selectedGroupId && cyclesData?.[selectedGroupId];
+if (!hasCyclesData) { return; }
 ```
 
 ## Memoization (useMemo/useCallback)
@@ -283,8 +399,8 @@ const [state, dispatch] = useReducer(reducer, initialState);
 ```typescript
 // Bad - premature optimization
 const stats = useMemo(() => ({
-  total: items.length,  // O(1)
-  active: items.filter(x => x.active).length  // O(n) where n=8
+  total: items.length,
+  active: items.filter(x => x.active).length
 }), [items]);
 
 // Good - just compute it
@@ -296,46 +412,37 @@ const stats = {
 // Good - genuinely expensive (measured problem)
 const processed = useMemo(() =>
   largeDataset.map(expensiveTransform).sort(complexComparator),
-  [largeDataset]  // 10,000+ items
+  [largeDataset]
 );
 ```
 
-**Why avoid premature memoization:**
-- Adds cognitive overhead (dependency arrays, stale closure bugs)
-- useMemo itself has overhead (comparison, caching)
-- React re-renders are fast - don't optimize what isn't slow
-- Makes code harder to read and maintain
-
 ## Navigation with Anchors
 
-**Any UI element that triggers navigation MUST be an `<a>` element** for accessibility and standard browser behavior (open in new tab, copy link).
+**Navigation MUST use `<a>` elements** for accessibility (open in new tab, copy link).
 
 ```tsx
-// Good - Link component renders <a> for SPA navigation
+// Good
 import { Link } from 'react-router-dom';
-
 <Link to={`/projects/${projectId}`}>{projectName}</Link>
-
-// Good - with ZCD components
 <ZCDMenuItem as={Link} to="/settings" />
-<ZCDButton LinkComponent={Link} to="/dashboard" />
 
-// Bad - click handler on non-anchor element
-<div onClick={() => navigate('/projects')}>Go to Projects</div>  // Breaks a11y!
-<Button onClick={() => navigate('/dashboard')}>Dashboard</Button>  // Avoid
+// Bad - breaks a11y
+<div onClick={() => navigate('/projects')}>Go</div>
 ```
 
 ## Rules
-- Components under 100 lines
-- One component per file
+- Components under 100 lines, one per file
 - Named exports only (no export default)
-- No direct localStorage access (use storageService)
+- No direct localStorage (use storageService)
 - No fetch() in components (use React Query)
 - No business logic in TSX
 - Use ZCD components from @zencity/common-ui
 - Constants declared outside component function
+- String literals in constants, not inline
+- `handle` prefix for internal handlers, `on` prefix for callback props
 - Return null (not `</>`) when rendering nothing
-- Use stable keys for list items (never uuid())
-- Navigation must use anchor elements (`<Link>`, not `onClick`)
-- Don't copy props to state with useEffect - derive directly
-- Don't use useMemo/useCallback unless you've measured a performance problem
+- Stable keys for list items (never uuid())
+- Navigation via anchor elements (`<Link>`, not `onClick`)
+- Don't copy props to state with useEffect
+- Don't use useMemo/useCallback unless measured
+- Context for state shared across 3+ components; props for 1-2
