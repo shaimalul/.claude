@@ -246,20 +246,27 @@ Invoke the `/review` skill:
 Skill: review
 ```
 
-### Step 3: Fix ALL findings
+### Step 3: Resolve ALL findings
 
-Fix EVERY finding from the review report regardless of severity (blockers, suggestions, nice-to-haves, questions).
+You own this review. Resolve EVERY finding - no deferring, no skipping.
 
-After applying fixes, annotate the review report inline with the status of each finding:
+Handle each category:
+
+- **Blocker** - Fix immediately, no exceptions
+- **Suggestion** - Fix it
+- **Nice to have** - Fix it
+- **Need to check** - Investigate (read code, run tests, trace behavior). Either fix the issue or confirm it's fine with evidence
+- **Question** - Research the answer (read code, check docs, trace logic). Respond with the answer, then fix if the answer reveals an issue
+
+After resolving all findings, annotate every finding in the review report with its status:
 
 ```
-- [FIXED] {finding description} - {what was done}
-- [NOT FIXED] {finding description} - {reason why}
+- [FIXED] {finding} - {what was done}
+- [VERIFIED] {finding} - {investigation result and why it's fine}
+- [ANSWERED] {finding} - {the answer, and fix applied if needed}
 ```
 
-Mark every single finding. The expectation is ALL are fixed, but the report must show the status either way.
-
-Then:
+Every single finding must have a tag. Then:
 1. Re-run the `/review` skill to confirm zero remaining findings
 2. Repeat until the review report is clean
 
