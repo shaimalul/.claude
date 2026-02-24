@@ -185,12 +185,40 @@ prompt: |
   - Shared types/architecture tasks -> architect-principal + backend-principal
   - Test infrastructure tasks -> backend-principal
 
-  Report completion summary: tests added, RGR cycles completed, files modified.
+  **Cross-Repo Observations:**
+  During implementation, if you notice patterns that need fixing across the whole repo
+  (e.g., inconsistent file naming, type duplication, convention violations, stale patterns),
+  do NOT fix them as part of this task. Instead, collect them and include in your completion
+  summary under "Cross-repo observations" with a short description of each.
+
+  Report completion summary: tests added, RGR cycles completed, files modified, cross-repo observations (if any).
 ```
 
 ---
 
 ## Phase 5: Self-Review & Fix
+
+### Step 0: Log cross-repo observations to Notion
+
+If the mastermind reported any cross-repo observations in its completion summary:
+
+1. Fetch the Notion TD page and read the "Follow up" section
+2. For each observation, check if it's already mentioned in the follow-up list
+3. If not already listed, append it using:
+
+```
+ToolSearch: select:mcp__notion__notion-update-page
+```
+
+```
+mcp__notion__notion-update-page with:
+  page_id: 302fd3ae77cd81e5b76bc65b00ced627
+  command: append_after
+  after_block_id: 311fd3ae77cd8099825bc45ebc004a24
+  content: "- {observation description}"
+```
+
+If no cross-repo observations were reported, skip this step.
 
 ### Step 1: Self-review (before formal review)
 
