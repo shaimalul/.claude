@@ -248,13 +248,20 @@ Skill: review
 
 ### Step 3: Fix ALL findings
 
-Fix EVERY finding from the review report regardless of severity. After applying fixes:
+Fix EVERY finding from the review report regardless of severity (blockers, suggestions, nice-to-haves, questions).
 
-1. Re-read the review report and verify each finding was addressed
-2. Check off each finding mentally - no skipping, no deferring
-3. If a finding was intentionally not fixed, document the reason
-4. Re-run the `/review` skill to confirm zero remaining findings
-5. Repeat until the review report is clean
+After applying fixes, annotate the review report inline with the status of each finding:
+
+```
+- [FIXED] {finding description} - {what was done}
+- [NOT FIXED] {finding description} - {reason why}
+```
+
+Mark every single finding. The expectation is ALL are fixed, but the report must show the status either way.
+
+Then:
+1. Re-run the `/review` skill to confirm zero remaining findings
+2. Repeat until the review report is clean
 
 ---
 
