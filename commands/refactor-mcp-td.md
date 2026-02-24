@@ -58,24 +58,25 @@ Display the selected task details and use `AskUserQuestion`:
 
 Options: "Yes, start implementation" / "Skip to next task" / "Choose different task"
 
-### Step 5: Find matching Jira ticket
+### Step 5: Create Jira ticket
 
 ```
-ToolSearch: select:mcp__claude_ai_Jira__searchJiraIssuesUsingJql
+ToolSearch: select:mcp__claude_ai_Jira__createJiraIssue
 ```
 
-Search the Jira epic for the matching child ticket:
+Create a new Jira ticket under the MCP V2 & Refactoring epic:
 
 ```
-mcp__claude_ai_Jira__searchJiraIssuesUsingJql with:
+mcp__claude_ai_Jira__createJiraIssue with:
   cloudId: zencity.atlassian.net
-  jql: "Epic Link" = PLT-3421 OR parent = PLT-3421 ORDER BY key ASC
-  fields: ["summary", "status", "issuetype"]
+  projectKey: PLT
+  issueType: Task
+  summary: {task-id} - {task-name from TD}
+  description: {task description from Notion TD}
+  epicKey: PLT-3421
 ```
 
-Match the selected Notion TD task to a Jira ticket by comparing task names/descriptions. Store the Jira ticket key (e.g., `PLT-3468`) for branch naming in Phase 3.
-
-If no matching Jira ticket is found, ask the user which ticket to use.
+Store the created Jira ticket key (e.g., `PLT-3468`) for branch naming in Phase 3.
 
 ### Step 6: Update Notion status to "In Progress"
 
@@ -219,7 +220,13 @@ Skill: review
 
 ### Step 3: Fix ALL findings
 
-Fix EVERY finding regardless of severity. Re-verify after fixes.
+Fix EVERY finding from the review report regardless of severity. After applying fixes:
+
+1. Re-read the review report and verify each finding was addressed
+2. Check off each finding mentally - no skipping, no deferring
+3. If a finding was intentionally not fixed, document the reason
+4. Re-run the `/review` skill to confirm zero remaining findings
+5. Repeat until the review report is clean
 
 ---
 
