@@ -293,8 +293,9 @@ git push -u origin {branch-name}
 
 Use `feat:` for issues (A-N) and `refactor:` for R tasks.
 
-```bash
-gh pr create --title "{type}: {task-name}" --body "$(cat <<'EOF'
+First, output the MR description as a standalone copy-paste block for the user:
+
+```markdown
 ## What
 - {2-4 bullet points of actual changes made}
 
@@ -303,18 +304,22 @@ gh pr create --title "{type}: {task-name}" --body "$(cat <<'EOF'
 Jira: [{jira-ticket-key}](https://zencity.atlassian.net/browse/{jira-ticket-key}) | [TD](https://www.notion.so/zencity/MCP-Server-Refactoring-TD-302fd3ae77cd81e5b76bc65b00ced627)
 
 ## Regression testing
-Verify in staging:
 - [ ] {specific behavior proving the change works correctly}
 - [ ] {specific existing behavior to check for regressions}
 - [ ] {edge case or error scenario to verify}
-EOF
-)"
+```
+
+Then create the PR using `gh`:
+
+```bash
+gh pr create --title "{type}: {task-name}" --body "{the description above}"
 ```
 
 MR description rules:
 - "What": factual list of changes, no fluff
 - "Why": use the essence summary from Phase 2, keep to 1-2 sentences
-- "Regression testing": actionable steps someone can follow in staging/production - not generic items like "tests pass"
+- "Regression testing": actionable verification steps - no "verify in staging" prefix, just what to check
+- Keep it concise and copy-paste ready
 
 ### Step 4: Update Notion status to "Done"
 
