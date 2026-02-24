@@ -12,7 +12,9 @@
       "WebSearch",
       "mcp__notion__notion-fetch",
       "mcp__notion__notion-search",
-      "mcp__notion__notion-move-pages"
+      "mcp__notion__notion-move-pages",
+      "mcp__claude_ai_Jira__getJiraIssue",
+      "mcp__claude_ai_Jira__searchJiraIssuesUsingJql"
     ],
     "defaultMode": "bypassPermissions"
   },

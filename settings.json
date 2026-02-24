@@ -8,7 +8,20 @@
       "Write(**)",
       "Edit(**)",
       "Bash",
-      "WebSearch"
+      "WebSearch",
+      "mcp__notion__notion-fetch",
+      "mcp__notion__notion-search",
+      "mcp__notion__notion-move-pages",
+      "mcp__claude_ai_Jira__getJiraIssue",
+      "mcp__claude_ai_Jira__searchJiraIssuesUsingJql",
+      "mcp__claude_ai_Jira__createJiraIssue",
+      "mcp__claude_ai_Jira__updateJiraIssue",
+      "mcp__claude_ai_Jira__deleteJiraIssue",
+      "mcp__claude_ai_Jira__getJiraIssueComments",
+      "mcp__claude_ai_Jira__addJiraIssueComment",
+      "mcp__claude_ai_Jira__updateJiraIssueComment",
+      "mcp__claude_ai_Jira__deleteJiraIssueComment",
+      "mcp__claude_ai_Jira__getJiraIssueAttachments"
     ],
     "defaultMode": "bypassPermissions"
   },
