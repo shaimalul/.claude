@@ -87,6 +87,6 @@ Fix ALL errors before marking complete.
 | `/consult ux` | ux-principal | WCAG, ARIA, accessibility |
 | `/consult product` | product-principal | Product strategy, enterprise PM |
 
-Key commands: `/plan-task` | `/build-feature` | `/quality-gate` | `/review` | `/cleanup` | `/domain-map` | `/plan-product` | `/cui-td-review`
+Key commands: `/plan-task` | `/build-feature` | `/quality-gate` | `/review` | `/cleanup` | `/domain-map` | `/plan-product`
 
 Use agents proactively — no need to wait for user to ask. Complex tasks → mastermind. Code written → `/review`. Expert needed → `/consult [domain]`.

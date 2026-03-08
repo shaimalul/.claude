@@ -15,7 +15,6 @@ Reference: [conventionalcommits.org](https://www.conventionalcommits.org)
 | Command | Usage |
 |---------|-------|
 | `/review [mr-url]` | Review local changes or GitLab MR, posts draft comments |
-| `/gitlab-fix-comments <mr-url>` | Apply MR comment suggestions |
 | `/mr-description` | Generate MR description |
 | `/commit-all` | Grouped commits by domain |
 | `/split-changes [--push] [--mr] [context...]` | Split branch into domain-focused branches with optional guidance |

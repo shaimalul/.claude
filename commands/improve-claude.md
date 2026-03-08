@@ -155,7 +155,6 @@ Based on category detection, I route rules to specific directories:
 | `ux-principal.md` | Accessibility, WCAG, ARIA | `/consult ux` |
 | `mastermind.md` | Orchestrator, multi-domain | `/plan-task`, `/build-feature` |
 | `bug-finder.md` | Root cause analysis | `/find-bug` |
-| `gitlab-comment-fixer.md` | MR comment processing | `/gitlab-fix-comments` |
 
 ## Phase 4: Determine Section Placement
 

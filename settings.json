@@ -21,7 +21,12 @@
       "mcp__claude_ai_Jira__addJiraIssueComment",
       "mcp__claude_ai_Jira__updateJiraIssueComment",
       "mcp__claude_ai_Jira__deleteJiraIssueComment",
-      "mcp__claude_ai_Jira__getJiraIssueAttachments"
+      "mcp__claude_ai_Jira__getJiraIssueAttachments",
+      "mcp__paper__create_artboard",
+      "mcp__paper__write_html",
+      "mcp__paper__get_basic_info",
+      "mcp__paper__get_screenshot",
+      "mcp__paper__finish_working_on_nodes"
     ],
     "defaultMode": "bypassPermissions"
   },
@@ -90,7 +95,9 @@
             "timeout": 10
           }
         ]
-      },
+      }
+    ],
+    "PermissionRequest": [
       {
         "hooks": [
           {
@@ -102,16 +109,6 @@
       }
     ],
     "PreToolUse": [
-      {
-        "matcher": "AskUserQuestion|ExitPlanMode",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/Users/shaimalul/.claude/plugins/claude-notifier-plugin/scripts/notify.sh",
-            "timeout": 5
-          }
-        ]
-      },
       {
         "matcher": "Edit|Write",
         "hooks": [
@@ -135,7 +132,10 @@
     ]
   },
   "enabledPlugins": {
-    "babysitter@a5c.ai": true
+    "babysitter@a5c.ai": true,
+    "context7@claude-plugins-official": true,
+    "playwright@claude-plugins-official": true,
+    "frontend-design@claude-plugins-official": true
   },
   "alwaysThinkingEnabled": false,
   "skipDangerousModePermissionPrompt": true,

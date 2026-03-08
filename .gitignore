@@ -33,3 +33,5 @@ sessions/
 .update.lock
 backups/
 review-assets/
+mcp-needs-auth-cache.json
+tasks/

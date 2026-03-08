@@ -205,7 +205,6 @@ The custom macOS menu bar app receives notifications via HTTP on port **19847**:
 | **Code Review** |||
 | `/review` | Review current branch changes | security, architect, frontend, backend, ux, devops, ai (based on files) |
 | `/gitlab-review <url>` | Review GitLab MR + post draft comments | Same as /review |
-| `/gitlab-fix-comments <proj> <mr>` | Apply fixes from MR comments | gitlab-comment-fixer |
 | **Feature Development** |||
 | `/plan-task [description]` | Plan feature with mastermind | mastermind |
 | `/build-feature` | Execute planned feature | mastermind → specialists |
@@ -890,7 +889,6 @@ Source of truth for code standards. Key rules:
 ├── commands/                  # 20 slash commands
 │   ├── review.md              # Local code review
 │   ├── gitlab-review.md       # Remote MR review
-│   ├── gitlab-fix-comments.md # Apply MR fixes
 │   ├── plan-task.md           # Feature planning
 │   ├── build-feature.md       # Feature execution
 │   ├── iterate-task.md        # Iterative task execution (Ralph)
@@ -956,9 +954,6 @@ Source of truth for code standards. Key rules:
 │       ├── mr_data.json
 │       └── review-report.md
 │
-└── gitlab-fix-comments/       # MR fix reports
-    └── mr_123_timestamp/
-        └── analysis.json
 ```
 
 ---
