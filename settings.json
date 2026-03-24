@@ -26,9 +26,36 @@
       "mcp__paper__write_html",
       "mcp__paper__get_basic_info",
       "mcp__paper__get_screenshot",
-      "mcp__paper__finish_working_on_nodes"
+      "mcp__paper__finish_working_on_nodes",
+      "mcp__sentry__get_issue_details",
+      "mcp__plugin_context7_context7__resolve-library-id",
+      "mcp__plugin_context7_context7__query-docs",
+      "Read(//Users/shaimalul/Downloads/**)",
+      "Edit(~/.claude/skills/cleanup/**)",
+      "Edit(~/.claude/skills/domain-map/**)",
+      "Edit(~/.claude/skills/find-bug/**)",
+      "Edit(~/.claude/skills/build-feature/**)",
+      "Edit(~/.claude/skills/commit-all/**)",
+      "Edit(~/.claude/skills/consult/**)",
+      "Edit(~/.claude/skills/extract-learning/**)",
+      "Edit(~/.claude/skills/grill-me/**)",
+      "Edit(~/.claude/skills/iterate-task/**)",
+      "Edit(~/.claude/skills/merge-branches/**)",
+      "Edit(~/.claude/skills/micro-iterate/**)",
+      "Edit(~/.claude/skills/mr-description/**)",
+      "Edit(~/.claude/skills/plan-product/**)",
+      "Edit(~/.claude/skills/plan-task/**)",
+      "Edit(~/.claude/skills/quality-gate/**)",
+      "Edit(~/.claude/skills/refactor/**)",
+      "Edit(~/.claude/skills/remove-comments/**)",
+      "Edit(~/.claude/skills/review/**)",
+      "Edit(~/.claude/skills/split-changes/**)",
+      "Edit(~/.claude/skills/improve-claude/**)"
     ],
-    "defaultMode": "bypassPermissions"
+    "defaultMode": "bypassPermissions",
+    "additionalDirectories": [
+      "/Users/shaimalul/Documents/Development/color-game"
+    ]
   },
   "model": "claude-sonnet-4-6",
   "hooks": {
@@ -138,6 +165,7 @@
     "frontend-design@claude-plugins-official": true
   },
   "alwaysThinkingEnabled": false,
+  "effortLevel": "high",
   "skipDangerousModePermissionPrompt": true,
   "feedbackSurveyState": {
     "lastShownTime": 1753951833330

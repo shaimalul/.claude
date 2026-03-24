@@ -1,6 +1,8 @@
 ---
+name: commit-all
 description: Review all changes and create grouped commits following Conventional Commits
 argument-hint: [--dry-run]
+disable-model-invocation: true
 allowed-tools: Read, Grep, Glob, Bash
 ---
 
@@ -57,12 +59,8 @@ Analyze each changed file and group them based on:
 ### Grouping Strategy
 
 1. **Group by feature/domain first** - Files that work together should be committed together
-   - Example: A new component + its hook + its service = one `feat:` commit
-
 2. **Separate tests from implementation** - Test files get their own `test:` commit
-
 3. **Separate docs from code** - Documentation changes get their own `docs:` commit
-
 4. **Group config changes together** - All config/chore changes in one `chore:` commit
 
 ## Phase 3: Generate Commit Plan
@@ -71,8 +69,6 @@ Present the commit plan to the user in this format:
 
 ```
 ## Commit Plan
-
-Analyzing changes...
 
 Found [N] changed files across [M] groups:
 
@@ -88,10 +84,6 @@ Files:
 ### Commit 2: [prefix]: [message under 60 chars]
 Files:
   - path/to/file3.ts (modified)
-
----
-
-[Continue for all groups...]
 ```
 
 ## Phase 4: User Confirmation
@@ -99,20 +91,11 @@ Files:
 After showing the plan, use the `AskUserQuestion` tool to confirm:
 
 **Question:** "Ready to create [N] commits. How would you like to proceed?"
-**Header:** "Confirm"
 **Options:**
 1. **Yes** - "Proceed with creating all commits as planned"
 2. **Improve** - "Suggest changes to the commit grouping or messages"
 
-If `--dry-run` was specified, skip this step and show:
-```
-Dry run complete. No commits were created.
-```
-
-Based on response:
-- **Yes**: Continue to Phase 5 (Execute Commits)
-- **Improve**: Ask user for specific changes, update plan, then ask again
-- **Other**: Handle user's custom input accordingly
+If `--dry-run` was specified, skip this step and show: "Dry run complete. No commits were created."
 
 ## Phase 5: Execute Commits
 
@@ -143,31 +126,9 @@ Created [N] commits:
 |---|------|---------|
 | 1 | abc1234 | feat: add user auth flow |
 | 2 | def5678 | test: add auth service tests |
-| 3 | ghi9012 | docs: update readme |
 
 All changes committed successfully.
 ```
-
-If any files were skipped, show them separately.
-
-## Commit Message Examples
-
-**Good messages:**
-- `feat: add user authentication endpoint`
-- `fix: resolve null pointer in user service`
-- `docs: update api documentation`
-- `chore: update eslint configuration`
-- `refactor: extract validation logic`
-- `test: add unit tests for auth service`
-- `perf: optimize database queries`
-- `ci: add github actions workflow`
-- `style: format with prettier`
-
-**Bad messages (avoid):**
-- `feat: Added new feature` (past tense)
-- `FEAT: Add feature` (uppercase prefix)
-- `feat: add user authentication endpoint with proper validation and error handling` (too long)
-- `feat: stuff` (not descriptive)
 
 ## Error Handling
 

@@ -1,5 +1,8 @@
 ---
+name: build-feature
 description: Execute the planned feature by delegating to specialist principal engineers
+argument-hint: [feature-description]
+disable-model-invocation: true
 allowed-tools: Task, Read, Grep, Glob, Bash, Edit, Write, MultiEdit
 model: opus
 ---
@@ -65,7 +68,7 @@ prompt: |
 
   4. **Final Integration**
      - Ensure all components work together
-     - Run full quality gate: tests → TypeScript → lint → build
+     - Run full quality gate: tests -> TypeScript -> lint -> build
      - Generate completion summary
 ```
 
@@ -91,7 +94,6 @@ The agent should return a build report:
 |-------|-------|--------|
 | 1 | X | Complete |
 | 2 | Y | Complete |
-| 3 | Z | Complete |
 
 ### Tasks Completed
 
@@ -99,12 +101,8 @@ The agent should return a build report:
 - [x] Task 1 - [Brief summary]
 - [x] Task 2 - [Brief summary]
 
-#### Phase 2
-- [x] Task 3 - [Brief summary]
-
 ### Files Modified
 - `path/to/file1.ts` - [Change summary]
-- `path/to/file2.ts` - [Change summary]
 
 ### Quality Gate Results
 - Code Standards: Pass/Fail

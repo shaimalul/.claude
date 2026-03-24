@@ -6,100 +6,81 @@ description: |
   (2) "save this as a skill" or "extract what we learned"
   (3) After debugging with non-obvious solutions
   Integrates learnings into existing domain skill files.
-metadata:
-  author: Claude Code
-  version: 2.0.0
-allowed-tools:
-  - Read
-  - Write
-  - Edit
-  - Grep
-  - Glob
-  - Skill
+allowed-tools: Read, Write, Edit, Grep, Glob, Skill
 ---
 
 # Extract Learning: Session Knowledge Extraction
+
+Extract reusable knowledge from your current session and integrate it into the appropriate skill files.
+
+**Arguments:** `$ARGUMENTS` - Optional: specific topic to extract (e.g., "the prisma pooling fix")
 
 ## Core Principle
 
 Extract reusable knowledge and **integrate it into existing skill files** rather than creating separate files. This maintains single source of truth and keeps related patterns together.
 
-## Quality Gates
+## When to Use
 
-Before saving, verify:
-- [ ] Description contains specific trigger conditions (error messages, symptoms)
-- [ ] Solution was verified to work
-- [ ] Content is actionable and reusable
-- [ ] No sensitive information included
-- [ ] Doesn't duplicate existing documentation
-- [ ] Would help someone hitting this problem in 6 months
+Run this skill when you've:
+- Fixed a non-obvious bug
+- Found a workaround through trial-and-error
+- Resolved an error where root cause wasn't immediately apparent
+- Discovered a useful pattern through investigation
 
-## Extraction Triggers
+## Quality Gates (MUST ALL PASS)
 
-Extract when you:
-1. Completed debugging with a **non-obvious solution**
-2. Found a workaround through **trial-and-error**
-3. Resolved an error where **root cause wasn't immediately apparent**
-4. Learned **project-specific patterns** through investigation
-5. User says "save this as a skill" or "extract this learning"
+- [ ] Solution was verified to work (not theoretical)
+- [ ] Description has specific triggers (error messages, symptoms)
+- [ ] Knowledge is reusable (not one-time fix)
+- [ ] No sensitive data (API keys, passwords)
+- [ ] Not just documentation lookup
 
-## What NOT to Extract
+## Instructions
 
-Skip extraction for:
-- Documentation lookups (just link to docs)
-- One-time project-specific fixes
-- Unverified or partial solutions
-- Trivial implementations
-- Common knowledge available in tutorials
+### Step 1: Identify the Learning
 
-## Extraction Process
+**If specific topic provided:** Focus on `$ARGUMENTS`
 
-### Step 1: Check for Existing Skills
+**If no topic (session review):**
+1. Review the session conversation for extraction candidates
+2. Look for signals:
+   - "finally fixed", "figured out", "the issue was"
+   - "turns out", "the trick is", "workaround"
+   - "root cause", "after debugging"
+3. For each candidate, check quality gates
 
-Search domain skill files for similar patterns:
+### Step 2: Categorize the Learning
 
-| Domain | Target Skill File |
-|--------|-------------------|
-| RTL, CSS, styling | `~/.claude/skills/styling-rtl/SKILL.md` |
-| React, hooks, components | `~/.claude/skills/react-component/SKILL.md` |
-| TypeScript, types | `~/.claude/skills/typescript-types/SKILL.md` |
-| Backend, APIs | `~/.claude/skills/backend-patterns/SKILL.md` |
-| Security, auth | `~/.claude/skills/security-patterns/SKILL.md` |
-| Testing, mocks | `~/.claude/skills/testing-patterns/SKILL.md` |
-| Common UI, ZCD | `~/.claude/skills/common-ui-patterns/SKILL.md` |
-| useEffect | `~/.claude/skills/useeffect-patterns/SKILL.md` |
-| Accessibility | `~/.claude/skills/accessibility-patterns/SKILL.md` |
+Match the learning to an existing skill domain:
 
-If similar pattern exists: **UPDATE** it, don't duplicate.
+| Learning Topic | Target Skill |
+|----------------|--------------|
+| RTL, CSS, styling, logical properties | `styling-rtl` |
+| React hooks, components, state | `react-component` |
+| TypeScript types, generics | `typescript-types` |
+| Backend, APIs, services | `backend-patterns` |
+| Security, auth, OWASP | `security-patterns` |
+| Testing, mocking, coverage | `testing-patterns` |
+| useEffect, lifecycle | `useeffect-patterns` |
+| Docker, K8s, CI/CD | devops skills |
+| Common UI, ZCD components | `common-ui-patterns` |
+| Storybook stories | `storybook-story` |
+| Accessibility, ARIA | `accessibility-patterns` |
 
-### Step 2: Identify the Knowledge
+### Step 3: Search for Existing Content
 
-Analyze:
-- What specific problem was solved?
-- What made it non-obvious?
-- What would help someone solve this faster next time?
-- What exact error message or symptom led here?
+Before adding, search the target skill file for similar patterns:
+1. Read the target SKILL.md file
+2. Search for keywords from the learning
+3. If similar content exists: **UPDATE** it, don't duplicate
+4. If not found: **ADD** new section in appropriate location
 
-### Step 3: Categorize and Route
+### Step 4: Integrate the Learning
 
-Match the learning to the appropriate skill by keywords:
-
-| Keywords | Target Skill |
-|----------|--------------|
-| css, scss, rtl, left, right, start, end, padding, margin | `styling-rtl` |
-| hook, useState, useEffect, component, prop, jsx | `react-component` |
-| type, interface, enum, generic, as, any | `typescript-types` |
-| express, nestjs, controller, service, api | `backend-patterns` |
-| auth, jwt, xss, injection, owasp | `security-patterns` |
-| test, mock, spec, coverage, vitest | `testing-patterns` |
-| ZCD, Zencity, common-ui, design system | `common-ui-patterns` |
-
-### Step 4: Integrate into Existing Skill
-
-Add a new section to the target SKILL.md using this format:
+**Format for skill files:**
 
 ```markdown
-## [Pattern Name]
+## [Pattern/Rule Name]
 
 [Problem description with specific triggers]
 
@@ -114,46 +95,36 @@ Add a new section to the target SKILL.md using this format:
 **When to apply:** [Trigger conditions]
 ```
 
-### Step 5: Update Related Files (if needed)
+### Step 5: Update Related Files
 
-Also consider updating:
+Based on category, also update:
 - `CLAUDE.md` - If it's a core coding standard
 - `rules/*.md` - If it's an enforcement rule
 - `agents/*.md` - If it affects a principal's domain
 
-### Step 6: Report Extraction
+### Step 6: Report Results
 
-Output to user:
 ```markdown
 ## Learning Extracted
 
-**Problem:** [Specific problem description]
+**Problem:** [Brief problem description]
 **Solution:** [What worked]
-**Integrated into:** ~/.claude/skills/[skill-name]/SKILL.md
-**Section:** [Section name added/updated]
-**Why this location:** [Brief routing explanation]
+**Integrated into:**
+- `~/.claude/skills/[skill-name]/SKILL.md` - Added [section name]
+- `~/.claude/[other-file]` - Updated [section name]
+
+**Why this location:** [Brief explanation of routing decision]
 ```
 
-## Anti-Patterns to Avoid
+If nothing extracted:
 
-| Anti-Pattern | Why It's Bad |
-|--------------|--------------|
-| Separate learned/ folder | Fragments knowledge, breaks single source of truth |
-| Over-extraction | Not every task needs a skill |
-| Vague descriptions | "Helps with React" is useless for retrieval |
-| Unverified solutions | Only extract what actually worked |
-| Documentation duplication | Link to docs, add what's missing |
-| Sensitive data | Never include API keys, passwords, etc. |
+```markdown
+## No Learnings Extracted
 
-## Retrospective Mode
+**Reason:** [Why nothing qualified]
+**Tip:** Run this skill after solving non-obvious problems
+```
 
-When `/extract-learning` is called without a specific topic:
+## Important: No Separate Learned Folder
 
-1. Review the session conversation for extraction candidates
-2. Look for patterns: debugging, workarounds, discoveries
-3. For each candidate:
-   - Check quality gates
-   - Route to appropriate skill
-   - If passes: integrate into skill
-   - If fails: skip with reason
-4. Report summary of what was/wasn't extracted
+**DO NOT** create files in `~/.claude/skills/learned/`. All learnings should be integrated into existing domain skill files. This maintains single source of truth and keeps related patterns together.

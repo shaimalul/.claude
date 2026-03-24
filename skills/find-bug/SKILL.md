@@ -1,336 +1,103 @@
 ---
 name: find-bug
-description: Bug detection patterns for analyzing error logs, stack traces, and code to identify root causes and suggest fixes. Use when debugging errors, analyzing stack traces, or investigating runtime failures in TypeScript, JavaScript, or Python code.
-globs: "**/*.ts,**/*.tsx,**/*.js,**/*.jsx,**/*.py"
+description: Analyze bug context (error logs, stack traces, code) to identify root cause and suggest fixes. Use when debugging errors, analyzing stack traces, or investigating runtime failures.
+argument-hint: [error log, stack trace, file path, or bug description]
+allowed-tools: Task, Read, Grep, Glob, Bash
+model: opus
 ---
 
-# Bug Finding Patterns
+# Bug Finding
 
-Systematic approach to identifying bugs from error context, stack traces, and code analysis.
+Use the **Task tool** to invoke the `bug-finder` agent for comprehensive bug analysis.
 
-## Error Log Analysis Patterns
+For detailed bug patterns reference, see [patterns.md](patterns.md).
 
-### Uncaught Exception - Missing Null Check
+## Bug Context: $ARGUMENTS
 
-```typescript
-// Error: Uncaught (in promise) TypeError: Cannot read property 'x' of undefined
+## Instructions
 
-// Before (buggy)
-const value = response.data.user.profile.name;
+Spawn the bug-finder agent using the Task tool:
 
-// After (fixed)
-const value = response.data?.user?.profile?.name ?? 'Unknown';
+```
+subagent_type: bug-finder
+prompt: |
+  Analyze this bug context and identify the root cause:
 
-// Or with type guard
-if (response.data?.user?.profile) {
-  const value = response.data.user.profile.name;
-}
+  $ARGUMENTS
+
+  Follow this analysis process:
+
+  1. **Classify the Input**
+     - Determine if this is an error log, stack trace, code snippet, or user report
+     - Identify the language/framework involved
+     - Note any file paths or line numbers mentioned
+
+  2. **Parse the Error**
+     - Extract the error type and message
+     - Identify the failure point from stack trace
+     - Note any relevant context (request data, user action)
+
+  3. **Search for Related Code**
+     - If file paths are provided, read those files
+     - Search for related patterns in the codebase
+     - Look for similar error handling patterns
+
+  4. **Identify Root Cause**
+     - Match against known bug patterns (from find-bug skill)
+     - Trace data flow to find where assumptions break
+     - Identify the specific condition that triggers the bug
+
+  5. **Develop Fix**
+     - Create working code that fixes the issue
+     - Add defensive measures to prevent recurrence
+     - Suggest test cases to verify the fix
+
+  6. **Provide Response**
+     Use this format:
+
+     ## Bug Analysis
+
+     ### Summary
+     [One sentence description of the bug]
+
+     ### Root Cause
+     [Clear explanation of why this happens]
+
+     ### Location
+     - **File**: [path if known]
+     - **Line**: [line number if known]
+     - **Function**: [function name if known]
+
+     ### Fix
+
+     ```[language]
+     // Before (buggy)
+     [original code]
+
+     // After (fixed)
+     [corrected code]
+     ```
+
+     ### Explanation
+     [Why the fix works]
+
+     ### Prevention
+     - [How to prevent this type of bug]
+
+     ### Related Patterns
+     - [Other places in codebase that might have similar issues]
 ```
 
-### CORS Error - Backend Configuration Issue
-
-```typescript
-// Error: Access to XMLHttpRequest blocked by CORS policy
-
-// Fix: Configure CORS middleware
-
-// Express
-import cors from 'cors';
-app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS?.split(',') || 'http://localhost:3000',
-  credentials: true,
-}));
-
-// NestJS
-app.enableCors({
-  origin: configService.get('ALLOWED_ORIGINS'),
-  credentials: true,
-});
-```
-
-### 429 Too Many Requests - Rate Limiting
-
-```typescript
-// Error: 429 Too Many Requests
-
-// Fix: Implement retry with exponential backoff
-const fetchWithRetry = async (url: string, maxRetries = 3): Promise<Response> => {
-  for (let i = 0; i < maxRetries; i++) {
-    const response = await fetch(url);
-    if (response.status !== 429) return response;
-
-    const retryAfter = response.headers.get('Retry-After');
-    const delay = retryAfter ? parseInt(retryAfter) * 1000 : Math.pow(2, i) * 1000;
-    await new Promise(resolve => setTimeout(resolve, delay));
-  }
-  throw new Error('Max retries exceeded');
-};
-```
-
----
-
-## Stack Trace Analysis Patterns
-
-### React: Maximum Update Depth Exceeded
-
-```typescript
-// Error: Maximum update depth exceeded. This can happen when a component
-// calls setState inside useEffect, but useEffect either doesn't have a
-// dependency array, or one of the dependencies changes on every render.
-
-// Before (buggy) - object reference changes each render
-const filters = { page: 1 }; // New object every render!
-useEffect(() => {
-  fetchData(filters);
-}, [filters]);
-
-// After (fixed) - stable reference
-const filters = useMemo(() => ({ page: 1 }), []);
-useEffect(() => {
-  fetchData(filters);
-}, [filters]);
-```
-
-### React: Cannot Update While Rendering
-
-```typescript
-// Error: Cannot update a component while rendering a different component
-
-// Before (buggy) - setState called during render
-function Parent() {
-  const [count, setCount] = useState(0);
-  return <Child onRender={() => setCount(c => c + 1)} />;
-}
-
-function Child({ onRender }) {
-  onRender(); // Called during render phase!
-  return <div>Child</div>;
-}
-
-// After (fixed) - use useEffect for side effects
-function Child({ onRender }) {
-  useEffect(() => {
-    onRender();
-  }, [onRender]);
-  return <div>Child</div>;
-}
-```
-
-### TypeError: X is not a function
-
-```typescript
-// Error: TypeError: someFunction is not a function
-
-// Cause 1: Default vs named import mismatch
-// Before (buggy)
-import someFunction from './utils'; // But it's a named export!
-
-// After (fixed)
-import { someFunction } from './utils';
-
-// Cause 2: Calling undefined
-const obj = { method: undefined };
-obj.method(); // TypeError
-
-// Fix: Check existence
-obj.method?.();
-```
-
----
-
-## Async/Promise Bug Patterns
-
-### Unhandled Promise Rejection
-
-```typescript
-// Error: UnhandledPromiseRejectionWarning
-
-// Before (buggy) - fire and forget
-async function saveData() {
-  apiClient.post('/data', payload); // Promise not awaited!
-}
-
-// After (fixed) - await and handle
-async function saveData() {
-  try {
-    await apiClient.post('/data', payload);
-  } catch (error) {
-    logger.error('Failed to save data', { error });
-    throw new DataSaveError('Save failed');
-  }
-}
-```
-
-### Race Condition - Stale Closure
-
-```typescript
-// Bug: Displaying data from previous request
-
-// Before (buggy) - race condition
-useEffect(() => {
-  fetchUser(userId).then(setUser);
-}, [userId]);
-
-// After (fixed) - cancel stale requests
-useEffect(() => {
-  let cancelled = false;
-
-  fetchUser(userId).then(user => {
-    if (!cancelled) setUser(user);
-  });
-
-  return () => { cancelled = true; };
-}, [userId]);
-
-// Or with AbortController
-useEffect(() => {
-  const controller = new AbortController();
-
-  fetchUser(userId, { signal: controller.signal })
-    .then(setUser)
-    .catch(err => {
-      if (err.name !== 'AbortError') throw err;
-    });
-
-  return () => controller.abort();
-}, [userId]);
-```
-
----
-
-## Null/Undefined Bug Patterns
-
-### Cannot Read Property of Undefined
-
-```typescript
-// Error: TypeError: Cannot read property 'name' of undefined
-
-// Checklist:
-// 1. Is the data loaded? (async data not ready)
-// 2. Is the path correct? (typo in property name)
-// 3. Is the data shaped correctly? (API changed)
-
-// Before (buggy)
-function UserProfile({ user }) {
-  return <div>{user.profile.name}</div>;
-}
-
-// After (fixed) - with loading state
-function UserProfile({ user }) {
-  if (!user?.profile) {
-    return <LoadingSpinner />;
-  }
-  return <div>{user.profile.name}</div>;
-}
-```
-
-### Array Method on Undefined
-
-```typescript
-// Error: Cannot read property 'map' of undefined
-
-// Before (buggy)
-function ItemList({ items }) {
-  return items.map(item => <Item key={item.id} {...item} />);
-}
-
-// After (fixed) - with default
-function ItemList({ items = [] }) {
-  return items.map(item => <Item key={item.id} {...item} />);
-}
-
-// Or with nullish coalescing
-function ItemList({ items }) {
-  return (items ?? []).map(item => <Item key={item.id} {...item} />);
-}
-```
-
----
-
-## Type Error Patterns (TypeScript)
-
-### Type Assertion Hiding Bugs
-
-```typescript
-// Bug: Runtime crash despite TypeScript "passing"
-
-// Before (buggy) - assertion hides the bug
-const user = apiResponse as User; // No runtime check!
-console.log(user.email.toLowerCase()); // Crashes if email undefined
-
-// After (fixed) - type guard with validation
-const isUser = (data: unknown): data is User => {
-  return (
-    typeof data === 'object' &&
-    data !== null &&
-    'email' in data &&
-    typeof (data as { email: unknown }).email === 'string'
-  );
-};
-
-if (isUser(apiResponse)) {
-  console.log(apiResponse.email.toLowerCase()); // Safe!
-}
-```
-
----
-
-## Database Bug Patterns
-
-### N+1 Query Problem
-
-```typescript
-// Bug: Slow performance, many DB queries
-
-// Before (buggy) - N+1 queries
-const users = await userRepository.find();
-for (const user of users) {
-  user.posts = await postRepository.findByUserId(user.id); // N queries!
-}
-
-// After (fixed) - eager loading
-const users = await userRepository.find({
-  relations: ['posts'],  // TypeORM
-});
-
-// Or with query builder
-const users = await userRepository
-  .createQueryBuilder('user')
-  .leftJoinAndSelect('user.posts', 'post')
-  .getMany();
-```
-
-### Deadlock - Transaction Ordering
-
-```typescript
-// Error: Deadlock found when trying to get lock
-
-// Before (buggy)
-async function transfer(fromId, toId, amount) {
-  await lockAccount(fromId);
-  await lockAccount(toId); // Might deadlock!
-}
-
-// After (fixed) - consistent ordering
-async function transfer(fromId, toId, amount) {
-  const [first, second] = [fromId, toId].sort();
-  await lockAccount(first);
-  await lockAccount(second);
-}
-```
-
----
-
-## Quick Reference
-
-| Error Message | Likely Cause | First Check |
-|---------------|--------------|-------------|
-| Cannot read property 'x' of undefined | Null/undefined access | Add optional chaining, check data loading |
-| Maximum update depth exceeded | Infinite loop in useEffect | Check dependency array for unstable refs |
-| X is not a function | Wrong import or undefined | Check import statement, default vs named |
-| Unhandled Promise Rejection | Missing catch or await | Add try-catch or .catch() |
-| CORS error | Backend config | Check CORS middleware config |
-| 429 Too Many Requests | Rate limiting | Add retry with backoff |
-| Cannot update while rendering | setState in render | Move to useEffect |
-| Deadlock | Transaction ordering | Lock in consistent order |
-| N+1 queries | Missing eager load | Use relations or JOIN |
+## Input Types Supported
+
+- **Error Logs**: `/find-bug TypeError: Cannot read property 'name' of undefined`
+- **Stack Traces**: `/find-bug Error: ECONNREFUSED at TCPConnectWrap...`
+- **File References**: `/find-bug There's a bug in src/services/userService.ts causing duplicate users`
+- **User Reports**: `/find-bug When I click submit twice quickly, two orders are created`
+- **Mixed Context**: `/find-bug The API returns 500 when email is empty: POST /api/users...`
+
+## Integration
+
+- For security vulnerabilities: delegates to `security-principal`
+- For architecture issues: may suggest `/consult architect`
+- For performance bugs: involves relevant specialist

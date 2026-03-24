@@ -1,3 +1,10 @@
+---
+name: iterate-task
+description: Run a task iteratively until complete, following the Ralph approach (tune the prompt, not the code)
+argument-hint: [path-to-PROMPT.md] [--max=N]
+disable-model-invocation: true
+---
+
 # Iterate Task
 
 Run a task iteratively until complete, following the Ralph approach.
@@ -6,28 +13,15 @@ Run a task iteratively until complete, following the Ralph approach.
 
 ## Philosophy
 
-**When things go wrong, tune the prompt—not the code.**
+**When things go wrong, tune the prompt - not the code.**
 
-This command implements the Ralph approach: continuous iteration with prompt refinement. Each iteration learns from the previous. When something fails, you edit the prompt file to provide clearer instructions.
-
-## What This Command Does
-
-1. Reads your PROMPT.md task definition
-2. Executes the task
-3. Reports results
-4. If not complete: prompts you to refine PROMPT.md
-5. Repeats until success or max iterations
+This skill implements the Ralph approach: continuous iteration with prompt refinement. Each iteration learns from the previous. When something fails, you edit the prompt file to provide clearer instructions.
 
 ## Usage
 
 ```bash
-# Basic usage - iterate until done
 /iterate-task path/to/PROMPT.md
-
-# With iteration limit
 /iterate-task path/to/PROMPT.md --max=5
-
-# Using the template
 /iterate-task ~/.claude/templates/iterate-prompt.md
 ```
 
@@ -57,8 +51,6 @@ If no prompt file provided, show usage help.
 4. Track what was attempted and results
 
 ### Step 4: Evaluate Results
-
-After attempting the task:
 
 **If SUCCESS:**
 ```markdown
@@ -98,48 +90,8 @@ If the prompt file has a "Previous Attempts" section, suggest updating it:
 ## Suggested Update to PROMPT.md
 
 Add to "Previous Attempts":
-- Iteration [N]: [What was tried] → [Result]
+- Iteration [N]: [What was tried] -> [Result]
 ```
-
-## PROMPT.md Format
-
-Recommended structure for your prompt file:
-
-```markdown
-# Task: [Clear Task Title]
-
-## Context
-[Project context, relevant background]
-
-## Objective
-[What needs to be accomplished - be specific]
-
-## Requirements
-- [ ] Requirement 1
-- [ ] Requirement 2
-- [ ] Requirement 3
-
-## Constraints
-- [Any constraints or rules to follow]
-
-## Previous Attempts
-<!-- Update after each iteration -->
-- Attempt 1: [What was tried] → [Result]
-- Attempt 2: [Refined approach] → [Result]
-
-## Current Focus
-<!-- What to focus on this iteration -->
-[Specific aspect to work on]
-
-## Success Criteria
-[How to know when the task is complete]
-```
-
-## Session Logging
-
-Iterations are logged to `~/.claude/iterate-sessions/` for reference:
-- `iterate-[timestamp].log` - Full session log
-- Includes: prompt content, attempts, results
 
 ## Best Practices
 
@@ -147,30 +99,3 @@ Iterations are logged to `~/.claude/iterate-sessions/` for reference:
 2. **Document failures** - Update "Previous Attempts" after each iteration
 3. **Refine, don't restart** - Build on what you learned
 4. **Extract learnings** - Run `/extract-learning` after success
-
-## Example Session
-
-```bash
-# First iteration
-/iterate-task ~/projects/api/PROMPT.md
-# Result: Failed - missing authentication
-
-# Edit PROMPT.md to add auth details
-# Add to Previous Attempts: "Attempt 1: No auth → 401 errors"
-# Update Current Focus: "Add JWT authentication first"
-
-# Second iteration
-/iterate-task ~/projects/api/PROMPT.md
-# Result: Partial - auth works, validation failing
-
-# Edit PROMPT.md again
-# Add to Previous Attempts: "Attempt 2: Auth works → validation errors"
-# Update Current Focus: "Add input validation with Zod"
-
-# Third iteration
-/iterate-task ~/projects/api/PROMPT.md
-# Result: Success!
-
-# Extract what was learned
-/extract-learning "JWT auth with Zod validation pattern"
-```

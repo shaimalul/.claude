@@ -1,180 +1,244 @@
 ---
 name: cleanup
-description: Code debt detection and cleanup patterns for duplicates, legacy code, and dead code. Use when detecting or removing duplicate types, dead code, deprecated exports, or multiple approaches to the same functionality.
-globs: "**/*.ts,**/*.tsx,**/*.js,**/*.jsx"
+description: Detect and remove code debt (duplicates, legacy code, dead code). Use when detecting duplicate types, dead code, deprecated exports, or multiple approaches to the same functionality.
+argument-hint: "[scope] [--dry-run] [--execute] [--category=<type>]"
+allowed-tools: Task, Read, Grep, Glob, Bash, Edit, Write, TodoWrite
+model: opus
 ---
 
-# Code Cleanup Patterns
+# Code Cleanup
 
-Patterns for detecting and safely removing code debt.
+Detect and remove code debt: duplicate types, multiple approaches, backward compatibility code, and dead code.
+
+For detailed cleanup patterns, see [patterns.md](patterns.md).
+
+Arguments: `$ARGUMENTS` - scope (files/directories), flags
+
+**Default Mode:** Dry-run (preview only). Use `--execute` to apply changes.
 
 ## Cleanup Categories
 
-### 1. Duplicate Types/Interfaces
+| Category | What It Finds | Priority |
+|----------|---------------|----------|
+| `duplicate_types` | Same interface/type defined in multiple files | High |
+| `multiple_approaches` | Different functions doing the same thing | High |
+| `backward_compat` | `@deprecated`, legacy aliases, re-exports | Medium |
+| `dead_code` | Unused exports, unreachable branches | Medium |
 
-**Detection Patterns:**
-```typescript
-// Same interface defined in multiple files
-// File: src/types/user.ts
-interface User { id: string; name: string; }
+## Phase 1: Session Check
 
-// File: src/components/UserCard.tsx
-interface User { id: string; name: string; } // DUPLICATE
+**First, check for existing cleanup session:**
+
+```
+Step 1: Check for cleanup directory
+Command: LS cleanup
+
+Step 2: If exists, read session state:
+Command: Read cleanup/state.json
+Command: Read cleanup/plan.md
+
+If session exists with incomplete tasks:
+- Display progress summary
+- Ask: "Resume existing session or start new?"
 ```
 
-**Detection Strategy:**
-1. Search for `interface <Name>` and `type <Name>` patterns
-2. Group by name across files
-3. Compare structure (properties, types)
-4. Flag exact or near-duplicates
+## Phase 2: Analysis
 
-**Safe Removal:**
-1. Identify the canonical location (usually `types/` folder)
-2. Verify all usages can import from canonical location
-3. Update imports in all files
-4. Remove duplicate definitions
-5. Run TypeScript check to verify
+**Scan the codebase for cleanup opportunities:**
 
-### 2. Multiple Approaches to Same Functionality
+### 2.1 Duplicate Types Detection
 
-**Detection Patterns:**
-```typescript
-// Multiple date formatters
-export const formatDate = (d: Date) => d.toLocaleDateString();
-export const formatDateString = (d: Date) => d.toISOString().split('T')[0];
-export const dateToString = (d: Date) => `${d.getMonth()}/${d.getDate()}/${d.getFullYear()}`;
-
-// Multiple fetch wrappers
-export const fetchData = async (url) => fetch(url).then(r => r.json());
-export const getData = async (url) => axios.get(url).then(r => r.data);
-export const apiCall = async (url) => httpClient.get(url);
+Use **Grep** to find type/interface definitions:
+```
+Pattern: "^export (interface|type|enum) \\w+"
+Scope: **/*.ts, **/*.tsx
 ```
 
-**Detection Strategy:**
-1. Search for functions with similar names (Levenshtein distance)
-2. Analyze function signatures and return types
-3. Check for overlapping functionality
-4. Flag when multiple functions serve same purpose
+Group by name, flag duplicates across files.
 
-**Safe Removal:**
-1. Identify the preferred approach (most used, best typed, matches patterns)
-2. Create migration map: `oldFunction` -> `newFunction`
-3. Update all call sites
-4. Add deprecation warning temporarily
-5. Remove old implementations after validation
+### 2.2 Multiple Approaches Detection
 
-### 3. Backward Compatibility Code
+Search for similar function names:
+```
+Patterns:
+- "export (const|function) \\w*(format|parse|fetch|get|load|convert|transform)"
+- Multiple functions with similar signatures
+```
 
-**Detection Patterns:**
-```typescript
-// Deprecated exports
-/** @deprecated Use newFunction instead */
-export const oldFunction = newFunction;
+### 2.3 Backward Compatibility Detection
 
-// Alias re-exports
-export { newService as oldService }; // backward compat alias
+Search for deprecation markers:
+```
+Patterns:
+- "@deprecated"
+- "// deprecated"
+- "// backward compat"
+- "// legacy"
+- "export { new as old }"
+```
 
-// Commented deprecation
-// DEPRECATED: keeping for backward compatibility
-export const legacyApi = () => { ... };
+### 2.4 Dead Code Detection
 
-// Conditional legacy support
-if (useLegacyMode) {
-  return oldImplementation();
+Find unused exports:
+```
+Strategy:
+1. List all exports with Grep
+2. For each export, search for imports
+3. Flag exports with zero imports
+```
+
+## Phase 3: Planning
+
+Create cleanup plan in `cleanup/plan.md`:
+
+```markdown
+# Cleanup Plan - [timestamp]
+
+## Summary
+- Duplicate Types: X found
+- Multiple Approaches: X found
+- Backward Compat: X found
+- Dead Code: X found
+
+## Findings
+
+### Duplicate Types
+| Type Name | Locations | Action |
+|-----------|-----------|--------|
+| User | src/types/user.ts, src/components/UserCard.tsx | Consolidate to types/user.ts |
+
+### Multiple Approaches
+| Functionality | Implementations | Preferred |
+|--------------|-----------------|-----------|
+| Date formatting | formatDate, dateToString, formatDateString | formatDate |
+
+### Backward Compatibility
+| Item | Location | Can Remove? |
+|------|----------|-------------|
+| oldService alias | src/services/index.ts | Verify no external consumers |
+
+### Dead Code
+| Export | Location | Last Modified |
+|--------|----------|---------------|
+| unusedHelper | src/utils/helpers.ts | 6 months ago |
+
+## Cleanup Tasks
+- [ ] Task 1
+- [ ] Task 2
+```
+
+Save state to `cleanup/state.json`:
+```json
+{
+  "session_id": "cleanup_YYYY_MM_DD_HHMM",
+  "status": "planning",
+  "scope": "$ARGUMENTS",
+  "findings": { },
+  "completed_tasks": [],
+  "pending_tasks": []
 }
 ```
 
-**Detection Strategy:**
-1. Search for `@deprecated` JSDoc tags
-2. Search for comments containing "deprecated", "backward", "legacy"
-3. Find re-export aliases
-4. Detect conditional legacy branches
+## Phase 4: Preview (Dry Run)
 
-**Safe Removal:**
-1. Identify all usages of deprecated code
-2. Verify no external consumers (if library)
-3. Update all internal usages
-4. Remove deprecated exports
-5. Clean up re-export aliases
+**Default behavior - show what would change:**
 
-### 4. Dead Code
+```
+CLEANUP PREVIEW (dry-run mode)
+==============================
 
-**Detection Patterns:**
-```typescript
-// Unused exports
-export const neverUsedFunction = () => {}; // no imports found
+Duplicate Types (3 found):
+  - User interface: 2 locations -> consolidate to src/types/user.ts
+  - Config type: 3 locations -> consolidate to src/types/config.ts
 
-// Unreachable branches
-if (false) {
-  // This code never runs
-}
+Multiple Approaches (2 found):
+  - Date formatting: 3 functions -> standardize on formatDate()
 
-// Commented out code
-// const oldLogic = () => {
-//   return computeOldWay();
-// };
+Backward Compat (4 found):
+  - @deprecated oldService -> safe to remove (no usages)
+  - legacy alias in index.ts -> safe to remove
 
-// Unused variables in module scope
-const UNUSED_CONSTANT = 'never referenced';
+Dead Code (5 found):
+  - unusedHelper (src/utils/helpers.ts) -> no imports found
+  - UNUSED_CONSTANT (src/config.ts) -> no references
+
+To apply these changes, run: /cleanup --execute
 ```
 
-**Detection Strategy:**
-1. Find exports with no imports across codebase
-2. Detect `if (false)` or `if (true)` branches
-3. Find large commented code blocks
-4. Detect module-level unused variables
+## Phase 5: Execution
 
-**Safe Removal:**
-1. Verify export is truly unused (check dynamic imports)
-2. Check for external consumers if publishing
-3. Remove unused code
-4. Clean up associated imports
-5. Run tests to verify
+**Only when `--execute` flag is provided:**
 
-## Verification Checklist
+### 5.1 Create Safety Checkpoint
 
-After each cleanup action:
-- [ ] TypeScript compiles without errors
-- [ ] All imports resolve correctly
-- [ ] Tests pass
-- [ ] Build succeeds
-- [ ] No runtime errors in affected areas
-
-## Edge Cases and Warnings
-
-### Do NOT Remove
-
-1. **Public API exports** - May have external consumers
-2. **Dynamic imports** - `import()` may not be detected
-3. **Reflection/eval usage** - Runtime access may exist
-4. **Test fixtures** - May look unused but needed for tests
-5. **Environment-specific code** - May only run in production/development
-
-### Require Extra Verification
-
-1. **Configuration objects** - May be used by frameworks
-2. **Callback handlers** - May be passed to external libraries
-3. **Event handlers** - May be registered dynamically
-4. **Types for external data** - API responses, configs
-
-## Integration with Existing Tools
-
-### Before Cleanup
 ```bash
-# Create safety checkpoint
 git add -A && git commit -m "chore: checkpoint before cleanup"
 ```
 
-### After Cleanup
+### 5.2 Execute Cleanup Tasks
+
+For each task:
+1. Make the change (Edit/Write)
+2. Update imports if needed
+3. Run incremental validation:
+   ```bash
+   npx tsc --noEmit
+   ```
+4. Mark task complete in state
+
+### 5.3 Validation After All Changes
+
 ```bash
-# Verify no breakage
 npm test
-npx tsc --noEmit
 npm run lint
 npm run build
 ```
 
-### Rollback if Needed
-```bash
-git reset --hard HEAD~1
+### 5.4 Final Report
+
 ```
+CLEANUP COMPLETE
+================
+
+Changes Applied:
+- Removed 3 duplicate type definitions
+- Consolidated 2 function implementations
+- Removed 4 deprecated exports
+- Deleted 5 unused exports
+
+Verification:
+- TypeScript: PASS
+- Tests: PASS
+- Lint: PASS
+- Build: PASS
+
+Files Modified: 12
+Lines Removed: 156
+```
+
+## Command Variants
+
+```bash
+/cleanup                          # Analyze entire project (dry-run)
+/cleanup src/components/          # Focus on specific directory
+/cleanup --category=dead_code     # Focus on specific category
+/cleanup --execute                # Execute changes (not dry-run)
+/cleanup resume                   # Resume existing session
+/cleanup status                   # Check progress
+/cleanup new                      # Start fresh (archive existing)
+```
+
+## Safety Measures
+
+1. **Dry-run by default** - Never modify without explicit `--execute`
+2. **Git checkpoint** - Commit before changes for easy rollback
+3. **Incremental validation** - TypeScript check after each change
+4. **Full validation** - Tests, lint, build after completion
+5. **Session state** - Resume if interrupted
+
+## Integration
+
+This skill works with:
+- `/refactor` - For larger structural changes
+- `/quality-gate` - Run after cleanup to verify
+- `/review` - Review cleanup changes before commit
