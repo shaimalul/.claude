@@ -10,15 +10,14 @@
  * Exit code 0 = allow the command
  */
 
-const { readStdinJson, log } = require('../lib/utils');
+const { readStdinJson, log } = require("../lib/utils");
 
 const DANGEROUS_PATTERNS = [
-  { pattern: /\bgit\s+push\b/, description: 'git push' },
-  { pattern: /\bgit\s+reset\s+--hard\b/, description: 'git reset --hard' },
-  { pattern: /\bgit\s+clean\s+-[a-zA-Z]*f/, description: 'git clean -f' },
-  { pattern: /\bgit\s+branch\s+-D\b/, description: 'git branch -D' },
-  { pattern: /\bgit\s+checkout\s+\.\s*$/, description: 'git checkout .' },
-  { pattern: /\bgit\s+restore\s+\.\s*$/, description: 'git restore .' },
+  { pattern: /\bgit\s+reset\s+--hard\b/, description: "git reset --hard" },
+  { pattern: /\bgit\s+clean\s+-[a-zA-Z]*f/, description: "git clean -f" },
+  { pattern: /\bgit\s+branch\s+-D\b/, description: "git branch -D" },
+  { pattern: /\bgit\s+checkout\s+\.\s*$/, description: "git checkout ." },
+  { pattern: /\bgit\s+restore\s+\.\s*$/, description: "git restore ." },
 ];
 
 async function main() {
@@ -31,7 +30,9 @@ async function main() {
 
   for (const { pattern, description } of DANGEROUS_PATTERNS) {
     if (pattern.test(command)) {
-      log(`BLOCKED: '${command}' matches dangerous pattern '${description}'. The user has prevented you from doing this.`);
+      log(
+        `BLOCKED: '${command}' matches dangerous pattern '${description}'. The user has prevented you from doing this.`,
+      );
       process.exit(2);
     }
   }
