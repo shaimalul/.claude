@@ -52,10 +52,7 @@
       "Edit(~/.claude/skills/split-changes/**)",
       "Edit(~/.claude/skills/improve-claude/**)"
     ],
-    "defaultMode": "bypassPermissions",
-    "additionalDirectories": [
-      "/Users/shaimalul/Documents/Development/color-game"
-    ]
+    "defaultMode": "bypassPermissions"
   },
   "model": "claude-sonnet-4-6",
   "hooks": {

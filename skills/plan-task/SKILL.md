@@ -91,3 +91,20 @@ prompt: |
 ```
 
 Return the mastermind's full plan to the user.
+
+## Post-Plan Review
+
+After presenting the plan, immediately start a **grill-me** session on the generated plan.
+
+Interview the user relentlessly about every aspect of the plan until
+reaching shared understanding. Walk down each branch of the design
+tree resolving dependencies between decisions one by one.
+
+If a question can be answered by exploring the codebase, explore
+the codebase instead.
+
+For each question:
+- Provide your recommended answer
+- Include a final option: **"I'm good with the current plan - stop asking questions"**
+
+When the user selects the stop option, end the interview and present the final plan.
