@@ -63,7 +63,7 @@ Match the learning to an existing skill domain:
 | Testing, mocking, coverage | `testing-patterns` |
 | useEffect, lifecycle | `useeffect-patterns` |
 | Docker, K8s, CI/CD | devops skills |
-| Common UI, ZCD components | `common-ui-patterns` |
+
 | Storybook stories | `storybook-story` |
 | Accessibility, ARIA | `accessibility-patterns` |
 

@@ -37,7 +37,7 @@ export default meta;
 
 ### 2. Story Title Formatting
 - Format: `DOMAIN/COMPONENT_NAME`
-- **Omit ZCD prefix** in title (e.g., ZCDButton -> "ATOMS/Button")
+- Use clean titles (e.g., "ATOMS/Button")
 
 ### 3. ArgTypes Documentation
 For each prop include:
@@ -100,21 +100,16 @@ export const Default: Story = {
 - **contentBackground**: Background color
 - **disablePadding**: Remove default padding
 
-## Using Internal Components
-Always use ZCD components in stories:
+## Using Design System Components
+Use design system components in stories when available:
 ```tsx
-// Good
-import { ZCDButton, ZCDFlex } from '@zencity/common-ui';
+// Good - use design system components
+import { Button, Flex } from 'design-system';
 
-<ZCDFlex direction="column" gap="md">
+<Flex direction="column" gap="md">
   <YourComponent {...args} />
-  <ZCDButton text="Action" onClick={() => {}} />
-</ZCDFlex>
-
-// Bad - avoid native HTML
-<div className="flex-container">
-  <button>Action</button>
-</div>
+  <Button text="Action" onClick={() => {}} />
+</Flex>
 ```
 
 ## Testing Checklist

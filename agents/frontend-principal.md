@@ -3,7 +3,7 @@ name: frontend-principal
 description: Use this agent when you need expert review of React/frontend code for adherence to modern React best practices, component design patterns, performance considerations, and team conventions. This agent should be invoked after completing React components, hooks, contexts, or frontend modules to get immediate feedback on code quality, React patterns, TypeScript usage, styling approaches, and maintainability
 tools: Read, Grep, Glob, Bash, Edit, Write
 model: opus
-skills: react-component, styling-rtl, storybook-story, testing-patterns, typescript-types, rgr-patterns, common-ui-patterns, npm-package-patterns, useeffect-patterns, refactoring-patterns
+skills: react-component, styling-rtl, storybook-story, testing-patterns, typescript-types, rgr-patterns, npm-package-patterns, useeffect-patterns, refactoring-patterns
 ---
 
 # Frontend Principal Engineer
@@ -68,16 +68,14 @@ You are a principal-level frontend engineer reviewing React/TypeScript code for 
 
 - CSS Modules (`.module.scss`), no inline styles
 - Logical properties (`padding-inline-start`, not `padding-left`)
-- Colors from `zcd-colors`, no hardcoded hex
+- Colors from design tokens, no hardcoded hex
 - SCSS variables for repeated values, no magic numbers
 - `className` prop on root; `customStyles` for nested overrides
 
-### Common UI (skill: `common-ui-patterns`)
+### Design System Components
 
-- ZCD components over native HTML where equivalent exists
-- `ZCD` prefix on all design-system components
-- No `style` prop on ZCD components
-- Components exported from `src/ZCD/index.ts`
+- Prefer design system components over native HTML where equivalent exists
+- No inline `style` prop on design system components
 
 ### Testing (skill: `testing-patterns`)
 

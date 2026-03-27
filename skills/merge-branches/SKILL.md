@@ -1,20 +1,20 @@
 ---
 name: merge-branches
 description: Merge multiple reviewed branches into a single integration branch
-argument-hint: "<branch1> <branch2> ... [--name <branch-name>] [--push] [--mr]"
+argument-hint: "<branch1> <branch2> ... [--name <branch-name>] [--push] [--pr]"
 disable-model-invocation: true
 allowed-tools: Read, Grep, Glob, Bash, TodoWrite
 ---
 
 # Merge Branches into Integration Branch
 
-After domain branches have been reviewed and approved (via `/split-changes`), merge them all back into a single integration branch. Optionally push and create a final MR to the base branch.
+After domain branches have been reviewed and approved (via `/split-changes`), merge them all back into a single integration branch. Optionally push and create a final PR to the base branch.
 
 **Arguments:** `$ARGUMENTS`
 - Positional: branch names (space-separated, at least 2)
 - `--name <branch-name>`: Custom integration branch name (default: auto-generated)
 - `--push`: Push the integration branch to remote
-- `--mr`: Create a GitLab MR from the integration branch (implies --push)
+- `--pr`: Create a GitHub PR from the integration branch (implies --push)
 
 ## Phase 1: Parse & Validate
 
@@ -24,7 +24,7 @@ Parse `$ARGUMENTS` to extract:
 - **Branch names**: all positional arguments (not starting with `--`)
 - **--name value**: custom integration branch name
 - **--push**: push flag
-- **--mr**: MR creation flag (implies --push)
+- **--pr**: PR creation flag (implies --push)
 
 ### 1.2 Validate
 
@@ -71,14 +71,14 @@ If merge conflict: show conflicting files and wait for user resolution.
 
 ## Phase 4: Push & Create MR
 
-### 4.1 Push (if --push or --mr)
+### 4.1 Push (if --push or --pr)
 ```bash
 git push -u origin <integration-branch>
 ```
 
-### 4.2 Create GitLab MR (if --mr)
+### 4.2 Create GitHub PR (if --pr)
 
-Create MR via GitLab API with merged branch details.
+Create PR via `gh pr create` with merged branch details.
 
 ### 4.3 Branch Cleanup
 

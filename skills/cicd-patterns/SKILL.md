@@ -1,6 +1,6 @@
 ---
 name: cicd-patterns
-description: CI/CD pipeline patterns for GitHub Actions and GitLab CI including testing, building, and deployment stages. Use when writing CI/CD pipelines for GitHub Actions or GitLab CI, including test, build, and deployment stages.
+description: CI/CD pipeline patterns for GitHub Actions including testing, building, and deployment stages. Use when writing CI/CD pipelines for GitHub Actions, including test, build, and deployment stages.
 ---
 
 # CI/CD Patterns Skill
@@ -95,68 +95,6 @@ jobs:
     steps:
       - name: Deploy
         run: echo "Deploying to production..."
-```
-
-## GitLab CI
-
-```yaml
-# .gitlab-ci.yml
-stages:
-  - test
-  - build
-  - deploy
-
-variables:
-  NODE_VERSION: '20'
-
-.node-template: &node-template
-  image: node:${NODE_VERSION}-alpine
-  cache:
-    key: ${CI_COMMIT_REF_SLUG}
-    paths:
-      - node_modules/
-
-test:
-  <<: *node-template
-  stage: test
-  script:
-    - npm ci
-    - npm run lint
-    - npm run type-check
-    - npm run test:cov
-  coverage: '/All files[^|]*\|[^|]*\s+([\d\.]+)/'
-
-build:
-  stage: build
-  image: docker:24
-  services:
-    - docker:24-dind
-  only:
-    - main
-    - develop
-  script:
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker build -t $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA .
-    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
-
-deploy:staging:
-  stage: deploy
-  only:
-    - develop
-  environment:
-    name: staging
-  script:
-    - echo "Deploying to staging..."
-
-deploy:production:
-  stage: deploy
-  only:
-    - main
-  environment:
-    name: production
-  when: manual
-  script:
-    - echo "Deploying to production..."
 ```
 
 ## Pipeline Best Practices

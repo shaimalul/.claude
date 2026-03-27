@@ -5,7 +5,7 @@ description: Shared code review framework with finding prefixes, agent routing, 
 
 # Code Review Framework
 
-Shared patterns for the `/review` command (local branch and GitLab MR modes).
+Shared patterns for the `/review` command (local branch and GitHub PR modes).
 
 ## Finding Prefixes
 
@@ -238,9 +238,9 @@ args: [category]: [concise rule description] --save-skill
 
 If no patterns were learned, report: "No learnable patterns identified in this review (no Blocker, Nice-to-have, or Suggestion findings)."
 
-## JSON Findings Format (for GitLab mode)
+## JSON Findings Format (for GitHub mode)
 
-When posting findings to GitLab, use one of these JSON structures:
+When posting findings to GitHub, use one of these JSON structures:
 
 **Inline finding** (on a specific changed line):
 ```json

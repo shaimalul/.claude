@@ -76,7 +76,7 @@ Move complex conditional logic out of JSX props:
 
 ```typescript
 // Before (bad) - hard to read inline
-<ZCDButton
+<Button
   text={isLoading
     ? i18n.get('generating')
     : i18n.get('generate')}
@@ -89,7 +89,7 @@ const buttonText = isLoading
   : i18n.get('generate');
 const isButtonDisabled = isRunning || !canRun || !hasExpected;
 
-<ZCDButton text={buttonText} disabled={isButtonDisabled} />
+<Button text={buttonText} disabled={isButtonDisabled} />
 ```
 
 **When to extract:**

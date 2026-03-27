@@ -77,12 +77,12 @@ interface Props {
 Import and use common UI color variables:
 
 ```scss
-@use '@zencity/common-ui/styles/zcd-colors';
-@use '@zencity/common-ui/styles/zcd-typography';
+@use 'styles/design-tokens/colors';
+@use 'styles/design-tokens/typography';
 
 .component {
-  background: zcd-colors.$zcd-blue-20;
-  color: zcd-colors.$zcd-gray-80;
+  background: colors.$blue-20;
+  color: colors.$gray-80;
 }
 
 // Bad - hardcoded colors

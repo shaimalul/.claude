@@ -1,7 +1,7 @@
 ---
 name: split-changes
-description: Split branch changes into domain-specific branches for focused MR review
-argument-hint: "[--dry-run] [--push] [--mr] [context...]"
+description: Split branch changes into domain-specific branches for focused PR review
+argument-hint: "[--dry-run] [--push] [--pr] [context...]"
 disable-model-invocation: true
 allowed-tools: Read, Edit, Write, Grep, Glob, Bash, TodoWrite
 model: opus
@@ -9,12 +9,12 @@ model: opus
 
 # Split Changes into Domain Branches
 
-Analyze all changes on the current feature branch, group them by domain/feature, and split into separate branches with auto-commits. Enables focused MR reviews where each MR covers a single domain.
+Analyze all changes on the current feature branch, group them by domain/feature, and split into separate branches with auto-commits. Enables focused PR reviews where each PR covers a single domain.
 
 **Arguments:** `$ARGUMENTS`
 - `--dry-run`: Preview the split plan without creating branches
 - `--push`: Push all created branches to remote
-- `--mr`: Create GitLab MRs for each branch (implies --push)
+- `--pr`: Create GitHub PRs for each branch (implies --push)
 - Remaining text = **context** guiding the split
 
 ## Phase 1: Validate & Analyze
@@ -51,20 +51,20 @@ For each domain:
 
 ## Phase 5: Push & Report
 
-Push branches if `--push` or `--mr`. Create GitLab MRs if `--mr`.
+Push branches if `--push` or `--pr`. Create GitHub PRs if `--pr`.
 
 ```
 ## Split Complete
 
 Created M domain branches from <ORIGINAL_BRANCH>:
 
-| # | Branch | Domain | Files | Verified | MR |
+| # | Branch | Domain | Files | Verified | PR |
 |---|--------|--------|-------|----------|-----|
-| 1 | split/<orig>/user-auth | User Auth | 5 | PASS | !123 |
+| 1 | split/<orig>/user-auth | User Auth | 5 | PASS | #123 |
 
 Next steps:
 - Review each MR independently
-- After all approved: /merge-branches split/<orig>/user-auth split/<orig>/api-config --mr
+- After all approved: /merge-branches split/<orig>/user-auth split/<orig>/api-config --pr
 ```
 
 ## Error Handling

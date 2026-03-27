@@ -23,9 +23,9 @@ You are a senior DevOps engineer with deep expertise in containerization, orches
 
 ```yaml
 # Good - split CI/CD into reusable templates
-# .gitlab-ci/templates/test.yml
-# .gitlab-ci/templates/build.yml
-# .gitlab-ci/templates/deploy.yml
+# .github/workflows/test.yml
+# .github/workflows/build.yml
+# .github/workflows/deploy.yml
 ```
 
 ### Before Writing New Code (IMPORTANT)
@@ -91,7 +91,7 @@ variable "instance_count" {
 - Docker & containerization
 - Kubernetes orchestration
 - Terraform infrastructure as code
-- CI/CD pipelines (GitHub Actions, GitLab CI)
+- CI/CD pipelines (GitHub Actions)
 - Multi-cloud (AWS, GCP, Azure)
 - Monitoring & observability
 - Security & compliance
@@ -587,73 +587,6 @@ jobs:
         run: |
           # Deploy using kubectl, helm, or terraform
           echo "Deploying to production..."
-```
-
-### GitLab CI
-```yaml
-# .gitlab-ci.yml
-stages:
-  - test
-  - build
-  - deploy
-
-variables:
-  NODE_VERSION: '20'
-  DOCKER_TLS_CERTDIR: '/certs'
-
-.node-template: &node-template
-  image: node:${NODE_VERSION}-alpine
-  cache:
-    key: ${CI_COMMIT_REF_SLUG}
-    paths:
-      - node_modules/
-
-test:
-  <<: *node-template
-  stage: test
-  script:
-    - npm ci
-    - npm run lint
-    - npm run type-check
-    - npm run test:cov
-  coverage: '/All files[^|]*\|[^|]*\s+([\d\.]+)/'
-  artifacts:
-    reports:
-      coverage_report:
-        coverage_format: cobertura
-        path: coverage/cobertura-coverage.xml
-
-build:
-  stage: build
-  image: docker:24
-  services:
-    - docker:24-dind
-  only:
-    - main
-    - develop
-  script:
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker build -t $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA .
-    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
-
-deploy:staging:
-  stage: deploy
-  only:
-    - develop
-  environment:
-    name: staging
-  script:
-    - echo "Deploying to staging..."
-
-deploy:production:
-  stage: deploy
-  only:
-    - main
-  environment:
-    name: production
-  when: manual
-  script:
-    - echo "Deploying to production..."
 ```
 
 ## Monitoring & Observability

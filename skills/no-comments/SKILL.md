@@ -111,42 +111,42 @@ This explains the "why" - preventing rate limiting - which isn't obvious from th
 ### JSX Section Comments (Bad)
 
 ```tsx
-<ZCDFlex flexDirection="column" gap={16}>
+<Flex flexDirection="column" gap={16}>
   {/* Generate Button */}
-  <ZCDFlex flexDirection="row" gap={16} alignItems="center">
-    <ZCDButton
+  <Flex flexDirection="row" gap={16} alignItems="center">
+    <Button
       text={isLoading ? 'Generating...' : 'Generate'}
       onClick={handleGenerateClick}
       disabled={isGenerateButtonDisabled}
       variant="primary"
       loading={isLoading}
     />
-  </ZCDFlex>
+  </Flex>
 
   {/* Error Message */}
   {error && (
-    <ZCDCard>
-      <ZCDTypography variant="t-body" color="zcd-red-30">
+    <Card>
+      <Typography variant="t-body" color="error">
         {error}
-      </ZCDTypography>
-    </ZCDCard>
+      </Typography>
+    </Card>
   )}
 
   {/* No Published Version Message */}
   {!publishedVersion && (
-    <ZCDCard>
-      <ZCDTypography variant="t-body" color="zcd-gray-80">
+    <Card>
+      <Typography variant="t-body" color="muted">
         No published version available
-      </ZCDTypography>
-    </ZCDCard>
+      </Typography>
+    </Card>
   )}
 
   {/* Metadata Display */}
   {metadata && <ExpectedOutputMetadata metadata={metadata} />}
 
   {/* Expected Output Editor */}
-  <ZCDTextArea value={expectedOutput} onChange={handleChange} rows={10} />
-</ZCDFlex>
+  <TextArea value={expectedOutput} onChange={handleChange} rows={10} />
+</Flex>
 ```
 
 These `{/* Section Name */}` comments are redundant - the JSX structure and component names are already self-documenting.
@@ -154,7 +154,7 @@ These `{/* Section Name */}` comments are redundant - the JSX structure and comp
 ### Self-Documenting JSX (Good)
 
 ```tsx
-<ZCDFlex flexDirection="column" gap={16}>
+<Flex flexDirection="column" gap={16}>
   <GenerateButtonSection
     isLoading={isLoading}
     onGenerate={handleGenerateClick}
@@ -168,7 +168,7 @@ These `{/* Section Name */}` comments are redundant - the JSX structure and comp
   {metadata && <ExpectedOutputMetadata metadata={metadata} />}
 
   <ExpectedOutputEditor value={expectedOutput} onChange={handleChange} />
-</ZCDFlex>
+</Flex>
 ```
 
 Extract sections into well-named components. If extraction isn't warranted, the variable names and component structure should be clear enough without comments.
@@ -176,37 +176,37 @@ Extract sections into well-named components. If extraction isn't warranted, the 
 ### Inline JSX Without Comments (Also Good)
 
 ```tsx
-<ZCDFlex flexDirection="column" gap={16}>
-  <ZCDFlex flexDirection="row" gap={16} alignItems="center">
-    <ZCDButton
+<Flex flexDirection="column" gap={16}>
+  <Flex flexDirection="row" gap={16} alignItems="center">
+    <Button
       text={isLoading ? 'Generating...' : 'Generate'}
       onClick={handleGenerateClick}
       disabled={isGenerateButtonDisabled}
       variant="primary"
       loading={isLoading}
     />
-  </ZCDFlex>
+  </Flex>
 
   {error && (
-    <ZCDCard>
-      <ZCDTypography variant="t-body" color="zcd-red-30">
+    <Card>
+      <Typography variant="t-body" color="error">
         {error}
-      </ZCDTypography>
-    </ZCDCard>
+      </Typography>
+    </Card>
   )}
 
   {!publishedVersion && (
-    <ZCDCard>
-      <ZCDTypography variant="t-body" color="zcd-gray-80">
+    <Card>
+      <Typography variant="t-body" color="muted">
         No published version available
-      </ZCDTypography>
-    </ZCDCard>
+      </Typography>
+    </Card>
   )}
 
   {metadata && <ExpectedOutputMetadata metadata={metadata} />}
 
-  <ZCDTextArea value={expectedOutput} onChange={handleChange} rows={10} />
-</ZCDFlex>
+  <TextArea value={expectedOutput} onChange={handleChange} rows={10} />
+</Flex>
 ```
 
 The conditional rendering (`{error && ...}`, `{!publishedVersion && ...}`) and component names already communicate intent.

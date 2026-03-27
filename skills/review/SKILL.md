@@ -1,7 +1,7 @@
 ---
 name: review
-description: Code Review - Review local branch changes or GitLab MR with principal agents
-argument-hint: [gitlab-mr-url] [context]
+description: Code Review - Review local branch changes or GitHub PR with principal agents
+argument-hint: [github-pr-url] [context]
 disable-model-invocation: true
 allowed-tools: Task, Bash, Read, Grep, Glob, TodoWrite, Write, WebFetch
 effort: max
@@ -15,15 +15,15 @@ For shared review framework details, see the `review-base` skill.
 
 **Modes:**
 - `/review [context]` - Review current branch changes
-- `/review <gitlab-mr-url> [context]` - Review GitLab MR and post draft comments
+- `/review <github-pr-url> [context]` - Review GitHub PR and post review comments
 
 ## FULLY AUTOMATED WORKFLOW
 
 This skill runs **without any user prompts**. It will:
-1. Detect mode (local branch vs GitLab MR)
-2. Fetch changes (git diff or GitLab API)
+1. Detect mode (local branch vs GitHub PR)
+2. Fetch changes (git diff or GitHub API)
 3. Analyze code using principal agents in parallel
-4. Post findings as draft comments on GitLab (GitLab mode only)
+4. Post findings as review comments on GitHub (GitHub mode only)
 5. Generate a comprehensive review report
 
 **Do NOT ask user questions during execution.**
@@ -34,9 +34,9 @@ This skill runs **without any user prompts**. It will:
 ARGS="$ARGUMENTS"
 FIRST_ARG=$(echo "$ARGS" | awk '{print $1}')
 
-if echo "$FIRST_ARG" | grep -qE '^https://gitlab\.com/.*/merge_requests/[0-9]+'; then
-  MODE="gitlab"
-  MR_URL="$FIRST_ARG"
+if echo "$FIRST_ARG" | grep -qE '^https://github\.com/.*/pull/[0-9]+'; then
+  MODE="github"
+  PR_URL="$FIRST_ARG"
 else
   MODE="local"
 fi
@@ -46,7 +46,7 @@ fi
 
 **LOCAL mode:** Use git diff against base branch, create assets directory.
 
-**GITLAB mode:** Fetch MR data via GitLab API, extract diffs and file content to assets directory.
+**GITHUB mode:** Fetch PR data via GitHub API (`gh`), extract diffs and file content to assets directory.
 
 ## Phase 2: Categorize Changed Files
 
@@ -102,9 +102,9 @@ Merge findings, deduplicate same-region findings. Group by severity:
 4. `[Need to check]` - Verify/explain
 5. `[Question]` - Needs clarification
 
-## Phase 5: Post to GitLab (GITLAB MODE ONLY)
+## Phase 5: Post to GitHub (GITHUB MODE ONLY)
 
-Post findings as draft notes via GitLab API, mapping code patterns to line numbers.
+Post findings as review comments via GitHub API (`gh`), mapping code patterns to line numbers.
 
 ## Phase 6: Generate Report
 

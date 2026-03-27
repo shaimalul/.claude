@@ -30,7 +30,7 @@ When reviewing code or implementing features, load appropriate skills based on t
 | Code Smell / Task | Primary Skill | Specialist |
 |-------------------|---------------|------------|
 | fetch() in component, multiple useState, 10+ props | `refactoring-patterns` | frontend-principal |
-| Native HTML vs ZCD, hardcoded colors | `common-ui-patterns` | frontend-principal |
+| Native HTML vs design system, hardcoded colors | `styling-rtl` | frontend-principal |
 | npm package, exports config | `npm-package-patterns` | backend-principal |
 | React anti-patterns, memoization | `react-component` | frontend-principal |
 | DB in controller, missing validation, DI | `backend-patterns` | backend-principal |
@@ -41,7 +41,7 @@ When reviewing code or implementing features, load appropriate skills based on t
 | Security, auth patterns, OWASP | `security-patterns` | security-principal |
 | Docker, containers, Compose | `docker-patterns` | devops-principal |
 | Kubernetes, Helm charts | `kubernetes-patterns` | devops-principal |
-| CI/CD, GitHub Actions, GitLab CI | `cicd-patterns` | devops-principal |
+| CI/CD, GitHub Actions | `cicd-patterns` | devops-principal |
 | Terraform, infrastructure as code | `terraform-patterns` | devops-principal |
 | AWS EKS, node groups, IRSA | `aws-eks-patterns` | devops-principal |
 | OpenAI, Chat API, streaming | `openai-integration` | ai-principal |
@@ -60,7 +60,7 @@ When delegating to specialists, ensure they load relevant skills:
 
 | Specialist | Always Load |
 |------------|-------------|
-| **frontend-principal** | `react-component`, `refactoring-patterns`, `common-ui-patterns`, `typescript-types`, `rgr-patterns` |
+| **frontend-principal** | `react-component`, `refactoring-patterns`, `typescript-types`, `rgr-patterns` |
 | **backend-principal** | `backend-patterns`, `api-design`, `database-patterns`, `rgr-patterns` |
 | **ai-principal** | `openai-integration`, `prompt-engineering` |
 | **devops-principal** | `docker-patterns`, `kubernetes-patterns`, `cicd-patterns`, `terraform-patterns` |

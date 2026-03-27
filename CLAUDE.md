@@ -4,7 +4,7 @@ When compacting, preserve: active task goal, decisions made, files modified, pen
 # Principal Engineer Code Standards
 
 Focus on SOLID principles, testability, clean architecture, and maintainability.
-For detailed patterns, invoke skills: `refactoring-patterns`, `react-component`, `backend-patterns`, `architect`, `typescript-types`, `common-ui-patterns`
+For detailed patterns, invoke skills: `refactoring-patterns`, `react-component`, `backend-patterns`, `architect`, `typescript-types`
 
 ---
 
@@ -30,7 +30,6 @@ Search the codebase first. Before creating types, utilities, constants:
 
 - Library docs → Context7 `resolve-library-id` + `query-docs` (not WebSearch)
 - Notion pages → Notion MCP (not WebFetch)
-- Jira/Confluence → Jira MCP `search`, `getJiraIssue` (not WebFetch or `gh`)
 - General web info → WebSearch/WebFetch (fallback only)
 
 ---

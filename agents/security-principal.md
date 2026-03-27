@@ -432,11 +432,9 @@ security-scan:
 ```
 
 ```yaml
-# GitLab CI example
-security:
-  stage: test
-  script:
-    - npm audit --audit-level=high
-    - npx snyk test --severity-threshold=high
-  allow_failure: false  # Block merge on vulnerabilities
+# GitHub Actions example
+- name: Security audit
+  run: |
+    npm audit --audit-level=high
+    npx snyk test --severity-threshold=high
 ```

@@ -55,9 +55,9 @@ Separate UI from logic. Presentational components receive data via props; contai
 function UserForm({ formData, onInputChange, onSubmit }: UserFormProps) {
   return (
     <form onSubmit={onSubmit}>
-      <ZCDInput name="name" value={formData.name} onChange={onInputChange} />
-      <ZCDInput name="email" value={formData.email} onChange={onInputChange} />
-      <ZCDButton type="submit" text="Save" />
+      <Input name="name" value={formData.name} onChange={onInputChange} />
+      <Input name="email" value={formData.email} onChange={onInputChange} />
+      <Button type="submit" text="Save" />
     </form>
   );
 }
@@ -424,7 +424,7 @@ const processed = useMemo(() =>
 // Good
 import { Link } from 'react-router-dom';
 <Link to={`/projects/${projectId}`}>{projectName}</Link>
-<ZCDMenuItem as={Link} to="/settings" />
+<MenuItem as={Link} to="/settings" />
 
 // Bad - breaks a11y
 <div onClick={() => navigate('/projects')}>Go</div>
@@ -436,7 +436,7 @@ import { Link } from 'react-router-dom';
 - No direct localStorage (use storageService)
 - No fetch() in components (use React Query)
 - No business logic in TSX
-- Use ZCD components from @zencity/common-ui
+- Use design system components when available
 - Constants declared outside component function
 - String literals in constants, not inline
 - `handle` prefix for internal handlers, `on` prefix for callback props

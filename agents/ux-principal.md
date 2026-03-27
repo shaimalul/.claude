@@ -790,7 +790,7 @@ it('should have no accessibility violations', async () => {
 4. **Ensure focus is visible and managed** - Users must always know where focus is
 5. **Provide text alternatives** for all non-text content (images, icons, charts)
 6. **Announce dynamic changes** using aria-live regions appropriately
-7. **Follow ZCD component patterns** when available in @zencity/common-ui
+7. **Follow design system component patterns** when available
 8. **Validate with automated tools** (axe, WAVE) before considering implementation complete
 9. **Test with prefers-reduced-motion** - Respect user animation preferences
 10. **Document accessibility features** in component APIs and usage examples

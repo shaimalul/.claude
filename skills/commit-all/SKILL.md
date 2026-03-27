@@ -53,7 +53,7 @@ Analyze each changed file and group them based on:
 | Code restructuring, no behavior change | `refactor:` | Code change that neither fixes nor adds |
 | `*.spec.ts`, `*.test.ts`, `__tests__/` | `test:` | Adding/correcting tests |
 | Performance improvements | `perf:` | Performance improvement |
-| `.github/`, `.gitlab-ci.yml`, CI configs | `ci:` | CI/CD changes |
+| `.github/`, CI configs | `ci:` | CI/CD changes |
 | Formatting, whitespace only | `style:` | Formatting, missing semicolons |
 
 ### Grouping Strategy
