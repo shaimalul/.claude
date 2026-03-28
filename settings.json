@@ -39,13 +39,11 @@
       "Edit(~/.claude/skills/storybook-story/**)",
       "Edit(~/.claude/skills/refactoring-patterns/**)",
       "Edit(~/.claude/skills/react-component/**)",
-      "Edit(~/.claude/skills/no-comments/**)"
+      "Edit(~/.claude/skills/no-comments/**)",
+      "WebFetch(domain:tanstack.com)",
+      "WebFetch(domain:tanstack.dev)"
     ],
-    "defaultMode": "bypassPermissions",
-    "additionalDirectories": [
-      "/Users/shaimalul/.claude/agents",
-      "/Users/shaimalul/.claude"
-    ]
+    "defaultMode": "bypassPermissions"
   },
   "model": "claude-sonnet-4-6",
   "hooks": {
