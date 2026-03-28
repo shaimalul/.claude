@@ -1,9 +1,9 @@
 ---
 name: commit-all
 description: Review all changes and create grouped commits following Conventional Commits
-argument-hint: [--dry-run]
+argument-hint: [--dry-run] [--scope=<path-or-pattern>] [<context-description>]
 disable-model-invocation: true
-allowed-tools: Read, Grep, Glob, Bash
+allowed-tools: Read, Grep, Glob, Bash, AskUserQuestion
 ---
 
 # Commit All Changes
@@ -12,6 +12,16 @@ Intelligently review all uncommitted changes, group them by domain/type, and com
 
 **Arguments:**
 - `--dry-run`: Preview the commit plan without actually committing
+- `--scope=<path>`: Only include changes in the specified path (e.g., `--scope=src/auth`)
+- `<context>`: Free text describing what you were working on (helps filter unrelated changes)
+
+## Multi-Session Change Filtering
+
+When you have accumulated changes from multiple sessions, this skill helps you commit only the relevant changes:
+
+1. **Scope by path**: Use `--scope=src/feature` to limit to a directory
+2. **Scope by context**: Describe your task (e.g., "auth improvements") and we'll identify related files
+3. **Interactive selection**: Review all changes and exclude unrelated files
 
 ## Phase 1: Analyze All Changes
 
