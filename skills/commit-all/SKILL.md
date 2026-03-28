@@ -48,6 +48,49 @@ Run these commands to understand the current state:
    git diff --cached
    ```
 
+## Phase 1.5: Filter Changes (Multi-Session Awareness)
+
+**CRITICAL:** When there are many changed files, check if they appear to be from different work sessions.
+
+### Detection Signals for Mixed Sessions:
+- Files in unrelated directories (e.g., `src/auth/` and `docs/api/` and `scripts/`)
+- Mix of feature work and config/chore files
+- Large number of files (>10) across different domains
+- User provided context description limiting scope
+
+### Filtering Strategy:
+
+1. **If `--scope=<path>` provided:**
+   Filter to only files matching the path pattern.
+
+2. **If context description provided:**
+   Analyze file names and diff content to identify files related to the described task. Mark unrelated files as "excluded".
+
+3. **If many diverse changes detected:**
+   Use `AskUserQuestion` to confirm scope:
+
+   **Question:** "I found [N] changed files across multiple domains. Which changes do you want to commit?"
+
+   **Options:**
+   - **All** - "Commit all [N] files as shown in the plan"
+   - **Filter by path** - "Only commit files in a specific directory"
+   - **Select manually** - "Let me review and exclude specific files"
+   - **Describe scope** - "I'll describe what I was working on"
+
+4. **Build the filtered file list** before proceeding to grouping.
+
+### Exclusion Display:
+
+If files are excluded, show them clearly:
+
+```
+## Excluded from this commit (unrelated changes):
+  - path/to/unrelated/file.ts
+  - another/session/work.ts
+
+These files will remain uncommitted. Use `/commit-all` again to commit them separately.
+```
+
 ## Phase 2: Group Changes by Domain
 
 Analyze each changed file and group them based on:
@@ -100,10 +143,13 @@ Files:
 
 After showing the plan, use the `AskUserQuestion` tool to confirm:
 
-**Question:** "Ready to create [N] commits. How would you like to proceed?"
+**Question:** "Ready to create [N] commits with [M] files. How would you like to proceed?"
 **Options:**
 1. **Yes** - "Proceed with creating all commits as planned"
-2. **Improve** - "Suggest changes to the commit grouping or messages"
+2. **Exclude files** - "Remove some files from this commit batch"
+3. **Improve** - "Suggest changes to the commit grouping or messages"
+
+If user selects "Exclude files", ask which files to exclude, then regenerate the commit plan without those files. The excluded files remain uncommitted for a future `/commit-all`.
 
 If `--dry-run` was specified, skip this step and show: "Dry run complete. No commits were created."
 
