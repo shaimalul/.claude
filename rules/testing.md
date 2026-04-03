@@ -1,10 +1,23 @@
 # Testing Requirements
 
+## CORE PRINCIPLE: I/O-Based Testing
+
+**MANDATORY**: All tests must be I/O-based (Input/Output). Mock at the HTTP boundary using **MSW** (frontend) or **nock** (backend), NOT internal functions.
+
+Why:
+- Tests survive refactoring (internal changes don't break tests)
+- Tests validate the contract (same I/O = same test result)
+- Tests are decoupled from implementation details
+
+```
+[Test] → [Real Code] → [HTTP Call] → [MSW Interceptor] → [Mock Response]
+```
+
 ## Minimum Test Coverage: 80%
 
 Test Types (ALL required):
-1. **Unit Tests** - Individual functions, utilities, components
-2. **Integration Tests** - API endpoints, database operations
+1. **Unit Tests** - Pure functions, utilities (no I/O)
+2. **Integration Tests** - API endpoints with HTTP interception (MSW/nock)
 3. **E2E Tests** - Critical user flows (Playwright)
 
 ## Test-Driven Development (RGR)
@@ -41,7 +54,29 @@ Load `rgr-patterns` skill for detailed RED/GREEN/REFACTOR patterns.
 Follow testing-patterns skill conventions:
 - Describe what the function/component DOES
 - Use clear, readable test names
-- Proper mocking and isolation
+- Mock at HTTP boundary only (MSW/nock)
+
+## Mocking Rules (STRICT)
+
+### CORRECT: HTTP Interception
+```typescript
+import { server } from '../mocks/server';
+import { http, HttpResponse } from 'msw';
+
+server.use(
+  http.get('/api/users', () => HttpResponse.json(mockUsers))
+);
+```
+
+### WRONG: Internal Function Mocking
+```typescript
+// NEVER DO THIS - couples tests to implementation
+vi.mock('../services/userService', () => ({
+  getUsers: vi.fn().mockResolvedValue(mockUsers),
+}));
+```
+
+The test should make real function calls. Only HTTP is intercepted.
 
 ## Troubleshooting Test Failures
 
@@ -59,3 +94,12 @@ After completing any implementation, ALWAYS run in order:
 4. `npm run build` - Build verification
 
 Fix ALL errors before considering task complete.
+
+## Test Quality Checklist
+
+Before submitting tests:
+- [ ] Uses MSW/nock for HTTP mocking (not vi.mock on services)
+- [ ] Test would pass if internal implementation changed (but I/O stayed same)
+- [ ] No direct mocking of functions that make HTTP calls
+- [ ] Test validates input → output contract
+- [ ] Error scenarios use HTTP error responses (not thrown mocks)
