@@ -1,17 +1,91 @@
 # Testing Requirements
 
-## CORE PRINCIPLE: I/O-Based Testing
+## CORE PRINCIPLE: Boundary Testing (I/O-Based, Black-Box)
 
-**MANDATORY**: All tests must be I/O-based (Input/Output). Mock at the HTTP boundary using **MSW** (frontend) or **nock** (backend), NOT internal functions.
+**MANDATORY**: All tests must be **boundary tests**. Mock ONLY at system boundaries (HTTP, database, file I/O), NEVER internal functions or libraries.
 
-Why:
-- Tests survive refactoring (internal changes don't break tests)
-- Tests validate the contract (same I/O = same test result)
-- Tests are decoupled from implementation details
+### The Library Swap Test
+
+> If you swap ANY internal library or restructure ANY internal code, your tests MUST still pass.
+> If they break, your tests are coupled to implementation - fix them.
+
+Examples:
+- Swap axios → fetch: tests pass
+- Swap Prisma → TypeORM: tests pass  
+- Refactor userService internals: tests pass
+- Change caching from Redis to Memcached: tests pass
+
+### Why Boundary Testing?
+
+- **Tests survive refactoring** - Change internals freely, tests stay green
+- **Tests validate contracts** - Same input/output = same test result
+- **Tests are implementation-agnostic** - No knowledge of internal libraries
+- **Tests are meaningful** - They test what users/consumers experience
+- **Tests are decoupled from logic** - Internal details don't break tests
+
+### Tests Don't Know About Internal Logic
+
+If the test breaks when you change internal logic (not the contract), the test is wrong:
+
+```typescript
+// Internal changes that should NOT break tests:
+- Rename env var: API_URL → BASE_URL
+- Change config key: 'timeout' → 'requestTimeout'
+- Refactor function: split into smaller functions
+- Change algorithm: bubble sort → quick sort
+- Rename internal variable: 'data' → 'response'
+
+// ONLY these should break tests (contract changes):
+- Change API endpoint path: /users → /accounts
+- Change response shape: { name } → { fullName }
+- Change function signature: getUser(id) → getUser(id, options)
+```
+
+**The principle**: Test the WHAT (input/output), not the HOW (internal logic).
+
+### Boundary Diagram
 
 ```
-[Test] → [Real Code] → [HTTP Call] → [MSW Interceptor] → [Mock Response]
+[Test] → [Your Code] → [BOUNDARY] → [Mock]
+                            ↑
+                      ONLY mock HERE
+                    (HTTP, DB, File I/O)
+
+Examples of what NOT to mock (implementation details):
+- HTTP clients: axios, fetch, got, ky, node-fetch
+- Internal services: userService, authService, apiClient
+- Repositories: userRepository, dataRepository
+- Utilities: formatDate, validateInput
 ```
+
+### Dependency Injection for Testability
+
+**DI is HOW you achieve decoupled tests** - inject dependencies at boundaries, not internals.
+
+```typescript
+// GOOD: Inject config and dependencies
+class UserService {
+  constructor(
+    private httpClient: HttpClient,     // Injected interface
+    private config: { baseUrl: string } // Injected config
+  ) {}
+  
+  async getUser(id: string) {
+    return this.httpClient.get(`${this.config.baseUrl}/users/${id}`);
+  }
+}
+
+// Test doesn't know about:
+// - Which HTTP client is used (axios? fetch?)
+// - What the env var is called (API_URL? BASE_URL?)
+// - How config is loaded (dotenv? AWS Secrets?)
+```
+
+DI enables you to:
+- **Decouple tests from internal logic** - rename env vars, tests don't break
+- **Swap implementations** - change libraries, tests don't break
+- **Test real code paths** - mock only at boundaries
+- **Keep tests ignorant** - no knowledge of HOW, only WHAT
 
 ## Minimum Test Coverage: 80%
 
@@ -58,25 +132,65 @@ Follow testing-patterns skill conventions:
 
 ## Mocking Rules (STRICT)
 
-### CORRECT: HTTP Interception
+### What is a Boundary?
+
+Boundaries are edges where your code interacts with external systems:
+- **HTTP** - API calls (use MSW/nock)
+- **Database** - Queries (use test database, not mock repository)
+- **File System** - File I/O (use temp files or mock fs)
+- **Time** - Date/timers (use vi.useFakeTimers)
+- **External Services** - Third-party APIs (use MSW/nock)
+
+### NEVER Mock (Implementation Details)
+
+These are **examples** - the principle applies to ANY internal implementation:
+
 ```typescript
+// WRONG - Mocking HTTP client libraries (ANY of them)
+vi.mock('axios');           // or fetch, got, ky, superagent...
+vi.mock('node-fetch');
+
+// WRONG - Mocking ORM/database clients
+vi.mock('prisma');          // or typeorm, sequelize, knex...
+vi.mock('../db/connection');
+
+// WRONG - Mocking internal services/repositories
+vi.mock('../services/userService');
+vi.mock('../repositories/userRepository');
+
+// WRONG - Mocking internal utilities
+vi.mock('../utils/apiClient');
+vi.mock('../lib/cache');
+```
+
+**The principle**: If it's YOUR code or a library YOUR code uses internally, don't mock it.
+
+### ALWAYS Mock at Boundary (HTTP Layer)
+
+```typescript
+// CORRECT - MSW intercepts HTTP regardless of what library makes the call
 import { server } from '../mocks/server';
 import { http, HttpResponse } from 'msw';
 
 server.use(
   http.get('/api/users', () => HttpResponse.json(mockUsers))
 );
+
+// Your code can use axios, fetch, got, ky, etc. - test doesn't care
 ```
 
-### WRONG: Internal Function Mocking
+### Why This Matters
+
 ```typescript
-// NEVER DO THIS - couples tests to implementation
-vi.mock('../services/userService', () => ({
-  getUsers: vi.fn().mockResolvedValue(mockUsers),
-}));
-```
+// Your service today:
+const response = await axios.get('/api/users');
 
-The test should make real function calls. Only HTTP is intercepted.
+// You refactor to:
+const response = await fetch('/api/users');
+
+// With boundary testing: Tests still pass (MSW intercepts both)
+// With vi.mock('axios'): Tests BREAK (coupled to implementation)
+```
 
 ## Troubleshooting Test Failures
 
@@ -98,8 +212,11 @@ Fix ALL errors before considering task complete.
 ## Test Quality Checklist
 
 Before submitting tests:
-- [ ] Uses MSW/nock for HTTP mocking (not vi.mock on services)
+- [ ] **Library Swap Test**: Would test pass if you swapped ANY internal library?
+- [ ] **DI Used**: Dependencies injected at boundaries, not hardcoded
+- [ ] Uses MSW/nock/test-DB for boundary mocking (NEVER vi.mock on libraries/services)
 - [ ] Test would pass if internal implementation changed (but I/O stayed same)
-- [ ] No direct mocking of functions that make HTTP calls
-- [ ] Test validates input → output contract
-- [ ] Error scenarios use HTTP error responses (not thrown mocks)
+- [ ] No mocking of: HTTP clients, ORMs, internal services, repositories, utilities
+- [ ] Test validates input → output contract at boundaries only
+- [ ] Error scenarios use boundary-level errors (HTTP 4xx/5xx, DB errors)
+- [ ] Test has no knowledge of which libraries the code uses internally
