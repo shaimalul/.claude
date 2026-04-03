@@ -35,3 +35,7 @@ backups/
 review-assets/
 mcp-needs-auth-cache.json
 tasks/
+
+policy-limits.json
+.claude/
+last-git-pull.json

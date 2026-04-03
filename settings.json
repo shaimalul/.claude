@@ -18,8 +18,18 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node /Users/shaimalul/.claude/scripts/hooks/session-start.js",
+            "command": "node ~/.claude/scripts/hooks/session-start.js",
             "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ~/.claude/scripts/hooks/periodic-git-pull.js",
+            "timeout": 35
           }
         ]
       }
@@ -30,7 +40,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node /Users/shaimalul/.claude/scripts/hooks/session-end.js",
+            "command": "node ~/.claude/scripts/hooks/session-end.js",
             "timeout": 10
           }
         ]
@@ -51,7 +61,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node /Users/shaimalul/.claude/scripts/hooks/micro-iterate-stop-hook.js",
+            "command": "node ~/.claude/scripts/hooks/micro-iterate-stop-hook.js",
             "timeout": 15
           }
         ]
@@ -61,7 +71,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node /Users/shaimalul/.claude/scripts/hooks/evaluate-session.js",
+            "command": "node ~/.claude/scripts/hooks/evaluate-session.js",
             "timeout": 10
           }
         ]
@@ -71,7 +81,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node /Users/shaimalul/.claude/scripts/hooks/evaluate-cleanup.js",
+            "command": "node ~/.claude/scripts/hooks/evaluate-cleanup.js",
             "timeout": 10
           }
         ]
@@ -82,7 +92,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/Users/shaimalul/.claude/plugins/claude-notifier-plugin/scripts/notify.sh",
+            "command": "~/.claude/plugins/claude-notifier-plugin/scripts/notify.sh",
             "timeout": 5
           }
         ]
@@ -94,7 +104,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node /Users/shaimalul/.claude/scripts/hooks/suggest-compact.js",
+            "command": "node ~/.claude/scripts/hooks/suggest-compact.js",
             "timeout": 5
           }
         ]
@@ -104,7 +114,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node /Users/shaimalul/.claude/scripts/hooks/git-guardrails.js",
+            "command": "node ~/.claude/scripts/hooks/git-guardrails.js",
             "timeout": 5
           }
         ]
