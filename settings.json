@@ -10,7 +10,6 @@
     ],
     "defaultMode": "bypassPermissions"
   },
-  "model": "claude-sonnet-4-6",
   "hooks": {
     "SessionStart": [
       {
@@ -131,13 +130,12 @@
     ]
   },
   "enabledPlugins": {
-    "babysitter@a5c.ai": true,
     "context7@claude-plugins-official": true,
     "playwright@claude-plugins-official": true,
     "frontend-design@claude-plugins-official": true
   },
   "alwaysThinkingEnabled": false,
-  "effortLevel": "high",
+  "effortLevel": "medium",
   "skipDangerousModePermissionPrompt": true,
   "feedbackSurveyState": {
     "lastShownTime": 1753951833330
