@@ -36,6 +36,7 @@ Use simple, consistent markdown:
 - Never use bold (`**text**`) - use plain text or headers for emphasis
 - Use triple backticks with language identifier for code blocks
 - Use `#` notation for headers, not underlines
+- NEVER use em dash `—` anywhere - use hyphen `-` instead (applies to code, templates, copy, markdown, everything)
 
 ## Error Handling
 
