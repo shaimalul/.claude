@@ -26,6 +26,24 @@ Search the codebase first. Before creating types, utilities, constants:
 
 ---
 
+## Testing Principles (Boundary Testing)
+
+**Library Swap Test**: If you swap ANY internal library (axios to fetch, Prisma to TypeORM), tests MUST still pass.
+
+Mock at boundaries only:
+```
+[Test] → [Your Code] → [BOUNDARY] → [Mock]
+                            ↑
+                      HTTP, DB, File I/O
+```
+
+FORBIDDEN: `vi.mock('axios')`, `vi.mock('aws-sdk')`, `vi.mock('../services/...')`, `vi.mock('../repositories/...')`
+REQUIRED: MSW/nock for HTTP, `@aws-sdk/client-mock` for AWS, test DB for database, vi.useFakeTimers for time
+
+Skills: `testing-patterns` (auto-loads for test files) | `review-test` (audit existing tests) | `rgr-patterns` (TDD workflow)
+
+---
+
 ## MCP-First Tool Routing
 
 - Library docs → Context7 `resolve-library-id` + `query-docs` (not WebSearch)

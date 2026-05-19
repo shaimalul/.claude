@@ -56,6 +56,8 @@ A boundary is where your code interacts with external systems:
 | Boundary | Mock Tool | Example |
 |----------|-----------|---------|
 | HTTP requests | MSW, nock | API calls to backend or third-party |
+| AWS services | @aws-sdk/client-mock | S3, DynamoDB, SQS, Lambda |
+| GCP services | Test emulators, mock-cloud-storage | Firestore, Cloud Storage, Pub/Sub |
 | Database | Test DB | Use real test database, not mock repository |
 | File system | memfs, temp files | File read/write operations |
 | Time | vi.useFakeTimers | Date.now(), setTimeout |
@@ -419,6 +421,11 @@ These are **examples** - the principle applies to ANY internal implementation:
 // FORBIDDEN - Mocking HTTP libraries (ANY of them)
 vi.mock('axios');                    // or fetch, got, ky, superagent...
 vi.mock('node-fetch');               // If you switch libraries, tests break
+
+// FORBIDDEN - Mocking cloud SDKs (bypasses the service boundary)
+vi.mock('aws-sdk');                  // Use @aws-sdk/client-mock instead
+vi.mock('@aws-sdk/client-s3');       // Use @aws-sdk/client-mock instead
+vi.mock('@google-cloud/storage');    // Use GCP emulators or mock-cloud-storage
 
 // FORBIDDEN - Mocking ORM/database clients
 vi.mock('prisma');                   // or typeorm, sequelize, knex...

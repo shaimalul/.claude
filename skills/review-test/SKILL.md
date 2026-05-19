@@ -38,10 +38,10 @@ Scan each test file for these specific anti-patterns. Use the exact detection he
 ### Blocker Anti-Patterns (Must Rewrite)
 
 **B1: Library Mocking**
-- Detection: `vi.mock('axios')`, `vi.mock('node-fetch')`, `vi.mock('got')`, `vi.mock('ky')`, `vi.mock('superagent')`, `vi.mock('prisma')`, `vi.mock('@prisma/client')`, `vi.mock('redis')`, `vi.mock('ioredis')`, `vi.mock('bull')`, `vi.mock('mongoose')`, `vi.mock('sequelize')`, `vi.mock('typeorm')`, `vi.mock('knex')` or any `vi.mock` of a third-party package name (no relative path)
+- Detection: `vi.mock('axios')`, `vi.mock('node-fetch')`, `vi.mock('got')`, `vi.mock('ky')`, `vi.mock('superagent')`, `vi.mock('prisma')`, `vi.mock('@prisma/client')`, `vi.mock('redis')`, `vi.mock('ioredis')`, `vi.mock('bull')`, `vi.mock('mongoose')`, `vi.mock('sequelize')`, `vi.mock('typeorm')`, `vi.mock('knex')`, `vi.mock('aws-sdk')`, `vi.mock('@aws-sdk/client-s3')`, `vi.mock('@aws-sdk/client-dynamodb')`, `vi.mock('@aws-sdk/client-sqs')`, `vi.mock('@google-cloud/storage')`, `vi.mock('@google-cloud/firestore')` or any `vi.mock` of a third-party package name (no relative path)
 - Exception: `vi.mock` of test utilities (`__mocks__/`, `test/`, `__tests__/`, `fixtures/`, `mocks/`) is acceptable
 - Why: Couples tests to a specific library choice. Fails the Library Swap Test.
-- Fix: Use MSW/nock to intercept at the HTTP boundary, test DB for database.
+- Fix: Use MSW/nock for HTTP, `@aws-sdk/client-mock` for AWS, GCP emulators for GCP, test DB for database.
 
 **B2: Internal Service/Repository Mocking**
 - Detection: `vi.mock('../services/...')`, `vi.mock('../repositories/...')`, `vi.mock('../utils/...')`, `vi.mock('../lib/...')`, `vi.mock('../hooks/...')` - any `vi.mock` with a relative path pointing to production source code

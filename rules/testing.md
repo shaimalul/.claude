@@ -136,8 +136,10 @@ Follow testing-patterns skill conventions:
 
 Boundaries are edges where your code interacts with external systems:
 - **HTTP** - API calls (use MSW/nock)
+- **AWS Services** - S3, DynamoDB, SQS, etc. (use `@aws-sdk/client-mock`)
+- **GCP Services** - Cloud Storage, Firestore, etc. (use `mock-cloud-storage`, test emulators)
 - **Database** - Queries (use test database, not mock repository)
-- **File System** - File I/O (use temp files or mock fs)
+- **File System** - File I/O (use temp files or memfs)
 - **Time** - Date/timers (use vi.useFakeTimers)
 - **External Services** - Third-party APIs (use MSW/nock)
 
@@ -149,6 +151,11 @@ These are **examples** - the principle applies to ANY internal implementation:
 // WRONG - Mocking HTTP client libraries (ANY of them)
 vi.mock('axios');           // or fetch, got, ky, superagent...
 vi.mock('node-fetch');
+
+// WRONG - Mocking cloud SDKs (bypasses service boundary, fails Library Swap Test)
+vi.mock('aws-sdk');         // Use @aws-sdk/client-mock instead
+vi.mock('@aws-sdk/client-s3');
+vi.mock('@google-cloud/storage'); // Use GCP emulators instead
 
 // WRONG - Mocking ORM/database clients
 vi.mock('prisma');          // or typeorm, sequelize, knex...
@@ -177,6 +184,22 @@ server.use(
 );
 
 // Your code can use axios, fetch, got, ky, etc. - test doesn't care
+```
+
+### ALWAYS Mock at Boundary (AWS Services)
+
+```typescript
+// CORRECT - @aws-sdk/client-mock intercepts at the AWS API boundary
+import { mockClient } from '@aws-sdk/client-mock';
+import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
+
+const s3Mock = mockClient(S3Client);
+
+s3Mock.on(GetObjectCommand).resolves({
+  Body: sdkStreamMixin(Readable.from([Buffer.from('test content')])),
+});
+
+// Your code can use S3Client however it wants - test doesn't care
 ```
 
 ### Why This Matters
