@@ -30,7 +30,7 @@ if (!apiKey) {
 
 If security issue found:
 1. STOP immediately
-2. Use **security-principal** agent via `/principal security`
+2. Use **security-agent** agent via `/consult security`
 3. Fix CRITICAL issues before continuing
 4. Rotate any exposed secrets
 5. Review entire codebase for similar issues

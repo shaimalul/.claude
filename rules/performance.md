@@ -2,20 +2,9 @@
 
 ## Model Selection Strategy
 
-**Haiku 4.5** (90% of Sonnet capability, 3x cost savings):
-- Lightweight agents with frequent invocation
-- Pair programming and code generation
-- Worker agents in multi-agent systems
+See `rules/models.md` - the single source of truth for tier definitions and the per-agent and per-skill assignment tables.
 
-**Sonnet 4.5** (Best coding model):
-- Main development work
-- Orchestrating multi-agent workflows
-- Complex coding tasks
-
-**Opus 4.5** (Deepest reasoning):
-- Complex architectural decisions
-- Maximum reasoning requirements
-- Research and analysis tasks
+Never hardcode a model version anywhere. Reference tiers by alias (`opus`, `sonnet`, `haiku`) only.
 
 ## Context Window Management
 
@@ -37,10 +26,6 @@ Use `/compact` at logical boundaries:
 - After completing a milestone, before starting next
 - When context feels stale or repetitive
 
-The `suggest-compact.js` hook will remind you at:
-- 50 tool calls (first suggestion)
-- Every 25 calls after that
-
 ## Ultrathink + Plan Mode
 
 For complex tasks requiring deep reasoning:
@@ -52,7 +37,7 @@ For complex tasks requiring deep reasoning:
 ## Build Troubleshooting
 
 If build fails:
-1. Use **bug-finder** agent for root cause analysis
+1. Use **bug-finder-agent** agent for root cause analysis
 2. Analyze error messages
 3. Fix incrementally
 4. Verify after each fix
