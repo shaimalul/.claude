@@ -1,110 +1,40 @@
 ---
 name: plan-task
-description: Plan a task by analyzing requirements and creating an implementation roadmap with the mastermind agent
+description: Plan a task by analyzing requirements and creating an implementation roadmap with the mastermind-agent, grounded in the project's domain docs.
 argument-hint: [task-description]
-disable-model-invocation: true
-allowed-tools: Task, Read, Grep, Glob
+allowed-tools: Task, Read, Grep, Glob, Bash, Write, Edit, AskUserQuestion
 model: opus
+disable-model-invocation: true
 ---
 
 # Task Planning
 
-Use the **Task tool** to invoke the `mastermind` agent for comprehensive task planning.
+Plan a task and produce an implementation roadmap.
+
+Extends: `plan-base`
 
 ## Task: $ARGUMENTS
 
-## Instructions
+## Workflow
 
-Spawn the mastermind agent using the Task tool:
+1. Domain Discovery
+2. Mastermind Invocation
+3. Plan Output Format
+4. Grill Interview, including the mandatory seams branch
 
-```
-subagent_type: mastermind
-prompt: |
-  Plan the implementation of this task: $ARGUMENTS
+All four are defined in `plan-base`.
 
-  As the mastermind principal engineer, you should:
+## Overrides
 
-  1. **Gather Requirements**
-     - What problem does this solve?
-     - Who is the user?
-     - What are the acceptance criteria?
-     - What are the constraints?
+### Scope
 
-  2. **Domain Analysis**
-     Identify which specialists are needed:
-     - frontend-principal (React, TypeScript, UI/UX)
-     - backend-principal (APIs, services, databases)
-     - ai-principal (LLM features, prompts)
-     - devops-principal (infrastructure, CI/CD)
-     - security-principal (auth, vulnerabilities)
-     - architect-principal (system design, patterns)
+This is the plain planning flow. Use it for a task big enough to need research, specialist agents, and an interview, but small enough that the resulting plan can be executed in one session.
 
-  3. **Task Breakdown**
-     Create atomic tasks with:
-     - Clear description
-     - Expected output
-     - Dependencies
-     - Assigned specialist
+What this skill does NOT do:
 
-  4. **Dependency Graph**
-     Order tasks by phases:
-     - Phase 1: No dependencies (can start immediately)
-     - Phase 2: Depends on Phase 1
-     - Phase 3: Depends on Phase 2
+- No phase documents. The plan is returned in the conversation and nothing is written to `ai_plans/`. Use `/plan-to-docs` when the work is too big for one session
+- No implementation. The plan stops at the roadmap
 
-  5. **Output Format**
-     Generate a structured plan in markdown format.
-```
+### Why Write and Edit are allowed
 
-## Output Format
-
-```markdown
-## Task Plan: [Task Name]
-
-### Overview
-[Brief description of the task]
-
-### Acceptance Criteria
-- [ ] Criterion 1
-- [ ] Criterion 2
-
-### Domain Involvement
-| Domain | Involved | Complexity |
-|--------|----------|------------|
-| Frontend | Yes/No | Low/Medium/High |
-| Backend | Yes/No | Low/Medium/High |
-
-### Task Breakdown
-
-#### Phase 1: Foundation
-| # | Domain | Task | Complexity | Dependencies |
-|---|--------|------|------------|--------------|
-| 1 | ... | ... | ... | None |
-
-### Risks & Considerations
-- [Risk 1 and mitigation]
-
-### Quality Gates
-- [ ] Unit tests for all new code
-- [ ] Security review for sensitive features
-- [ ] Documentation updated
-```
-
-Return the mastermind's full plan to the user.
-
-## Post-Plan Review
-
-After presenting the plan, immediately start a **grill-me** session on the generated plan.
-
-Interview the user relentlessly about every aspect of the plan until
-reaching shared understanding. Walk down each branch of the design
-tree resolving dependencies between decisions one by one.
-
-If a question can be answered by exploring the codebase, explore
-the codebase instead.
-
-For each question:
-- Provide your recommended answer
-- Include a final option: **"I'm good with the current plan - stop asking questions"**
-
-When the user selects the stop option, end the interview and present the final plan.
+The grill updates `CONTEXT.md` and creates ADRs inline as decisions land, per `plan-base`. Those are the ONLY files this skill writes. It never touches source code.

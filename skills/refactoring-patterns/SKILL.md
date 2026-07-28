@@ -2,11 +2,21 @@
 name: refactoring-patterns
 description: Frontend refactoring patterns for extracting services, hooks, and utilities from React components. Use when refactoring React components, extracting hooks or services, or identifying and fixing code smells in frontend code.
 globs: "**/*.tsx,**/*.ts"
+user-invocable: false
 ---
 
 # Frontend Refactoring Patterns
 
 Code smell detection and refactoring guidance for React/TypeScript applications.
+
+## Judging Whether an Extraction Is Worth It
+
+Load `codebase-design` for the vocabulary and the tests. Do not restate them here. The two that decide most extractions:
+
+- THE DELETION TEST. Imagine deleting the thing you are about to extract. If complexity vanishes, it was a pass-through and the extraction is not worth it. If complexity reappears across N callers, it was earning its keep
+- DEEP not SHALLOW. A good extraction hides a lot of behaviour behind a small interface. An extraction whose interface is nearly as complex as its body just moved the code
+
+Every pattern below passes both. When a case in your codebase does not, leave it inline.
 
 ## fetch() in Component → Service + React Query
 

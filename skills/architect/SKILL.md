@@ -1,6 +1,7 @@
 ---
 name: architect
 description: System architecture and design patterns including ADRs, scalability, reliability, and integration patterns for principal-level design decisions. Use when making architectural decisions, writing ADRs, designing for scalability, or reviewing system integration patterns.
+user-invocable: false
 ---
 
 # Architect Skill

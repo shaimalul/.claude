@@ -1,154 +1,124 @@
 ---
 name: docker-patterns
-description: Docker best practices including multi-stage builds, security, optimization, and Compose patterns. Use when writing Dockerfiles, docker-compose configurations, or reviewing container setup for security and optimization.
+description: Docker conventions for multi-stage builds, non-root users, build secrets, and image slimming. Use when writing Dockerfiles or .dockerignore files.
+globs: "Dockerfile*,.dockerignore"
+user-invocable: false
 ---
 
-# Docker Patterns Skill
+# Docker Patterns
 
-Apply these patterns when working with Docker.
+Keep Dockerfiles minimal. Health probes and multi-arch builds belong to the orchestrator and CI, not the image definition.
 
-## Multi-Stage Build (Node.js)
+## Base Images
+
+ALWAYS use a slim base, and pull through a registry mirror in CI to avoid Docker Hub rate limits.
 
 ```dockerfile
-# Stage 1: Dependencies
-FROM node:20-alpine AS deps
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --only=production
+# Good - Alpine (smallest attack surface)
+FROM node:22-alpine AS builder
 
-# Stage 2: Build
-FROM node:20-alpine AS builder
+# Good - registry mirror (avoids Docker Hub pull limits)
+FROM public.ecr.aws/docker/library/node:22-alpine AS builder
+
+# Bad - full Debian unnecessarily
+FROM node:22-bullseye
+```
+
+## Multi-Stage Build
+
+Two stages: `builder` (install + compile) then a clean runtime stage that copies only what runs. Never carry build toolchains or dev dependencies into the runtime image.
+
+```dockerfile
+# Good - standard Node.js pattern
+FROM node:22-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
 RUN npm run build
 
-# Stage 3: Production
-FROM node:20-alpine AS runner
+FROM node:22-alpine
 WORKDIR /app
-
-# Security: Run as non-root
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodeuser -u 1001
-
-COPY --from=deps /app/node_modules ./node_modules
+USER node
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/package.json ./
-
-USER nodeuser
-EXPOSE 3000
-
-HEALTHCHECK --interval=30s --timeout=3s \
-  CMD wget -q --spider http://localhost:3000/health || exit 1
-
+COPY --from=builder /app/node_modules ./node_modules
+COPY package*.json ./
+EXPOSE 8080
 CMD ["node", "dist/main.js"]
 ```
 
+```dockerfile
+# Good - Next.js standalone output pattern
+FROM node:22-alpine
+RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nextjs
+WORKDIR /app
+COPY --chown=nextjs:nodejs ./.next/standalone /app/
+COPY --chown=nextjs:nodejs ./.next/static /app/.next/static
+COPY --chown=nextjs:nodejs ./public /app/public
+USER nextjs
+CMD ["node", "server.js"]
+```
+
+## Non-Root User
+
+| Base Image | Pattern |
+|------------|---------|
+| `node:*-alpine` | `USER node` (built-in uid 1000) |
+| `node:*-slim` | `RUN groupadd -r appuser && useradd -r -g appuser appuser` |
+| Next.js | `addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nextjs` |
+
+NEVER leave user unset (defaults to root).
+
+## Private Registry Credentials
+
+Use BuildKit secret mounts. The secret is available only for that `RUN` and never lands in a layer:
+
+```dockerfile
+# Good - BuildKit secret mount, nothing persisted
+RUN --mount=type=secret,id=npm_token \
+    NPM_TOKEN=$(cat /run/secrets/npm_token) npm ci
+
+# Bad - ENV bakes the token into the image permanently
+ENV NPM_TOKEN=$NPM_TOKEN
+RUN npm ci
+```
+
+`ARG` is better than `ENV` but still recoverable from build history. Prefer secret mounts for anything genuinely sensitive.
+
 ## .dockerignore
 
+Keep the build context small. A bloated context slows every build and risks copying secrets into the image.
+
 ```
-node_modules
-npm-debug.log
-Dockerfile*
-docker-compose*
+# Good - typical .dockerignore
 .git
 .gitignore
-.env*
+.github/
+node_modules
+dist/
+coverage/
 *.md
-.vscode
-coverage
-dist
+.env*
+.DS_Store
+npm-debug.log
 ```
 
-## Docker Compose (Development)
-
-```yaml
-version: '3.8'
-
-services:
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile.dev
-    ports:
-      - '3000:3000'
-    volumes:
-      - .:/app
-      - /app/node_modules
-    environment:
-      - NODE_ENV=development
-      - DATABASE_URL=postgres://user:pass@db:5432/app
-    depends_on:
-      - db
-      - redis
-
-  db:
-    image: postgres:15-alpine
-    environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: pass
-      POSTGRES_DB: app
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - '5432:5432'
-
-  redis:
-    image: redis:7-alpine
-    ports:
-      - '6379:6379'
-
-volumes:
-  postgres_data:
-```
-
-## Security Best Practices
-
-```dockerfile
-# Use specific version tags
-FROM node:20.10-alpine3.18
-
-# Run as non-root user
-USER node
-
-# Don't run as PID 1 (use dumb-init or tini)
-RUN apk add --no-cache tini
-ENTRYPOINT ["/sbin/tini", "--"]
-
-# Read-only filesystem
-# docker run --read-only ...
-
-# No new privileges
-# docker run --security-opt=no-new-privileges ...
-```
-
-## Layer Optimization
-
-```dockerfile
-# Bad - invalidates cache on any code change
-COPY . .
-RUN npm ci
-
-# Good - dependencies cached separately
-COPY package*.json ./
-RUN npm ci
-COPY . .
-```
+Excluding `node_modules` is correct when the builder stage runs `npm ci` itself. Only keep it in the context if your pipeline deliberately passes prebuilt dependencies in as an artifact.
 
 ## Health Checks
 
-```dockerfile
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget -q --spider http://localhost:3000/health || exit 1
-```
+Do NOT add `HEALTHCHECK` when deploying to Kubernetes. Liveness and readiness probes are configured in the deployment manifest; defining both creates two sources of truth and conflicting restart signals. `HEALTHCHECK` is appropriate only for plain Docker or Compose deployments.
+
+## Multi-Architecture
+
+Multi-arch (`linux/amd64` + `linux/arm64`) is handled in CI by `docker buildx`, not in the Dockerfile. Keep the Dockerfile architecture-neutral: avoid hardcoded arch strings in downloaded binary URLs, and use `$TARGETARCH` where an arch-specific artifact is unavoidable.
 
 ## Checklist
 
-- [ ] Multi-stage build
-- [ ] Non-root user
-- [ ] .dockerignore configured
-- [ ] Specific version tags
-- [ ] Health check defined
-- [ ] Layer optimization
-- [ ] Minimal base image (alpine)
+- [ ] Slim base image, pinned by tag, pulled via a mirror in CI
+- [ ] Two-stage build (builder -> runtime); no build toolchain in the runtime stage
+- [ ] Non-root user in runtime stage
+- [ ] Registry credentials via BuildKit secret mounts, never `ENV`
+- [ ] `.dockerignore` keeps the build context small and excludes `.env*`
+- [ ] No `HEALTHCHECK` when Kubernetes probes are in use
+- [ ] Dockerfile is architecture-neutral (buildx handles multi-arch)

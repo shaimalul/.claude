@@ -42,15 +42,6 @@ function getSkillsDir() {
 }
 
 /**
- * DEPRECATED: Learnings now integrate into existing domain skills.
- * Use getSkillsDir() instead.
- * @deprecated
- */
-function getLearnedSkillsDir() {
-  return getSkillsDir();
-}
-
-/**
  * Get the temp directory (cross-platform)
  */
 function getTempDir() {
@@ -89,12 +80,15 @@ function getTimeString() {
 }
 
 /**
- * Get short session ID from CLAUDE_SESSION_ID environment variable
- * Returns the last 8 characters for uniqueness with brevity
- * @param {string} fallback - Fallback value if no session ID (default: 'default')
+ * Shorten a session ID to its last 8 characters for use in filenames.
+ *
+ * The session ID arrives on the hook's stdin payload as `session_id`; there is
+ * no environment variable carrying it. See https://code.claude.com/docs/en/hooks
+ *
+ * @param {string} sessionId - session_id from the hook payload
+ * @param {string} fallback - Value to use when no session ID was supplied
  */
-function getSessionIdShort(fallback = 'default') {
-  const sessionId = process.env.CLAUDE_SESSION_ID;
+function getSessionIdShort(sessionId, fallback = 'default') {
   if (!sessionId || sessionId.length === 0) {
     return fallback;
   }
@@ -375,7 +369,6 @@ module.exports = {
   getClaudeDir,
   getSessionsDir,
   getSkillsDir,
-  getLearnedSkillsDir, // deprecated
   getTempDir,
   ensureDir,
 

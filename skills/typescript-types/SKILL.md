@@ -2,6 +2,7 @@
 name: typescript-types
 description: TypeScript naming conventions, discriminated unions, and type patterns. Use when defining types, interfaces, enums, or reviewing TypeScript type usage for correctness and conventions.
 globs: "**/*.ts,**/*.tsx"
+user-invocable: false
 ---
 
 # TypeScript Type Conventions
@@ -178,6 +179,39 @@ export type Status = (typeof STATUS_OPTIONS)[number]['value'];
 export const isStatus = (value: string): value is Status =>
   STATUS_OPTIONS.some((opt) => opt.value === value);
 ```
+
+## React Event Type Imports
+
+Importing React's synthetic event types (`KeyboardEvent`, `MouseEvent`, `FocusEvent`, etc.) shadows the same-named DOM globals in the file. Type-only imports vanish at runtime, so any `instanceof` check against the imported name compares against `undefined` and either throws `TypeError` or always evaluates falsy. The bug surfaces only at runtime — TypeScript reports no error.
+
+```typescript
+// Bad - React's KeyboardEvent shadows the DOM global; instanceof check is broken at runtime
+import { KeyboardEvent } from 'react';
+
+window.addEventListener('keydown', (event) => {
+  if (!(event instanceof KeyboardEvent)) return; // KeyboardEvent is undefined at runtime
+  if (event.key === 'Escape') closeModal();
+});
+
+// Good - alias the React import so the DOM global stays in scope
+import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
+
+function handleReactKey(event: ReactKeyboardEvent<HTMLInputElement>) {
+  // ...
+}
+
+window.addEventListener('keydown', (event) => {
+  if (!(event instanceof KeyboardEvent)) return; // DOM KeyboardEvent, works at runtime
+  if (event.key === 'Escape') closeModal();
+});
+
+// Good - drop the redundant guard entirely; DOM listeners already give you a KeyboardEvent
+window.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') closeModal();
+});
+```
+
+**When to apply:** Any file that needs both React event handlers AND a native `addEventListener` / `instanceof` check. Use `import type` with an alias (or no React import at all) so `KeyboardEvent`/`MouseEvent`/`FocusEvent` resolve to the DOM global at runtime.
 
 ## Optional Parameter Syntax
 
@@ -427,6 +461,26 @@ catch (error) {
 
 When to apply: Every catch block that uses the error value beyond just logging.
 
+## Nullish Coalescing (`??`) vs Logical OR (`||`)
+
+Use `??` instead of `||` for numeric fallbacks where `0` is a valid value:
+
+```typescript
+// Bad - || treats 0, "", and false as falsy
+const temperature = agentConfig?.temperature || baseConfig?.temperature;
+// If agentConfig.temperature is 0, falls through to baseConfig!
+
+const timeout = config.timeout || DEFAULT_TIMEOUT;
+// If config.timeout is 0, uses DEFAULT_TIMEOUT instead!
+
+// Good - ?? only falls back on null/undefined
+const temperature = agentConfig?.temperature ?? baseConfig?.temperature;
+const timeout = config.timeout ?? DEFAULT_TIMEOUT;
+const retries = options.maxRetries ?? 3;
+```
+
+When to apply: Any fallback chain involving numbers (temperature, timeout, count, retries, port) or booleans where `0`/`false` are valid values.
+
 ## Never Use
 - Type casting with `as Type`
 - `any` type
@@ -436,3 +490,4 @@ When to apply: Every catch block that uses the error value beyond just logging.
 - `get` prefix for non-data-fetching functions
 - Multiple booleans for mutually exclusive states
 - Non-null assertions (`!`) - use type guards or early validation instead
+- `||` for numeric/boolean fallbacks where `0`/`false` are valid - use `??` instead

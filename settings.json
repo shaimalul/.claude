@@ -6,10 +6,17 @@
       "mcp__playwright__*",
       "Read(**)",
       "Bash",
-      "WebSearch"
+      "WebSearch",
+      "mcp__claude_ai_monday_com__search",
+      "mcp__claude_ai_monday_com__get_updates",
+      "mcp__claude_ai_monday_com__get_board_info",
+      "mcp__claude_ai_monday_com__get_board_items_page",
+      "mcp__claude_ai_monday_com__create_update",
+      "mcp__claude_ai_monday_com__get_full_board_data"
     ],
-    "defaultMode": "bypassPermissions"
+    "defaultMode": "auto"
   },
+  "model": "sonnet",
   "hooks": {
     "SessionStart": [
       {
@@ -19,16 +26,6 @@
             "type": "command",
             "command": "node ~/.claude/scripts/hooks/session-start.js",
             "timeout": 10
-          }
-        ]
-      },
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node ~/.claude/scripts/hooks/periodic-git-pull.js",
-            "timeout": 35
           }
         ]
       }
@@ -60,39 +57,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ~/.claude/scripts/hooks/micro-iterate-stop-hook.js",
-            "timeout": 15
-          }
-        ]
-      },
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
             "command": "node ~/.claude/scripts/hooks/evaluate-session.js",
             "timeout": 10
-          }
-        ]
-      },
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node ~/.claude/scripts/hooks/evaluate-cleanup.js",
-            "timeout": 10
-          }
-        ]
-      }
-    ],
-    "PermissionRequest": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/plugins/claude-notifier-plugin/scripts/notify.sh",
-            "timeout": 5
           }
         ]
       }
@@ -119,24 +85,65 @@
         ]
       },
       {
-        "matcher": "Bash",
+        "matcher": "Edit|Write",
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/hooks/rtk-rewrite.sh"
+            "command": "node ~/.claude/scripts/hooks/config-edit-guard.js",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "AskUserQuestion",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /Users/shaimalul/.claude/scripts/hooks/play-sound.sh notify",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "permission_prompt|idle_prompt|agent_needs_input|elicitation_dialog",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /Users/shaimalul/.claude/scripts/hooks/play-sound.sh notify",
+            "timeout": 5
           }
         ]
       }
     ]
   },
   "enabledPlugins": {
-    "context7@claude-plugins-official": true,
-    "playwright@claude-plugins-official": true,
-    "frontend-design@claude-plugins-official": true
+    "gitkraken-hooks@gitkraken": true
+  },
+  "extraKnownMarketplaces": {
+    "gitkraken": {
+      "source": {
+        "source": "directory",
+        "path": "~/.claude/plugins/marketplaces/gitkraken"
+      }
+    }
   },
   "alwaysThinkingEnabled": false,
   "effortLevel": "medium",
+  "tui": "fullscreen",
   "skipDangerousModePermissionPrompt": true,
+  "skipAutoPermissionPrompt": true,
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest",
+        "--cdp-endpoint",
+        "http://localhost:9222"
+      ]
+    }
+  },
   "feedbackSurveyState": {
     "lastShownTime": 1753951833330
   }

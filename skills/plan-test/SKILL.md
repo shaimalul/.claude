@@ -2,7 +2,7 @@
 name: plan-test
 description: Interactive test planning for production-grade tests. Use after building a feature to design edge cases, boundary tests, and failure modes before writing tests.
 argument-hint: [feature file path or description]
-allowed-tools: Read, Grep, Glob, Bash
+allowed-tools: Read, Grep, Glob, Bash, AskUserQuestion
 model: opus
 ---
 
@@ -10,9 +10,11 @@ model: opus
 
 LLM-generated tests tend to be shallow happy-path assertions that "just pass." This skill helps engineers design resilient, battle-tested test suites that mock production scenarios and survive refactoring.
 
-**Prerequisite knowledge**: `testing-patterns` (boundary testing standard), `rgr-patterns` (TDD workflow).
+Prerequisite knowledge: `testing-patterns` (boundary testing standard), `tdd` (the red-green loop and seams), `codebase-design` (what a seam is).
 
-**Output**: A structured test plan. This skill does NOT generate test code - it helps you THINK about what to test.
+Output: A structured test plan. This skill does NOT generate test code, it helps you THINK about what to test.
+
+Relationship to planning: `/plan-task` and `/plan-to-docs` already agree the SEAMS during their grill, so every plan carries them. Reach for this skill when you want to go deeper at those seams, designing edge cases and failure modes before writing the tests.
 
 ## Phase 1: Context Gathering (Automated)
 
@@ -49,15 +51,20 @@ Present a brief **Feature Understanding** summary:
 
 Then proceed to Phase 2.
 
-## Phase 2: Grill-Me Session (Interactive)
+## Phase 2: Grill Session (Interactive)
 
-Interview the engineer ONE QUESTION AT A TIME. For each question:
-- Provide your recommended answer based on what you read in the code
-- Adapt follow-up questions based on the engineer's answers
-- Skip questions you can answer by reading the codebase
-- Always include as the final option: **"I'm satisfied with the plan so far - stop asking questions"**
+Run the `grilling` protocol. That skill owns the technique: one question at a time, your recommended answer as context, explore the codebase instead of asking when you can, and always offer the stop option.
 
-Ask questions in this order. Pick 2-3 from each category based on relevance (skip categories that don't apply to this feature):
+This skill owns only the question categories below. Pick 2-3 from each based on relevance, and skip categories that do not apply to this feature.
+
+### Category 0: Seams
+
+- "Which seam does each behaviour get tested at? My read is: [your analysis]"
+- "Is there an existing seam that already reaches this behaviour, so we do not add a new one?"
+- "Is there a HIGHER seam that would cover this with fewer tests?"
+
+No test is planned at a seam the engineer has not confirmed. If `/plan-task` or `/plan-to-docs` already agreed the seams, load them and confirm rather than re-deriving.
+
 
 ### Category 1: Contract Questions
 
@@ -175,7 +182,7 @@ describe('[FeatureName]', () => {
 
 After presenting the test plan, remind the engineer:
 
-1. Load `rgr-patterns` skill for the RED-GREEN-REFACTOR workflow
+1. Load `tdd` skill for the RED-GREEN-REFACTOR workflow
 2. Load `testing-patterns` skill for boundary mocking conventions
 3. Start with the highest priority test from the plan
 4. After writing tests, run `/review-test` to audit the test quality

@@ -2,6 +2,7 @@
 name: styling-rtl
 description: CSS/SCSS conventions with RTL support, logical properties, and design tokens. Use when writing CSS/SCSS styles, implementing RTL support with logical properties, or applying design tokens.
 globs: "**/*.css,**/*.scss"
+user-invocable: false
 ---
 
 # Styling & RTL Conventions
@@ -74,48 +75,154 @@ interface Props {
 
 ## Design System Colors
 
-Import and use common UI color variables:
+Import and use the design system's color tokens:
 
 ```scss
-@use 'styles/design-tokens/colors';
-@use 'styles/design-tokens/typography';
+@use '@your-design-system/colors';
+@use '@your-design-system/data-visualization-colors' as viz-colors;
 
+// Good - UI colors
 .component {
   background: colors.$blue-20;
   color: colors.$gray-80;
+}
+
+// Good - data visualization colors
+.chart {
+  fill: viz-colors.$data-blue;
 }
 
 // Bad - hardcoded colors
 .component {
   background: #3c87cd;
 }
+
+// Bad - plausible-looking token names that don't exist in the package
+.component {
+  background: colors.$white; // palettes often expose $gray-0 instead
+  color: colors.$black;      // palettes often expose $gray-100 instead
+}
 ```
+
+ALWAYS verify the exact token name exists in the design system source before using it. Do not guess based on naming patterns.
+
+## Typography
+
+Prefer design system typography scales. Use custom values only when design system has no matching scale:
+
+```scss
+@use '@your-design-system/typography';
+
+// Good - use typography mixins
+.page-title {
+  @include typography.t-heading-1;
+}
+
+.section-title {
+  @include typography.t-heading-3;
+}
+
+.body-text {
+  @include typography.t-body;
+}
+
+.small-text {
+  @include typography.t-small;
+}
+
+.button-text {
+  @include typography.t-action-medium;
+}
+
+// Acceptable - custom value when no design system match exists
+$custom-code-size: 13px;
+
+.code {
+  font-size: $custom-code-size;
+  font-family: 'Monaco', monospace;
+}
+
+// Bad - hardcoded without checking design system first
+.heading {
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+```
+
+**Available typography scales:** `t-heading-1` through `t-heading-6`, `t-body`, `t-body-large`, `t-small`, `t-mini`, `t-tag`, `t-action-large`, `t-action-medium`, `t-action-small`, `t-number-large`
 
 ## CSS Variables for Spacing
 
-```scss
-:root {
-  --spacing-unit: 8px;
-  --space-xs: 4px;
-  --space-sm: 8px;
-  --space-md: 16px;
-  --space-lg: 24px;
-  --header-height: 60px;
-}
+ALWAYS reuse shared spacing variables for spacing and sizing properties. NEVER use px directly for properties like `margin`, `padding`, `width`, `height`, `gap`, `min-height`, `max-width`, etc.
 
+```scss
+// Good - always use variables
 .component {
   padding: var(--space-md);
   margin-bottom: var(--space-sm);
-  height: calc(100vh - var(--header-height));
+  gap: var(--space-lg);
+  width: var(--container-width);
+  height: calc(100dvh - var(--header-height));
 }
 
-// Bad - magic numbers
+// Bad - direct px values
 .component {
   padding: 17px;
   margin-bottom: 23px;
-  height: calc(100vh - 60px);
+  width: 1200px;
+  height: calc(100dvh - 60px);
 }
 ```
+
+**Spacing variable naming varies by project.** Check your repo's design system for the naming scheme. Common patterns include:
+- `--space-xs`, `--space-sm`, `--space-md`, `--space-lg`, `--space-xl`
+- `--spacing-1`, `--spacing-2`, `--spacing-4`, etc.
+- `--gap-small`, `--gap-medium`, `--gap-large`
+
+Use whatever naming convention your project defines.
+
+**When to create custom variables:** If a value doesn't fit the standard scale, create a SCSS variable:
+
+```scss
+// Good - custom variable for non-standard value
+$custom-tooltip-offset: 12px;
+
+.tooltip {
+  margin-top: $custom-tooltip-offset;
+}
+
+// Bad - inline px value
+.tooltip {
+  margin-top: 12px;
+}
+```
+
+## Viewport Heights on Mobile
+
+`100vh` is broken on iOS Safari — it includes the area behind the URL bar, so a `height: 100vh` shell overflows the visible viewport and gets clipped. Use `100dvh` (dynamic viewport height), which shrinks/grows with the URL bar. For browsers that lack `dvh` support, fall back to `100vh`.
+
+```scss
+// Bad - 100vh overflows on iOS Safari (URL bar)
+.app-shell {
+  height: 100vh;
+  max-height: 100vh;
+}
+
+// Good - 100dvh tracks the visible viewport on mobile
+.app-shell {
+  height: 100dvh;
+  max-height: 100dvh;
+}
+
+// Good - with fallback for older browsers
+.app-shell {
+  height: 100vh;
+  height: 100dvh;
+}
+```
+
+**When to apply:** Any full-viewport layout (app shells, modals, drawers, hero sections). Also applies to `min-height` and `max-height` — substitute `min-block-size: 100dvh` / `max-block-size: 100dvh` for RTL safety.
 
 ## Margin vs Padding
 

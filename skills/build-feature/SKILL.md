@@ -1,36 +1,35 @@
 ---
 name: build-feature
-description: Execute the planned feature by delegating to specialist principal engineers
-argument-hint: [feature-description]
-disable-model-invocation: true
+description: Execute the planned feature by delegating to specialist agents
 allowed-tools: Task, Read, Grep, Glob, Bash, Edit, Write, MultiEdit
-model: opus
+model: sonnet
+disable-model-invocation: true
 ---
 
 # Build Feature
 
-Use the **Task tool** to invoke the `mastermind` agent for feature execution.
+Use the **Task tool** to invoke the `mastermind-agent` agent for feature execution.
 
 ## Prerequisites
-- A feature plan should exist (created via `/plan-task`)
+- A feature plan should exist (created via `plan-task` skill)
 - Or provide a feature description to plan and build in one go
 
 ## Instructions
 
-Spawn the mastermind agent using the Task tool:
+Spawn the mastermind-agent agent using the Task tool:
 
 **Task tool invocation:**
 ```
-subagent_type: mastermind
+subagent_type: mastermind-agent
 prompt: |
   Execute the planned feature.
 
-  As the mastermind principal engineer, you should:
+  As the mastermind agent, you should:
 
   1. **Load Plan**
      - Check conversation history for existing feature plan
      - Verify all tasks are defined with dependencies
-     - If no plan exists, ask user to run /plan-task first
+     - If no plan exists, ask user to run plan-task skill first
 
   2. **Execute by Phase**
      For each phase (in dependency order):
@@ -39,7 +38,7 @@ prompt: |
 
      Task tool invocation for specialists:
      ```
-     subagent_type: {specialist}-principal
+     subagent_type: {specialist}-agent
      prompt: |
        ## Task: [Task Name]
 
@@ -68,19 +67,19 @@ prompt: |
 
   4. **Final Integration**
      - Ensure all components work together
-     - Run full quality gate: tests -> TypeScript -> lint -> build
+     - Run full quality gate: tests → TypeScript → lint → build
      - Generate completion summary
 ```
 
-The mastermind agent has access to:
+The mastermind-agent agent has access to:
 - **Tools**: Read, Grep, Glob, Bash, Edit, Write, Task
-- **Specialists**: All principal engineers via Task tool delegation:
-  - frontend-principal (React, components, hooks)
-  - backend-principal (APIs, services, databases)
-  - ai-principal (LLM features, prompts)
-  - devops-principal (infrastructure, CI/CD)
-  - security-principal (auth, security review)
-  - architect-principal (design decisions)
+- **Specialists**: All specialist agents via Task tool delegation:
+  - frontend-agent (React, components, hooks)
+  - backend-agent (APIs, services, databases)
+  - ai-agent (LLM features, prompts)
+  - devops-agent (infrastructure, CI/CD)
+  - security-agent (auth, security review)
+  - architect-agent (design decisions)
 
 ## Output Format
 
@@ -94,6 +93,7 @@ The agent should return a build report:
 |-------|-------|--------|
 | 1 | X | Complete |
 | 2 | Y | Complete |
+| 3 | Z | Complete |
 
 ### Tasks Completed
 
@@ -101,8 +101,12 @@ The agent should return a build report:
 - [x] Task 1 - [Brief summary]
 - [x] Task 2 - [Brief summary]
 
+#### Phase 2
+- [x] Task 3 - [Brief summary]
+
 ### Files Modified
 - `path/to/file1.ts` - [Change summary]
+- `path/to/file2.ts` - [Change summary]
 
 ### Quality Gate Results
 - Code Standards: Pass/Fail
@@ -114,4 +118,4 @@ The agent should return a build report:
 - [Any follow-up actions needed]
 ```
 
-Return the mastermind's full build report to the user.
+Return the mastermind-agent's full build report to the user.

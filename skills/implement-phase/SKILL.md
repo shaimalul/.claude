@@ -49,10 +49,10 @@ Extract the phase number from the filename (e.g., `03-api-layer.md` -> 3).
 
 ### Phase 2: TDD Execution
 
-Spawn mastermind via Task tool for each implementation step:
+Spawn mastermind-agent via Task tool for each implementation step:
 
 ```
-subagent_type: mastermind
+subagent_type: mastermind-agent
 prompt: |
   Implement this phase using strict TDD workflow.
 
@@ -64,8 +64,8 @@ prompt: |
   ### RED: Write Failing Test First
   1. Identify test case(s) for this step
   2. Delegate to appropriate specialist:
-     - frontend-principal for React/UI tests
-     - backend-principal for API/service tests
+     - frontend-agent for React/UI tests
+     - backend-agent for API/service tests
   3. Write test following testing-patterns:
      - Mock ONLY at boundaries (HTTP, DB, file I/O)
      - Tests must pass the Library Swap Test
@@ -84,11 +84,11 @@ prompt: |
   3. Run ALL tests after each refactor
 
   ## Skills to Load
-  - rgr-patterns (TDD workflow)
+  - tdd (TDD workflow)
   - testing-patterns (boundary mocking)
-  - Domain-specific skills per mastermind routing
+  - Domain-specific skills per mastermind-agent routing
 
-  Report progress after each RGR cycle.
+  Report progress after each TDD cycle.
 ```
 
 ### Phase 3: Track Progress

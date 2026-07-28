@@ -2,6 +2,7 @@
 name: interaction-design
 description: UI interaction patterns for modals, forms, loading states, error handling, and notifications. Use when implementing modals, forms, loading states, error handling UX, or notification patterns in React components.
 globs: "**/*.tsx,**/*.jsx"
+user-invocable: false
 ---
 
 # Interaction Design Patterns

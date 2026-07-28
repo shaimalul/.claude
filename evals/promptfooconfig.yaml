@@ -1,0 +1,100 @@
+# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
+description: Representative eval suite for Claude Code skills and agents
+
+providers:
+  - id: openrouter:anthropic/claude-haiku-4.5
+    config:
+      apiKeyEnvar: OPENROUTER_API_KEY
+      temperature: 0
+      max_tokens: 1024
+
+prompts:
+  - file://prompts/system-and-question.yaml
+
+defaultTest:
+  options:
+    provider:
+      id: openrouter:anthropic/claude-haiku-4.5
+      config:
+        apiKeyEnvar: OPENROUTER_API_KEY
+        temperature: 0
+        max_tokens: 1024
+
+tests:
+  - description: tdd skill enforces writing a failing test before implementation
+    vars:
+      system: file://../skills/tdd/SKILL.md
+      question: >-
+        I need to add a function that validates email addresses. Walk me
+        through exactly how you'd start, step by step.
+    assert:
+      - type: icontains
+        value: failing test
+      - type: llm-rubric
+        value: >-
+          The response describes writing a failing test before any
+          implementation code (red-green-refactor), not writing the
+          implementation first.
+
+  - description: review-base skill labels SSOT violations as [Blocker]
+    vars:
+      system: file://../skills/review-base/SKILL.md
+      question: >-
+        You're reviewing a PR and find a function that duplicates logic
+        already defined elsewhere in the codebase (an SSOT violation). How
+        do you report this finding, and what severity prefix do you use?
+    assert:
+      - type: icontains
+        value: '[Blocker]'
+
+  - description: grilling primitive asks one question at a time
+    vars:
+      system: file://../skills/grilling/SKILL.md
+      question: >-
+        You need to stress-test my plan before I start building. There are
+        five open questions about it. How do you proceed?
+    assert:
+      - type: llm-rubric
+        value: >-
+          The response commits to asking one question at a time and waiting
+          for an answer before moving to the next, rather than listing all
+          five questions at once.
+
+  - description: backend-agent enforces three-layer architecture
+    vars:
+      system: file://../agents/backend-agent.md
+      question: >-
+        I want to add a new endpoint that fetches a user's order history.
+        What layers should the code be split across?
+    assert:
+      - type: icontains
+        value: repository
+      - type: llm-rubric
+        value: >-
+          The response describes controller, service, and repository as
+          separate layers, not a single file handling everything.
+
+  - description: security-agent flags SQL injection as a security issue
+    vars:
+      system: file://../agents/security-agent.md
+      question: >-
+        Review this code: `db.query("SELECT * FROM users WHERE id = " +
+        req.params.id)`. Any issues?
+    assert:
+      - type: icontains
+        value: injection
+      - type: llm-rubric
+        value: >-
+          The response identifies this as a SQL injection vulnerability and
+          recommends parameterized queries or an ORM instead of string
+          concatenation.
+
+  - description: architect-agent documents significant decisions as ADRs
+    vars:
+      system: file://../agents/architect-agent.md
+      question: >-
+        We just decided to replace our REST API with GraphQL for the main
+        service. Should this decision be written down anywhere?
+    assert:
+      - type: icontains
+        value: ADR

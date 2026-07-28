@@ -1,100 +1,27 @@
+---
+paths:
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/__tests__/**"
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/*.py"
+  - "**/*.ts"
+  - "**/*.tsx"
+  - "**/*.js"
+  - "**/*.jsx"
+---
+
 # Testing Requirements
-
-## CORE PRINCIPLE: Boundary Testing (I/O-Based, Black-Box)
-
-**MANDATORY**: All tests must be **boundary tests**. Mock ONLY at system boundaries (HTTP, database, file I/O), NEVER internal functions or libraries.
-
-### The Library Swap Test
-
-> If you swap ANY internal library or restructure ANY internal code, your tests MUST still pass.
-> If they break, your tests are coupled to implementation - fix them.
-
-Examples:
-- Swap axios → fetch: tests pass
-- Swap Prisma → TypeORM: tests pass  
-- Refactor userService internals: tests pass
-- Change caching from Redis to Memcached: tests pass
-
-### Why Boundary Testing?
-
-- **Tests survive refactoring** - Change internals freely, tests stay green
-- **Tests validate contracts** - Same input/output = same test result
-- **Tests are implementation-agnostic** - No knowledge of internal libraries
-- **Tests are meaningful** - They test what users/consumers experience
-- **Tests are decoupled from logic** - Internal details don't break tests
-
-### Tests Don't Know About Internal Logic
-
-If the test breaks when you change internal logic (not the contract), the test is wrong:
-
-```typescript
-// Internal changes that should NOT break tests:
-- Rename env var: API_URL → BASE_URL
-- Change config key: 'timeout' → 'requestTimeout'
-- Refactor function: split into smaller functions
-- Change algorithm: bubble sort → quick sort
-- Rename internal variable: 'data' → 'response'
-
-// ONLY these should break tests (contract changes):
-- Change API endpoint path: /users → /accounts
-- Change response shape: { name } → { fullName }
-- Change function signature: getUser(id) → getUser(id, options)
-```
-
-**The principle**: Test the WHAT (input/output), not the HOW (internal logic).
-
-### Boundary Diagram
-
-```
-[Test] → [Your Code] → [BOUNDARY] → [Mock]
-                            ↑
-                      ONLY mock HERE
-                    (HTTP, DB, File I/O)
-
-Examples of what NOT to mock (implementation details):
-- HTTP clients: axios, fetch, got, ky, node-fetch
-- Internal services: userService, authService, apiClient
-- Repositories: userRepository, dataRepository
-- Utilities: formatDate, validateInput
-```
-
-### Dependency Injection for Testability
-
-**DI is HOW you achieve decoupled tests** - inject dependencies at boundaries, not internals.
-
-```typescript
-// GOOD: Inject config and dependencies
-class UserService {
-  constructor(
-    private httpClient: HttpClient,     // Injected interface
-    private config: { baseUrl: string } // Injected config
-  ) {}
-  
-  async getUser(id: string) {
-    return this.httpClient.get(`${this.config.baseUrl}/users/${id}`);
-  }
-}
-
-// Test doesn't know about:
-// - Which HTTP client is used (axios? fetch?)
-// - What the env var is called (API_URL? BASE_URL?)
-// - How config is loaded (dotenv? AWS Secrets?)
-```
-
-DI enables you to:
-- **Decouple tests from internal logic** - rename env vars, tests don't break
-- **Swap implementations** - change libraries, tests don't break
-- **Test real code paths** - mock only at boundaries
-- **Keep tests ignorant** - no knowledge of HOW, only WHAT
 
 ## Minimum Test Coverage: 80%
 
 Test Types (ALL required):
-1. **Unit Tests** - Pure functions, utilities (no I/O)
-2. **Integration Tests** - API endpoints with HTTP interception (MSW/nock)
+1. **Unit Tests** - Individual functions, utilities, components
+2. **Integration Tests** - API endpoints, database operations
 3. **E2E Tests** - Critical user flows (Playwright)
 
-## Test-Driven Development (RGR)
+## Test-Driven Development (TDD)
 
 MANDATORY workflow for new logic, bug fixes, and behavior changes:
 
@@ -106,16 +33,30 @@ MANDATORY workflow for new logic, bug fixes, and behavior changes:
 6. Run ALL tests again - verify they STILL PASS
 7. Verify coverage (80%+)
 
-Load `rgr-patterns` skill for detailed RED/GREEN/REFACTOR patterns.
+Load `tdd` skill for detailed RED/GREEN/REFACTOR patterns.
 
-### When to Use RGR
+### Seams (MANDATORY)
+
+A SEAM is the public interface where behavior is observed without reaching inside. Tests live at seams, never against internals. The `codebase-design` skill owns the definition.
+
+TEST ONLY AT PRE-AGREED SEAMS. The seams under test are written down and confirmed before any test is written. `/plan-task` and `/plan-to-docs` produce them in the plan; `/plan-test` confirms them; otherwise ask.
+
+Prefer EXISTING seams to new ones. Prefer the HIGHEST seam that reaches the behavior. Prefer FEWER seams.
+
+### Test Anti-Patterns (ALWAYS a blocker in review)
+
+- IMPLEMENTATION-COUPLED: mocks internal collaborators, tests private methods, or verifies through a side channel such as querying the DB instead of using the interface. The tell is a test that breaks on refactor when behavior did not change
+- TAUTOLOGICAL: the assertion recomputes the expected value the way the code does, so it passes by construction. Expected values come from an independent source: a known-good literal, a worked example, the spec
+- HORIZONTAL SLICING: all tests written first, then all implementation. Bulk tests verify IMAGINED behavior. Work in vertical slices instead, one test then one implementation, each a tracer bullet
+
+### When to Use TDD
 
 - New functions, hooks, services, components with logic
 - Bug fixes (reproduce the bug with a failing test first)
 - API endpoint implementation
 - Significant refactors that change behavior
 
-### When to Skip RGR
+### When to Skip TDD
 
 - Config/env changes only
 - Documentation-only changes
@@ -123,123 +64,55 @@ Load `rgr-patterns` skill for detailed RED/GREEN/REFACTOR patterns.
 - Renaming/moving files with no behavior change
 - Adding types/interfaces with no runtime code
 
+## Boundary Testing (MANDATORY)
+
+Tests MUST mock ONLY at system boundaries (HTTP, DB, file I/O, time), NEVER internal functions or libraries.
+
+The Library Swap Test: if you swap ANY internal library (axios to fetch, Prisma to TypeORM) or restructure internal code, your tests MUST still pass. If they break, the tests are coupled to implementation - rewrite them.
+
+| Blocker Code | Anti-Pattern | Fix |
+|--------------|-------------|-----|
+| B1 | `vi.mock('axios')` | MSW/nock at HTTP boundary |
+| B2 | `vi.mock('../services/...')` | Let real code execute |
+| B3 | `vi.spyOn(axios, 'get')` | Assert on outputs |
+| B4 | Testing library internals | Test observable output |
+
+Load `testing-patterns` skill for full patterns, DI examples, MSW/nock setup, and cloud service mocking (@aws-sdk/client-mock, GCP emulators).
+
 ## Behavior-Driven Tests
 
 Follow testing-patterns skill conventions:
 - Describe what the function/component DOES
 - Use clear, readable test names
-- Mock at HTTP boundary only (MSW/nock)
+- Test INPUT to OUTPUT contracts, not internal implementation
 
-## Mocking Rules (STRICT)
+## Test Failure Discipline (STRICT)
 
-### What is a Boundary?
-
-Boundaries are edges where your code interacts with external systems:
-- **HTTP** - API calls (use MSW/nock)
-- **AWS Services** - S3, DynamoDB, SQS, etc. (use `@aws-sdk/client-mock`)
-- **GCP Services** - Cloud Storage, Firestore, etc. (use `mock-cloud-storage`, test emulators)
-- **Database** - Queries (use test database, not mock repository)
-- **File System** - File I/O (use temp files or memfs)
-- **Time** - Date/timers (use vi.useFakeTimers)
-- **External Services** - Third-party APIs (use MSW/nock)
-
-### NEVER Mock (Implementation Details)
-
-These are **examples** - the principle applies to ANY internal implementation:
-
-```typescript
-// WRONG - Mocking HTTP client libraries (ANY of them)
-vi.mock('axios');           // or fetch, got, ky, superagent...
-vi.mock('node-fetch');
-
-// WRONG - Mocking cloud SDKs (bypasses service boundary, fails Library Swap Test)
-vi.mock('aws-sdk');         // Use @aws-sdk/client-mock instead
-vi.mock('@aws-sdk/client-s3');
-vi.mock('@google-cloud/storage'); // Use GCP emulators instead
-
-// WRONG - Mocking ORM/database clients
-vi.mock('prisma');          // or typeorm, sequelize, knex...
-vi.mock('../db/connection');
-
-// WRONG - Mocking internal services/repositories
-vi.mock('../services/userService');
-vi.mock('../repositories/userRepository');
-
-// WRONG - Mocking internal utilities
-vi.mock('../utils/apiClient');
-vi.mock('../lib/cache');
-```
-
-**The principle**: If it's YOUR code or a library YOUR code uses internally, don't mock it.
-
-### ALWAYS Mock at Boundary (HTTP Layer)
-
-```typescript
-// CORRECT - MSW intercepts HTTP regardless of what library makes the call
-import { server } from '../mocks/server';
-import { http, HttpResponse } from 'msw';
-
-server.use(
-  http.get('/api/users', () => HttpResponse.json(mockUsers))
-);
-
-// Your code can use axios, fetch, got, ky, etc. - test doesn't care
-```
-
-### ALWAYS Mock at Boundary (AWS Services)
-
-```typescript
-// CORRECT - @aws-sdk/client-mock intercepts at the AWS API boundary
-import { mockClient } from '@aws-sdk/client-mock';
-import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
-
-const s3Mock = mockClient(S3Client);
-
-s3Mock.on(GetObjectCommand).resolves({
-  Body: sdkStreamMixin(Readable.from([Buffer.from('test content')])),
-});
-
-// Your code can use S3Client however it wants - test doesn't care
-```
-
-### Why This Matters
-
-```typescript
-// Your service today:
-const response = await axios.get('/api/users');
-
-// You refactor to:
-const response = await fetch('/api/users');
-
-// With boundary testing: Tests still pass (MSW intercepts both)
-// With vi.mock('axios'): Tests BREAK (coupled to implementation)
-```
+- Treat test failures as indications that YOUR code needs fixing, not that tests are wrong
+- NEVER remove or disable pre-existing tests unless the user explicitly orders it
+- If a test fails after your changes, fix the implementation to make the test pass
+- Only modify a test if you can prove the test itself is incorrect (not just inconvenient)
 
 ## Troubleshooting Test Failures
 
-1. Use **bug-finder** agent for root cause analysis
+1. Use **bug-finder-agent** agent for root cause analysis
 2. Check test isolation
 3. Verify mocks are correct
-4. Fix implementation, not tests (unless tests are wrong)
+4. Fix implementation, not tests (unless tests are provably wrong)
 
 ## Post-Implementation Verification (REQUIRED)
 
-After completing any implementation, ALWAYS run in order:
+After completing any implementation, run the appropriate verification commands:
+
+**JavaScript/TypeScript projects:**
 1. `npm test` - Run tests
 2. `npx tsc --noEmit` - TypeScript check
 3. `npm run lint` - Lint check
 4. `npm run build` - Build verification
 
+**Python projects:**
+1. `poetry run pytest` (or `make test`) - Run tests
+2. `poetry run ruff check .` - Lint check
+3. `poetry run ruff format --check .` - Format check
+
 Fix ALL errors before considering task complete.
-
-## Test Quality Checklist
-
-Before submitting tests:
-- [ ] **Library Swap Test**: Would test pass if you swapped ANY internal library?
-- [ ] **DI Used**: Dependencies injected at boundaries, not hardcoded
-- [ ] Uses MSW/nock/test-DB for boundary mocking (NEVER vi.mock on libraries/services)
-- [ ] Test would pass if internal implementation changed (but I/O stayed same)
-- [ ] No mocking of: HTTP clients, ORMs, internal services, repositories, utilities
-- [ ] Test validates input → output contract at boundaries only
-- [ ] Error scenarios use boundary-level errors (HTTP 4xx/5xx, DB errors)
-- [ ] Test has no knowledge of which libraries the code uses internally

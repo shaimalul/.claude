@@ -2,6 +2,7 @@
 name: accessibility-patterns
 description: WCAG 2.1 AA accessibility patterns including semantic HTML, ARIA, keyboard navigation, and focus management. Use when implementing accessible UI components, adding ARIA attributes, keyboard navigation, or reviewing for WCAG 2.1 AA compliance.
 globs: "**/*.tsx,**/*.jsx"
+user-invocable: false
 ---
 
 # Accessibility Patterns
@@ -242,6 +243,43 @@ Apply these patterns for WCAG 2.1 AA compliance.
 <span id="password-error" role="alert">Password is too short</span>
 ```
 
+## Label in Name (WCAG 2.5.3)
+
+When a button or link has visible text, the accessible name (computed from `aria-label` or `aria-labelledby` when present) MUST contain that visible text. Voice-control users speak what they see — if `aria-label` overrides the visible text with different wording, "click Exit" or "click John" silently fails.
+
+```tsx
+// Bad - visible text "Exit" not contained in accessible name
+<button aria-label="Exit customer view">Exit</button>
+
+// Bad - visible name (avatar initials + "John Doe") overridden by aria-label
+<button aria-label={`Open user menu for ${user.displayName}`}>
+  <Avatar name={user.displayName} />
+  <span>{user.displayName}</span>
+</button>
+
+// Bad - visible text "Search…" not in accessible name
+<button aria-label="Open search">
+  <SearchIcon aria-hidden="true" />
+  <span>Search…</span>
+</button>
+
+// Good - aria-label contains the visible text verbatim
+<button aria-label="Exit customer view">Exit customer view</button>
+
+// Good - drop aria-label and let visible content compute the name
+<button>
+  <Avatar name={user.displayName} aria-hidden="true" />
+  <span>{user.displayName}</span>
+</button>
+
+// Good - icon-only button (no visible text), aria-label is the only name source
+<button aria-label="Close" onClick={onClose}>
+  <XIcon aria-hidden="true" />
+</button>
+```
+
+**When to apply:** Any interactive element with visible text content. Voice-control activation ("click Exit") matches against the accessible name, so the visible label must appear in it. Icon-only controls are exempt — their `aria-label` IS the accessible name.
+
 ## Live Regions
 
 ### aria-live="polite"
@@ -357,9 +395,54 @@ button:focus {
 
 ### Focus Trap
 
+Modal must trap focus - users can't Tab outside:
+
 ```tsx
-// Modal must trap focus - users can't Tab outside
-// See ux-principal agent for useFocusTrap implementation
+const useFocusTrap = (isActive: boolean) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (!isActive) return;
+
+    // Store current focus
+    previousFocusRef.current = document.activeElement as HTMLElement;
+
+    const container = containerRef.current;
+    if (!container) return;
+
+    const focusableElements = container.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+
+    // Focus first element
+    firstElement?.focus();
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return;
+
+      if (e.shiftKey && document.activeElement === firstElement) {
+        e.preventDefault();
+        lastElement?.focus();
+      } else if (!e.shiftKey && document.activeElement === lastElement) {
+        e.preventDefault();
+        firstElement?.focus();
+      }
+    };
+
+    container.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      container.removeEventListener('keydown', handleKeyDown);
+      // Restore focus
+      previousFocusRef.current?.focus();
+    };
+  }, [isActive]);
+
+  return containerRef;
+};
 ```
 
 ### Focus Restoration
@@ -490,6 +573,86 @@ const closeModal = () => {
   {isValid ? 'Valid' : 'Invalid'}
 </span>
 ```
+
+## aria-label Suppresses All Child Content on Links
+
+When `aria-label` is placed on a link (`<a>`) that wraps rich content (status badges, counts, tags, dates), the label completely overrides all child content. Screen readers announce only the `aria-label` value and skip everything inside the link.
+
+```tsx
+// Bad - aria-label suppresses status, count, date inside link
+<a href={url} aria-label={metadata.title}>
+  <StatusBadge status={metadata.status} />
+  <span>{metadata.interactionsCount} interactions</span>
+  <span>{formattedDate}</span>
+</a>
+
+// Good - remove aria-label and let visible text content be announced naturally
+<a href={url}>
+  <StatusBadge status={metadata.status} />
+  <span>{metadata.interactionsCount} interactions</span>
+  <span>{formattedDate}</span>
+</a>
+
+// Good - if you must use aria-label, compose a full description
+<a href={url} aria-label={`${metadata.title}, ${metadata.status}, ${metadata.interactionsCount} interactions`}>
+  ...
+</a>
+```
+
+**When to apply:** Any `<a>` or `<button>` that wraps multiple pieces of meaningful content (status, count, date, type tag). Only use `aria-label` on links if they contain only decorative/icon content with no visible text.
+
+## Empty States Must Have `role="status"`
+
+When a section accordion or container renders an empty state (no items), wrap it in `role="status"` so screen readers announce the absence of content when the section is expanded.
+
+```tsx
+// Bad - empty div gives no programmatic feedback
+{items.length === 0 && (
+  <div className={styles.emptyState}>
+    <p>No items found</p>
+  </div>
+)}
+
+// Good - role="status" announces to screen readers
+{items.length === 0 && (
+  <div role="status" className={styles.emptyState}>
+    <p>No items found</p>
+  </div>
+)}
+```
+
+**When to apply:** Any conditional empty state inside an accordion, tab panel, or dynamic section. `role="status"` is equivalent to `aria-live="polite"` and announces the content without interrupting the user.
+
+## Reduced Motion at the Token Level
+
+`prefers-reduced-motion: reduce` should suppress position, scale, and translate animations — NOT all transitions. Color, border, and opacity transitions provide essential interactive feedback (hover, focus, selection) and remain expected even with reduced-motion enabled. Zeroing global motion-duration tokens kills both, leaving the UI feeling broken.
+
+```css
+/* Bad - zeros every transition that uses these tokens, including hover/focus colour changes */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-duration-fast: 0ms;
+    --motion-duration-medium: 0ms;
+    --motion-duration-slow: 0ms;
+  }
+}
+
+/* Good - keep state-transition durations; suppress motion only on the components that animate position/scale */
+@media (prefers-reduced-motion: reduce) {
+  .modal,
+  .drawer,
+  .toast {
+    transition: none;
+    animation: none;
+  }
+
+  .card:hover {
+    transform: none;
+  }
+}
+```
+
+**When to apply:** Any time you define motion-duration / transition-duration design tokens at the `:root` level. Override per-component for animations that move or scale; leave color/border/opacity transitions intact so hover, focus, and selected states still animate.
 
 ## Checklist
 

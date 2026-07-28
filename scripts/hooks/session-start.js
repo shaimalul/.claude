@@ -15,8 +15,16 @@ const {
   log
 } = require('../lib/utils');
 const { getPackageManager, getSelectionPrompt } = require('../lib/package-manager');
+const { run: runAutoUpdate } = require('./auto-update');
+const { run: ensureMcpServers } = require('./ensure-mcp-servers');
 
 async function main() {
+  // Auto-pull config updates (throttled, safe to call every session)
+  runAutoUpdate();
+
+  // Ensure team MCP servers are present in ~/.claude.json
+  ensureMcpServers();
+
   const sessionsDir = getSessionsDir();
 
   // Ensure directories exist
