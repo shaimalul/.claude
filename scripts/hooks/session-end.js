@@ -19,13 +19,15 @@ const {
   readFile,
   writeFile,
   replaceInFile,
+  readStdinJson,
   log
 } = require('../lib/utils');
 
 async function main() {
+  const hookInput = await readStdinJson();
   const sessionsDir = getSessionsDir();
   const today = getDateString();
-  const shortId = getSessionIdShort();
+  const shortId = getSessionIdShort(hookInput?.session_id);
   // Include session ID in filename for unique per-session tracking
   const sessionFile = path.join(sessionsDir, `${today}-${shortId}-session.tmp`);
 

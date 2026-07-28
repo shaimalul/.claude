@@ -13,6 +13,7 @@ const fs = require('fs');
 const {
   readFile,
   countInFile,
+  readStdinJson,
   log
 } = require('../lib/utils');
 
@@ -78,7 +79,7 @@ function countPatternMatches(text, patterns) {
 async function main() {
   // Get script directory to find config
   const scriptDir = __dirname;
-  const configFile = path.join(scriptDir, '..', '..', 'skills', 'continuous-learning', 'config.json');
+  const configFile = path.join(scriptDir, '..', '..', 'config', 'continuous-learning.json');
 
   // Default configuration
   let minSessionLength = 10;
@@ -96,8 +97,10 @@ async function main() {
     }
   }
 
-  // Get transcript path from environment (set by Claude Code)
-  const transcriptPath = process.env.CLAUDE_TRANSCRIPT_PATH;
+  // transcript_path arrives on the hook's stdin payload, not the environment.
+  // See https://code.claude.com/docs/en/hooks
+  const hookInput = await readStdinJson();
+  const transcriptPath = hookInput?.transcript_path;
 
   if (!transcriptPath || !fs.existsSync(transcriptPath)) {
     process.exit(0);
