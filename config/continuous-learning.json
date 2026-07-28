@@ -1,0 +1,6 @@
+{
+  "min_session_length": 10,
+  "extract_learning": {
+    "quality_threshold": 2
+  }
+}

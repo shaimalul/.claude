@@ -1,41 +1,53 @@
-# Folders
+# OS
+.DS_Store
+
+# Dependencies
+node_modules/
+
+# Secrets & credentials
+.secrets
+.secrets.example
+.credentials.json
+.env
+policy-limits.json
+mcp-needs-auth-cache.json
+
+# Local config (machine-specific overrides)
+settings.json
+.claude/
+
+# Runtime / cache directories
 cache/
 debug/
 file-history/
 ide/
-plans/
-plugins/
-projects/
 session-env/
 shell-snapshots/
 statsig/
 telemetry/
-todos/
-gitlab-review-assets/
-gitlab-fix-comments/
-gitlab-review/
-iterate-sessions/
-
-# Files
-history.jsonl
-stats-cache.json
-.DS_Store
-
-# Secrets
-.secrets
-
-# Sessions folder
-sessions/
-
-.a5c/
-
-.credentials.json
-.update.lock
 backups/
-review-assets/
-mcp-needs-auth-cache.json
+
+# Sessions & session bookkeeping
+sessions/
+iterate-sessions/
+last-git-pull.json
+.last-cleanup
+.update.lock
+
+# Planning, plugins, projects, tasks
+plans/
+plugins/
+projects/
+todos/
 tasks/
 
-policy-limits.json
-.claude/
-last-git-pull.json
+# Review artifacts
+review-assets/
+
+# Logs & generated data files
+history.jsonl
+stats-cache.json
+
+# Eval outputs
+evals/results.json
+.promptfoo/
