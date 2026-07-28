@@ -32,6 +32,7 @@ sessions/
 iterate-sessions/
 last-git-pull.json
 .last-cleanup
+.last-update-check
 .update.lock
 
 # Planning, plugins, projects, tasks
