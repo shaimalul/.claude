@@ -1,6 +1,7 @@
 ---
 name: database-patterns
 description: Database patterns for TypeORM and Prisma including queries, transactions, migrations, and optimization. Use when writing database queries, transactions, migrations, or optimizing query performance with TypeORM or Prisma.
+user-invocable: false
 ---
 
 # Database Patterns Skill

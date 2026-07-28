@@ -1,6 +1,7 @@
 ---
 name: api-design
 description: RESTful API design patterns, validation, error responses, and HTTP status codes for Node.js backends. Use when designing REST APIs, implementing validation middleware, error responses, or choosing HTTP status codes.
+user-invocable: false
 ---
 
 # API Design Skill

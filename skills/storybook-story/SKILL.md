@@ -2,6 +2,7 @@
 name: storybook-story
 description: Storybook story conventions with StorybookPage wrapper, interaction tests, and argTypes documentation. Use when writing Storybook stories, adding interaction tests, or documenting component argTypes.
 globs: "**/*.stories.tsx"
+user-invocable: false
 ---
 
 # Storybook Story Conventions
@@ -37,7 +38,7 @@ export default meta;
 
 ### 2. Story Title Formatting
 - Format: `DOMAIN/COMPONENT_NAME`
-- Use clean titles (e.g., "ATOMS/Button")
+- **Omit the design system prefix** in title (e.g., `DSButton` -> "ATOMS/Button")
 
 ### 3. ArgTypes Documentation
 For each prop include:
@@ -100,16 +101,21 @@ export const Default: Story = {
 - **contentBackground**: Background color
 - **disablePadding**: Remove default padding
 
-## Using Design System Components
-Use design system components in stories when available:
+## Using Internal Components
+Always use design system components in stories:
 ```tsx
-// Good - use design system components
-import { Button, Flex } from 'design-system';
+// Good
+import { Button, Flex } from '@your-design-system';
 
 <Flex direction="column" gap="md">
   <YourComponent {...args} />
   <Button text="Action" onClick={() => {}} />
 </Flex>
+
+// Bad - avoid native HTML
+<div className="flex-container">
+  <button>Action</button>
+</div>
 ```
 
 ## Testing Checklist

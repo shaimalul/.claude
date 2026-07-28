@@ -2,52 +2,24 @@
 name: testing-patterns
 description: Boundary testing conventions - mock ONLY at system edges (HTTP, DB, file I/O), NEVER internal functions. Tests must pass the Library Swap Test.
 globs: "**/*.test.ts,**/*.test.tsx,**/*.spec.ts,**/*.spec.tsx"
+user-invocable: false
 ---
 
 # Testing Conventions
 
-## CORE PRINCIPLE: Boundary Testing (Black-Box, Contract-Based)
+## Boundary Testing (Black-Box, Contract-Based)
 
-**MANDATORY**: Tests must be **boundary tests**. Mock ONLY at system boundaries, NEVER internal functions or libraries.
+Tests MUST be boundary tests. Mock ONLY at system boundaries, NEVER internal functions or libraries.
 
 ### The Library Swap Test
 
-> **If you swap ANY internal library or restructure ANY internal code, your tests MUST still pass.**
-> If they break, your tests are coupled to implementation - rewrite them.
+If you swap ANY internal library or restructure ANY internal code, your tests MUST still pass. If they break, your tests are coupled to implementation - rewrite them.
 
 Examples that MUST pass without test changes:
-- axios → fetch (HTTP client swap)
-- Prisma → TypeORM (ORM swap)
-- Redis → Memcached (cache swap)
+- axios to fetch (HTTP client swap)
+- Prisma to TypeORM (ORM swap)
+- Redis to Memcached (cache swap)
 - Refactor service internals (code restructure)
-
-### Why Boundary Testing?
-
-- **Tests survive refactoring**: Swap libraries, restructure code - tests stay green
-- **Tests validate contracts**: Same input/output = same test result
-- **Tests are implementation-agnostic**: No knowledge of internal libraries
-- **Tests are meaningful**: They test what users/consumers actually experience
-- **Tests are decoupled from logic**: Internal implementation details don't break tests
-
-### Tests Don't Know About Internal Logic
-
-The test should NEVER break when you change internal logic. Only contract changes break tests.
-
-```typescript
-// These internal changes should NOT break tests:
-- Rename env var: process.env.API_URL → process.env.BASE_URL
-- Change config key: config.timeout → config.requestTimeout  
-- Refactor internals: split function, rename variables
-- Change algorithm: different sorting, different caching strategy
-- Restructure code: move files, rename internal functions
-
-// ONLY contract changes break tests:
-- API endpoint changes: GET /users → GET /accounts
-- Response shape changes: { name } → { fullName }
-- Public function signature changes
-```
-
-**Test the WHAT (input → output), not the HOW (internal logic).**
 
 ### What is a Boundary?
 
@@ -56,95 +28,88 @@ A boundary is where your code interacts with external systems:
 | Boundary | Mock Tool | Example |
 |----------|-----------|---------|
 | HTTP requests | MSW, nock | API calls to backend or third-party |
-| AWS services | @aws-sdk/client-mock | S3, DynamoDB, SQS, Lambda |
-| GCP services | Test emulators, mock-cloud-storage | Firestore, Cloud Storage, Pub/Sub |
 | Database | Test DB | Use real test database, not mock repository |
 | File system | memfs, temp files | File read/write operations |
 | Time | vi.useFakeTimers | Date.now(), setTimeout |
 | Environment | process.env mocks | Config values |
 
+### Prefer a Local Substitute Over a Mock
+
+When a boundary has a real local stand-in, use it instead of a mock. A stand-in runs the real code path; a mock only asserts you called something.
+
+| Boundary | Local substitute | Fall back to a mock when |
+|----------|------------------|--------------------------|
+| Postgres | PGLite, testcontainers, a test DB | No container runtime available in CI |
+| File system | memfs, a temp directory | Never, temp dirs always work |
+| Redis | ioredis-mock, testcontainers | No container runtime available |
+| Third-party HTTP API | MSW or nock at the HTTP boundary | This IS the fallback, there is no local Stripe |
+
+Classify a dependency before choosing: in-process (no adapter needed), local-substitutable (use the stand-in), remote but owned (define a port, in-memory adapter in tests), or true external (intercept at HTTP). See `codebase-design` DEEPENING.md for the full categories.
+
+### Designing for Mockability
+
+At true-external boundaries, design interfaces that are easy to substitute.
+
+Pass external dependencies in rather than constructing them internally:
+
+```typescript
+// Easy to substitute
+function processPayment(order: Order, paymentClient: PaymentClient) {
+  return paymentClient.charge(order.total);
+}
+
+// Hard to substitute
+function processPayment(order: Order) {
+  const client = new StripeClient(process.env.STRIPE_KEY);
+  return client.charge(order.total);
+}
+```
+
+Prefer SDK-style interfaces over one generic fetcher, so each operation is independently substitutable and no conditional logic is needed in test setup:
+
+```typescript
+// GOOD: each function returns one specific shape
+const api = {
+  getUser: (id: string) => fetch(`/users/${id}`),
+  getOrders: (userId: string) => fetch(`/users/${userId}/orders`),
+  createOrder: (data: OrderInput) => fetch('/orders', { method: 'POST', body: data }),
+};
+
+// BAD: substituting requires conditional logic inside the stand-in
+const api = {
+  fetch: (endpoint: string, options: RequestInit) => fetch(endpoint, options),
+};
+```
+
 ### The Pattern
 
 ```
-[Test] → [Your Code] → [BOUNDARY] → [Mock]
-                            ↑
-                      ONLY mock HERE
+[Test] -> [Your Code] -> [BOUNDARY] -> [Mock]
+                              ^
+                        ONLY mock HERE
 
-WRONG:  [Test] → vi.mock(axios) → [Code]     // Knows about axios
-WRONG:  [Test] → vi.mock(service) → [Code]   // Knows about internal structure
-CORRECT: [Test] → [Code] → [HTTP] → [MSW]    // Only knows HTTP contract
+WRONG:   [Test] -> vi.mock(axios) -> [Code]     // Knows about axios
+WRONG:   [Test] -> vi.mock(service) -> [Code]   // Knows about internal structure
+CORRECT: [Test] -> [Code] -> [HTTP] -> [MSW]    // Only knows HTTP contract
 ```
 
-The test calls real code. The code makes real HTTP calls. MSW intercepts at the HTTP layer and returns mock responses. The test verifies final output.
+Test the WHAT (input to output), not the HOW (internal logic).
 
-## Dependency Injection for Testability
-
-**DI is HOW you achieve decoupled tests** - inject dependencies at boundaries, tests stay ignorant of internals.
-
-### Why DI Enables Decoupled Tests
+### What Should NOT Break Tests
 
 ```typescript
-// WITHOUT DI - Test coupled to internal logic
-class UserService {
-  async getUser(id: string) {
-    const url = process.env.API_URL;  // Test needs to know env var name!
-    return axios.get(`${url}/users/${id}`);  // Test needs to mock axios!
-  }
-}
-// If you rename API_URL → BASE_URL, test breaks - WRONG
+// These internal changes should NOT break tests:
+// - Rename env var: process.env.API_URL -> process.env.BASE_URL
+// - Change config key: config.timeout -> config.requestTimeout
+// - Refactor internals: split function, rename variables
+// - Change algorithm: different sorting, different caching strategy
+// - Restructure code: move files, rename internal functions
 
-// WITH DI - Test decoupled from internal logic
-class UserService {
-  constructor(
-    private httpClient: HttpClient,
-    private config: { baseUrl: string }
-  ) {}
-  
-  async getUser(id: string) {
-    return this.httpClient.get(`${this.config.baseUrl}/users/${id}`);
-  }
-}
-// Rename env var? Test doesn't care. Change HTTP client? Test doesn't care.
+// ONLY contract changes break tests:
+// - API endpoint changes: GET /users -> GET /accounts
+// - Response shape changes: { name } -> { fullName }
+// - Public function signature changes
 ```
-
-### DI Patterns for Testing
-
-```typescript
-// Pattern 1: Constructor injection (preferred)
-class OrderService {
-  constructor(
-    private httpClient: HttpClient,
-    private cache: CacheInterface,
-  ) {}
-}
-
-// Pattern 2: Factory with defaults (for simpler cases)
-function createUserService(deps = defaultDeps) {
-  return new UserService(deps.httpClient);
-}
-
-// Pattern 3: React Context (for frontend)
-const ApiContext = createContext<ApiClient>(defaultClient);
-function useApi() { return useContext(ApiContext); }
-```
-
-### Testing with DI
-
-```typescript
-// The SERVICE uses real code
-const userService = new UserService(realHttpClient);
-
-// MSW intercepts at HTTP boundary
-server.use(
-  http.get('/api/users/:id', () => HttpResponse.json(mockUser))
-);
-
-// Test validates INPUT → OUTPUT
-const result = await userService.getUser('123');
-expect(result.name).toBe('Test User');
-```
-
-**Key insight**: DI decouples tests from internal logic. Change env var names, config keys, libraries - tests don't break because they don't know about those details.
 
 ## HTTP Interception (REQUIRED)
 
@@ -166,13 +131,6 @@ export const handlers = [
   http.post('/api/users', async ({ request }) => {
     const body = await request.json();
     return HttpResponse.json({ id: '123', ...body }, { status: 201 });
-  }),
-
-  http.get('/api/users', () => {
-    return HttpResponse.json([
-      { id: '1', name: 'User 1' },
-      { id: '2', name: 'User 2' },
-    ]);
   }),
 ];
 ```
@@ -198,7 +156,6 @@ afterAll(() => server.close());
 ### Backend: nock
 
 ```typescript
-// For Node.js backend tests
 import nock from 'nock';
 
 beforeEach(() => {
@@ -212,87 +169,129 @@ afterEach(() => {
 });
 ```
 
-## I/O Test Examples
+## Cloud Service Mocking
 
-### CORRECT: Test calls real code, HTTP is intercepted
+### AWS Services with @aws-sdk/client-mock
 
 ```typescript
-// Good - I/O based test
-import { server } from '../mocks/server';
-import { http, HttpResponse } from 'msw';
+import { mockClient } from '@aws-sdk/client-mock';
+import { S3Client, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
+import { DynamoDBClient, GetItemCommand } from '@aws-sdk/client-dynamodb';
+import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
+import { Readable } from 'stream';
+import { sdkStreamMixin } from '@aws-sdk/util-stream-node';
 
-describe('UserProfile', () => {
-  it('should display user data from API', async () => {
-    // Setup: MSW intercepts the HTTP call
-    server.use(
-      http.get('/api/users/123', () => {
-        return HttpResponse.json({ id: '123', name: 'John Doe' });
-      })
-    );
+const s3Mock = mockClient(S3Client);
+const dynamoMock = mockClient(DynamoDBClient);
+const sqsMock = mockClient(SQSClient);
 
-    // Act: Render component (it makes REAL HTTP call, intercepted by MSW)
-    render(<UserProfile userId="123" />);
+beforeEach(() => {
+  s3Mock.reset();
+  dynamoMock.reset();
+  sqsMock.reset();
+});
 
-    // Assert: Verify the OUTPUT
-    await waitFor(() => {
-      expect(screen.getByText('John Doe')).toBeInTheDocument();
-    });
-  });
+// S3 examples
+s3Mock.on(GetObjectCommand).resolves({
+  Body: sdkStreamMixin(Readable.from([Buffer.from('test content')])),
+});
 
-  it('should show error when API fails', async () => {
-    server.use(
-      http.get('/api/users/123', () => {
-        return HttpResponse.json({ error: 'Not found' }, { status: 404 });
-      })
-    );
+s3Mock.on(PutObjectCommand).resolves({
+  ETag: '"abc123"',
+});
 
-    render(<UserProfile userId="123" />);
+// DynamoDB examples
+dynamoMock.on(GetItemCommand).resolves({
+  Item: { id: { S: '123' }, name: { S: 'Test' } },
+});
 
-    await waitFor(() => {
-      expect(screen.getByText('User not found')).toBeInTheDocument();
-    });
-  });
+// SQS examples
+sqsMock.on(SendMessageCommand).resolves({
+  MessageId: 'msg-123',
 });
 ```
 
-### WRONG: Mocking Internal Functions or Libraries
+### GCP Services
+
+Use official emulators or mock libraries:
 
 ```typescript
-// BAD - Mocking HTTP client library
-vi.mock('axios');  // Test now KNOWS you use axios
-vi.mock('node-fetch');  // Test now KNOWS you use fetch
+// Firestore: use @google-cloud/firestore with emulator
+process.env.FIRESTORE_EMULATOR_HOST = 'localhost:8080';
 
-// BAD - Mocking internal service
-vi.mock('../services/userService', () => ({
-  userService: {
-    getUser: vi.fn().mockResolvedValue({ id: '123', name: 'John Doe' }),
-  },
-}));
+// Cloud Storage: use mock-cloud-storage
+import { MockStorage } from 'mock-cloud-storage';
+const storage = new MockStorage();
 
-// BAD - Mocking internal utilities
-vi.mock('../utils/apiClient');
-vi.mock('../repositories/userRepository');
+// Pub/Sub: use @google-cloud/pubsub with emulator
+process.env.PUBSUB_EMULATOR_HOST = 'localhost:8085';
 ```
 
-**Why this is wrong:**
-- Test BREAKS if you replace axios with fetch (fails Library Swap Test)
-- Test BREAKS if you rename/restructure userService
-- Test has knowledge of internal implementation details
-- You can't refactor freely - tests block you
+### Azure Services
 
-## When to Use Each Approach
+Use official emulators where available:
 
-| Scenario | Approach | Tool |
-|----------|----------|------|
-| Component fetching data | HTTP Interception | MSW |
-| Service calling external API | HTTP Interception | MSW/nock |
-| Hook with API calls | HTTP Interception | MSW |
-| Pure utility function (no I/O) | Direct unit test | vitest |
-| Redux/state logic | State snapshot testing | vitest |
+```typescript
+// Blob Storage: use Azurite emulator
+process.env.AZURE_STORAGE_CONNECTION_STRING = 
+  'DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;...';
+
+// Cosmos DB: use emulator
+process.env.COSMOS_ENDPOINT = 'https://localhost:8081';
+```
+
+## Dependency Injection for Testability
+
+DI is HOW you achieve decoupled tests - inject dependencies at boundaries, tests stay ignorant of internals.
+
+```typescript
+// Bad - Test coupled to internal logic
+class UserService {
+  async getUser(id: string) {
+    const url = process.env.API_URL;  // Test needs to know env var name
+    return axios.get(`${url}/users/${id}`);  // Test needs to mock axios
+  }
+}
+
+// Good - Test decoupled from internal logic
+class UserService {
+  constructor(
+    private httpClient: HttpClient,
+    private config: { baseUrl: string }
+  ) {}
+
+  async getUser(id: string) {
+    return this.httpClient.get(`${this.config.baseUrl}/users/${id}`);
+  }
+}
+// Rename env var? Test does not care. Change HTTP client? Test does not care.
+```
+
+### DI Patterns
+
+```typescript
+// Pattern 1: Constructor injection (preferred)
+class OrderService {
+  constructor(
+    private httpClient: HttpClient,
+    private cache: CacheInterface,
+  ) {}
+}
+
+// Pattern 2: Factory with defaults
+function createUserService(deps = defaultDeps) {
+  return new UserService(deps.httpClient);
+}
+
+// Pattern 3: React Context
+const ApiContext = createContext<ApiClient>(defaultClient);
+function useApi() { return useContext(ApiContext); }
+```
 
 ## Test Structure
 
 ### Behavior-Driven Test Organization
+
 ```typescript
 describe('ComponentName', () => {
   describe('when initialized', () => {
@@ -315,6 +314,7 @@ describe('ComponentName', () => {
 ## Testing Patterns
 
 ### Testing React Components
+
 ```typescript
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -332,7 +332,45 @@ it('should handle user interaction', async () => {
 });
 ```
 
+### Testing Components with API Calls
+
+```typescript
+import { server } from '../mocks/server';
+import { http, HttpResponse } from 'msw';
+
+describe('UserProfile', () => {
+  it('should display user data from API', async () => {
+    server.use(
+      http.get('/api/users/123', () => {
+        return HttpResponse.json({ id: '123', name: 'John Doe' });
+      })
+    );
+
+    render(<UserProfile userId="123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText('John Doe')).toBeInTheDocument();
+    });
+  });
+
+  it('should show error when API fails', async () => {
+    server.use(
+      http.get('/api/users/123', () => {
+        return HttpResponse.json({ error: 'Not found' }, { status: 404 });
+      })
+    );
+
+    render(<UserProfile userId="123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText('User not found')).toBeInTheDocument();
+    });
+  });
+});
+```
+
 ### Testing Hooks
+
 ```typescript
 import { renderHook, waitFor } from '@testing-library/react';
 
@@ -348,12 +386,8 @@ it('should fetch data', async () => {
 ```
 
 ### Testing with Dependency Injection
-```typescript
-const mockService = {
-  getAll: vi.fn().mockResolvedValue(mockData),
-  getById: vi.fn(),
-};
 
+```typescript
 render(
   <DependencyProvider overrides={{ dataService: mockService }}>
     <ComponentUnderTest />
@@ -363,7 +397,6 @@ render(
 
 ## Analytics Testing
 
-### Structure for Analytics Events
 ```typescript
 describe('Analytics', () => {
   let mockTrack: Mock;
@@ -397,8 +430,8 @@ describe('Analytics', () => {
 ## Mocking Patterns
 
 ### PREFERRED: HTTP Interception (MSW)
+
 ```typescript
-// Define handlers for your API endpoints
 server.use(
   http.get('/api/data', () => {
     return HttpResponse.json(mockData);
@@ -413,46 +446,8 @@ server.use(
 );
 ```
 
-### FORBIDDEN: Direct Service/Library Mocking
-
-These are **examples** - the principle applies to ANY internal implementation:
-
-```typescript
-// FORBIDDEN - Mocking HTTP libraries (ANY of them)
-vi.mock('axios');                    // or fetch, got, ky, superagent...
-vi.mock('node-fetch');               // If you switch libraries, tests break
-
-// FORBIDDEN - Mocking cloud SDKs (bypasses the service boundary)
-vi.mock('aws-sdk');                  // Use @aws-sdk/client-mock instead
-vi.mock('@aws-sdk/client-s3');       // Use @aws-sdk/client-mock instead
-vi.mock('@google-cloud/storage');    // Use GCP emulators or mock-cloud-storage
-
-// FORBIDDEN - Mocking ORM/database clients
-vi.mock('prisma');                   // or typeorm, sequelize, knex...
-vi.mock('@prisma/client');
-
-// FORBIDDEN - Mocking internal services/repositories
-vi.mock('../services/dataService');  // Coupled to internal structure
-vi.mock('../repositories/userRepo'); // Coupled to data layer
-
-// FORBIDDEN - Mocking caching/queue libraries
-vi.mock('redis');                    // or ioredis, memcached...
-vi.mock('bull');                     // or agenda, bee-queue...
-
-// FORBIDDEN - Spying on library methods
-vi.spyOn(axios, 'get');              // Test knows implementation details
-vi.spyOn(prisma.user, 'findMany');   // Test knows ORM details
-```
-
-**The principle**: Mock at BOUNDARIES (HTTP, DB connection, file system), not at libraries or internal code.
-
-**The fix**: 
-- HTTP → MSW/nock intercepts requests
-- Database → Use test database (Docker, SQLite)
-- File system → Use temp files or memfs
-- Time → vi.useFakeTimers()
-
 ### Mocking React Query
+
 ```typescript
 const createWrapper = () => {
   const queryClient = new QueryClient({
@@ -468,6 +463,7 @@ const createWrapper = () => {
 ```
 
 ### Mocking Context
+
 ```typescript
 const mockContextValue = {
   user: { id: '1', name: 'Test User' },
@@ -481,9 +477,48 @@ render(
 );
 ```
 
-## Go Beyond Basic Render Tests
+### FORBIDDEN: Direct Service/Library Mocking
 
-Testing components goes beyond just ensuring they render without error. Write tests that validate behavior, user interaction, and response to prop changes.
+These patterns are blockers - they MUST be rewritten. See `/review-test` for full audit.
+
+| Code | Anti-Pattern | Fix |
+|------|-------------|-----|
+| B1 | Library mocking (`vi.mock('axios')`) | Use MSW/nock at HTTP boundary |
+| B2 | Internal service mocking (`vi.mock('../services/...')`) | Let real code execute, mock at boundaries |
+| B3 | Implementation assertions (`vi.spyOn(axios, 'get')`) | Assert on outputs, not internal calls |
+| B4 | Third-party internals (`expect(prisma.user.findMany).toHaveBeenCalled()`) | Test observable output |
+
+```typescript
+// B1 - FORBIDDEN - Mocking HTTP libraries
+vi.mock('axios');                    // or fetch, got, ky, superagent
+vi.mock('node-fetch');               // If you switch libraries, tests break
+vi.mock('aws-sdk');                  // Use @aws-sdk/client-mock instead
+vi.mock('@aws-sdk/client-s3');       // Use @aws-sdk/client-mock instead
+
+// B2 - FORBIDDEN - Mocking internal services/repositories
+vi.mock('../services/dataService');  // Coupled to internal structure
+vi.mock('../repositories/userRepo'); // Coupled to data layer
+
+// B1 - FORBIDDEN - Mocking ORM/database clients
+vi.mock('prisma');                   // or typeorm, sequelize, knex
+vi.mock('@prisma/client');
+
+// B1 - FORBIDDEN - Mocking caching/queue libraries
+vi.mock('redis');                    // or ioredis, memcached
+vi.mock('bull');                     // or agenda, bee-queue
+
+// B3 - FORBIDDEN - Spying on library methods
+vi.spyOn(axios, 'get');              // Test knows implementation details
+vi.spyOn(prisma.user, 'findMany');   // Test knows ORM details
+```
+
+The fix for each boundary:
+- HTTP: MSW/nock intercepts requests
+- Database: Use test database (Docker, SQLite)
+- File system: Use temp files or memfs
+- Time: vi.useFakeTimers()
+
+## Go Beyond Basic Render Tests
 
 ```typescript
 // Bad - only tests that component renders
@@ -503,31 +538,44 @@ it('displays success message when form is submitted', async () => {
 });
 ```
 
-## Best Practices
+## When to Use Each Approach
+
+| Scenario | Approach | Tool |
+|----------|----------|------|
+| Component fetching data | HTTP Interception | MSW |
+| Service calling external API | HTTP Interception | MSW/nock |
+| Hook with API calls | HTTP Interception | MSW |
+| Pure utility function (no I/O) | Direct unit test | vitest |
+| Redux/state logic | State snapshot testing | vitest |
+
+## Quick Reference
 
 ### DO (Boundary Testing)
-- **Apply the Library Swap Test**: Would test pass if you swapped axios for fetch?
-- **Mock at HTTP boundary only** (MSW/nock) - not at service/function level
-- Test INPUT → OUTPUT contracts, not internal implementation
+
+- Apply the Library Swap Test: would test pass if you swapped axios for fetch?
+- Mock at HTTP boundary only (MSW/nock) - not at service/function level
+- Test INPUT to OUTPUT contracts, not internal implementation
 - Write tests that survive internal refactoring
 - Use semantic queries (getByRole, getByLabelText)
 - Test user interactions with userEvent
 - Test error states with HTTP error responses
 - Test analytics events to prevent regression
 
-### DON'T (Forbidden Patterns)
-- **NEVER vi.mock('axios')** - couples test to HTTP client choice
-- **NEVER vi.mock('fetch')** - same problem
-- **NEVER vi.mock('../services/...')** - couples test to internal structure
-- **NEVER vi.mock('../repositories/...')** - bypasses real data layer
-- **NEVER vi.spyOn(axios, 'get')** - test knows about implementation
-- Test implementation details or internal function signatures
-- Write tests that break when you refactor (but I/O stays same)
-- Use getByTestId when semantic queries work
-- Ignore async operations (use waitFor)
-- Write only basic render tests
+### NEVER (Forbidden Patterns)
+
+- NEVER `vi.mock('axios')` - couples test to HTTP client choice
+- NEVER `vi.mock('fetch')` - same problem
+- NEVER `vi.mock('../services/...')` - couples test to internal structure
+- NEVER `vi.mock('../repositories/...')` - bypasses real data layer
+- NEVER `vi.spyOn(axios, 'get')` - test knows about implementation
+- NEVER test implementation details or internal function signatures
+- NEVER write tests that break when you refactor (but I/O stays same)
+- NEVER use getByTestId when semantic queries work
+- NEVER ignore async operations (use waitFor)
+- NEVER write only basic render tests
 
 ## Assertions
+
 ```typescript
 // Presence
 expect(element).toBeInTheDocument();
@@ -549,3 +597,28 @@ expect(element).toHaveTextContent('Expected text');
 expect(mockFn).toHaveBeenCalledTimes(1);
 expect(mockFn).toHaveBeenCalledWith(expectedArgs);
 ```
+
+## Test Quality Checklist
+
+Before submitting tests, verify:
+
+- [ ] Library Swap Test: Would test pass if you swapped ANY internal library?
+- [ ] Uses MSW/nock for HTTP (NEVER vi.mock on axios/fetch)
+- [ ] Uses @aws-sdk/client-mock for AWS (NEVER vi.mock on SDK)
+- [ ] No mocking of internal services, repositories, or utilities
+- [ ] Asserts on outputs/UI, not internal function calls
+- [ ] Error scenarios use boundary-level errors (HTTP 4xx/5xx)
+- [ ] Uses semantic queries (getByRole, getByLabelText) not getByTestId
+- [ ] Tests user interactions with userEvent
+- [ ] Each test is independent (no shared mutable state)
+
+## Related Skills
+
+| Skill | Purpose |
+|-------|---------|
+| `/plan-test` | Interactive test planning - design edge cases before writing tests |
+| `/review-test` | Audit tests for anti-patterns (B1-B4, N1-N5, S1-S3) |
+| `tdd` | RED-GREEN-REFACTOR loop, what a good test is, seams |
+| `codebase-design` | The seam definition and dependency categories |
+
+Run `/plan-test [file]` before writing tests. Run `/review-test [file]` after to audit quality.

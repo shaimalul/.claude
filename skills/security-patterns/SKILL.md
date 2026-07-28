@@ -1,6 +1,7 @@
 ---
 name: security-patterns
 description: Application security patterns including OWASP Top 10 prevention, authentication, and secrets management. Use when implementing authentication, input validation, secrets management, or reviewing code for security vulnerabilities.
+user-invocable: false
 ---
 
 # Security Patterns Skill
@@ -171,6 +172,124 @@ catch (error) {
 ```
 
 This applies to SSE events, WebSocket messages, and any client-facing response.
+
+## Safe Logging (No Sensitive Data in Logs)
+
+Never log full config/response objects - log only IDs and metadata:
+
+```typescript
+// Bad - logs full config with prompts, tool schemas, and internal details
+logger.error('Agent config not found', error, { agentConfig: prefetchedConfig });
+logger.info('Agent loaded', { tools: agentConfig.tools });
+
+// Good - log only identifiers and metadata
+logger.error('Agent config not found', error, { agentId: effectiveAgentId });
+logger.info('Agent loaded', {
+  agentId: effectiveAgentId,
+  toolsCount: agentConfig.tools?.length,
+  promptLength: agentConfig.prompt.length,
+});
+```
+
+When to apply: Any log statement that includes a config object, API response, or request payload that could contain prompts, tool definitions, credentials, or internal system details.
+
+## Credential Exposure in Process List (Shell Scripts)
+
+Command-line arguments are visible to all users via `ps aux`. Never pass secrets as curl/CLI arguments:
+
+```bash
+# Bad - token visible in process list
+curl -H "Authorization: Bearer $TOKEN" "$URL"
+
+# Good - write to temp file, pass via @file reference
+local _hdr
+_hdr=$(mktemp -t hdr-XXXXXX)
+printf 'Authorization: Bearer %s' "$TOKEN" > "$_hdr"
+curl -H @"$_hdr" "$URL"
+rm -f "$_hdr"
+```
+
+When to apply: Any shell script that passes credentials to curl, wget, or CLI tools as arguments.
+
+## URL Encoding in Shell Scripts
+
+Partial URL encoding (e.g., only replacing `/`) breaks on special characters. Use `jq @uri` for full RFC 3986 encoding:
+
+```bash
+# Bad - only handles slashes
+encoded=$(echo "$path" | sed 's|/|%2F|g')
+
+# Good - full URL encoding
+encoded=$(printf '%s' "$path" | jq -sRr @uri)
+```
+
+When to apply: Any API call where user-provided file paths or identifiers are interpolated into URLs.
+
+## URL Validation Before Navigation, Href, or Clipboard
+
+Server-supplied URLs used as `href`, `document.location.href`, or clipboard content must be validated to prevent open redirect and `javascript:` injection.
+
+```typescript
+// Bad - unvalidated server URL used directly
+document.location.href = brief.downloadUrl;
+<a href={attachment.url}>Link</a>
+copy(brief.viewUrl);
+
+// Good - validate https before use
+const isHttpsUrl = (url: string): boolean => url.startsWith('https://');
+
+const safeDownloadUrl = isHttpsUrl(brief.downloadUrl) ? brief.downloadUrl : undefined;
+const safeViewUrl = isHttpsUrl(brief.viewUrl) ? brief.viewUrl : undefined;
+
+// Safe navigation
+if (safeDownloadUrl) { document.location.href = safeDownloadUrl; }
+
+// Safe href (undefined href renders as no link)
+<a href={safeViewUrl}>Link</a>
+
+// Safe clipboard
+if (safeViewUrl) { copy(safeViewUrl); }
+```
+
+**When to apply:** Any time a URL from API response (or database-backed field) is used as `href`, `document.location.href`, or passed to `copy()`. The `isHttpsUrl` helper is minimal and intentionally inline — no shared utility needed.
+
+## Dependency Security
+
+```bash
+npm audit
+npm audit fix
+yarn audit
+npm outdated
+```
+
+Use Dependabot or Renovate for automated dependency updates. Run Snyk or `npm audit` in CI/CD and block merges on critical vulnerabilities:
+
+```yaml
+# GitHub Actions example
+security-scan:
+  runs-on: ubuntu-latest
+  steps:
+    - uses: actions/checkout@v4
+
+    # Dependency vulnerability scanning
+    - name: NPM Audit
+      run: npm audit --audit-level=high
+
+    # SAST scanning
+    - name: CodeQL Analysis
+      uses: github/codeql-action/analyze@v2
+
+    # Secret scanning
+    - name: Gitleaks
+      uses: gitleaks/gitleaks-action@v2
+
+    # Container scanning (if applicable)
+    - name: Trivy Scan
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: ${{ env.IMAGE_NAME }}
+        severity: 'CRITICAL,HIGH'
+```
 
 ## Checklist
 

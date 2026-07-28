@@ -1,14 +1,19 @@
 ---
 name: plan-to-docs
-description: Plan a task with mastermind agent, grill interview, then output numbered phase documents to ai_plans/{task-slug}/ folder
+description: Plan a task with the mastermind-agent, grill interview, then output numbered vertical-slice phase documents to ai_plans/{task-slug}/
 argument-hint: "[task-description]"
-allowed-tools: Task, Read, Grep, Glob, Bash, Write, AskUserQuestion
+allowed-tools: Task, Read, Grep, Glob, Bash, Write, Edit, AskUserQuestion
 model: opus
+disable-model-invocation: true
 ---
 
 # Document-Driven Planning
 
-Plan a task using mastermind agent with grill interview, then generate a folder of numbered, testable phase documents.
+Plan a task, then generate a folder of numbered, independently verifiable phase documents.
+
+Use this when the work is too big to hold in one session. For a task that fits in one session, use `/plan-task`.
+
+Extends: `plan-base`
 
 ## Input
 
@@ -37,96 +42,65 @@ ai_plans/{task-slug}/
 
 ### Phase 2: Domain Discovery
 
-Before planning, scan the project:
+Run Domain Discovery from `plan-base`. Additionally, `ls ai_plans/` to see whether a related plan folder already exists.
 
-```bash
-# Look for existing documentation
-ls docs/*.md 2>/dev/null
-ls ai_plans/ 2>/dev/null
+### Phase 3: Mastermind Agent Planning
 
-# Check for architecture docs
-cat ARCHITECTURE.md 2>/dev/null | head -100
-cat CLAUDE.md 2>/dev/null | head -50
-```
-
-Read up to 5 relevant files to understand existing patterns.
-
-### Phase 3: Mastermind Planning
-
-Spawn mastermind via Task tool:
+Run Mastermind Invocation from `plan-base`, replacing step 3 (Task Breakdown) with vertical slice decomposition:
 
 ```
-subagent_type: mastermind
-prompt: |
-  Plan the implementation of this task: [task-description]
+  3. Vertical Slice Decomposition
+     Break the work into 3-8 phases. Each phase is a TRACER BULLET:
+     - Cuts a narrow but COMPLETE path through every layer it touches
+       (schema, API, UI, tests). Vertical, NOT a horizontal slice of one layer
+     - Is demoable or verifiable on its own when complete
+     - Is sized to fit in a single fresh context window
+     - Declares its BLOCKING EDGES: the phases that must complete before it
+       can start. A phase with no blockers can start immediately
 
-  As the mastermind principal engineer, analyze deeply:
+     Any prefactoring goes FIRST. Make the change easy, then make the easy change.
 
-  1. Requirements Analysis
-     - What problem does this solve?
-     - Who is the user/consumer?
-     - What are the acceptance criteria?
-     - What are the constraints?
-
-  2. Domain Analysis
-     Identify which specialists are needed:
-     - frontend-principal (React, TypeScript, UI/UX)
-     - backend-principal (APIs, services, databases)
-     - ai-principal (LLM features, prompts)
-     - devops-principal (infrastructure, CI/CD)
-     - security-principal (auth, vulnerabilities)
-     - architect-principal (system design, patterns)
-
-  3. Phase Decomposition
-     Break into 3-8 phases where each phase:
-     - Has a clear, testable goal
-     - Can be verified independently
-     - Builds on previous phases
-     - Takes 1-4 hours to implement
+     WIDE REFACTOR EXCEPTION. A wide refactor is one mechanical change
+     (rename a column, retype a shared symbol) whose blast radius fans across
+     the codebase, so a single edit breaks thousands of call sites at once and
+     no vertical slice can land green. Do not force it into a tracer bullet.
+     Sequence it as expand-contract:
+       - EXPAND: add the new form beside the old so nothing breaks
+       - MIGRATE: move call sites over in batches sized by blast radius
+         (per package, per directory), each batch its own phase blocked by the
+         expand, keeping CI green batch to batch because the old form still exists
+       - CONTRACT: remove the old form once no caller remains, in a phase
+         blocked by every migrate batch
 
   4. Dependency Graph
      For each phase, identify:
-     - What it receives from the previous phase
-     - What it provides to the next phase
+     - Blocked by: which phases gate it, or "None"
+     - What it receives from its blockers
+     - What it provides to the phases it unblocks
      - Files to add
      - Files to edit
 
   5. Risk Assessment
      - What could go wrong?
      - What decisions need to be locked?
-
-  Output a comprehensive plan with phase breakdown.
 ```
 
 ### Phase 4: Grill Interview
 
-Interview the user using AskUserQuestion. Ask ONE question at a time.
+Run Grill Interview from `plan-base`, including its mandatory seams branch. Additional branches specific to a multi-session build:
 
-For each question:
-
-- Provide your recommended answer as context
-- Include option: "I'm good with the plan - stop asking questions"
-- If user selects stop, proceed immediately to Phase 5
-
-Topics to grill:
-
-- Scope boundaries (what is explicitly out?)
-- Error handling strategy
-- Testing approach for each phase
-- Rollback strategy if phase fails
-- Performance requirements
-- Security considerations
-- Migration/deployment concerns
-
-Cross-reference answers against existing docs. Challenge contradictions.
+- Slice granularity: too coarse or too fine? Should any phase be merged or split?
+- Blocking edges: does each phase depend only on phases that genuinely gate it?
+- Rollback strategy if a phase fails midway
+- Migration and deployment sequencing across phases
 
 ### Phase 5: Lock Decisions
 
 Synthesize answers into a decisions table:
 
-| Decision | Choice             | Rationale |
-| -------- | ------------------ | --------- |
-| [topic]  | [what was decided] | [why]     |
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| [topic] | [what was decided] | [why] |
 
 ### Phase 6: Generate Phase Documents
 
@@ -134,7 +108,7 @@ For each phase, create a numbered markdown file using the template below.
 
 ## Phase Document Template
 
-````markdown
+```markdown
 # Phase N: [Title]
 
 ## Goal
@@ -147,17 +121,24 @@ For each phase, create a numbered markdown file using the template below.
 
 ## Dependencies
 
-- Receives from Phase N-1: [what the previous phase provides]
-- Provides to Phase N+1: [what this phase produces for the next]
+- Blocked by: [phase numbers that gate this one, or "None - can start immediately"]
+- Receives: [what the blocking phases provide]
+- Provides: [what this phase produces for the phases it unblocks]
+
+## Seams Under Test
+
+| Seam | New or Existing | What this phase covers at it |
+|------|-----------------|------------------------------|
+| ... | ... | ... |
+
+Tests in this phase are written ONLY at these seams. They were agreed during the grill.
 
 ## Scope
 
 In:
-
 - [Included in this phase]
 
 Out:
-
 - [Deferred to later phases]
 
 ## Files to Add
@@ -180,9 +161,10 @@ Out:
 
 ## Tests
 
-- [ ] Unit: [specific test case]
-- [ ] Unit: [specific test case]
-- [ ] Integration: [specific test case]
+Each entry names the seam it is written at.
+
+- [ ] [seam]: [specific behaviour under test]
+- [ ] [seam]: [specific behaviour under test]
 
 ## Verification
 
@@ -191,7 +173,6 @@ npm test -- [relevant-test-pattern]
 npx tsc --noEmit
 npm run lint
 ```
-````
 
 ## Done When
 
@@ -202,8 +183,7 @@ npm run lint
 ## Notes for Next Phase
 
 [Bridge to Phase N+1. What patterns are established. What the next phase should know.]
-
-````
+```
 
 ### Phase 7: Generate README.md
 
@@ -220,18 +200,18 @@ npm run lint
 
 ## Phase Index
 
-| # | File | Surface | Done When |
-|---|------|---------|-----------|
-| 1 | [01-phase.md](01-phase.md) | [what it produces] | [key verification] |
-| 2 | [02-phase.md](02-phase.md) | [what it produces] | [key verification] |
+| # | File | Blocked by | Delivers | Done When |
+|---|------|------------|----------|-----------|
+| 1 | [01-phase.md](01-phase.md) | None | [end-to-end behaviour] | [key verification] |
+| 2 | [02-phase.md](02-phase.md) | 1 | [end-to-end behaviour] | [key verification] |
 
 ## How to Use
 
-1. Open the lowest-numbered phase MD that is not done
-2. Run `/p-implement-phase ai_plans/{task-slug}/0N-phase.md`
-3. Complete verification, tick Done When, move on
+1. Work the FRONTIER: any phase whose blockers are all done. For a linear chain that is top to bottom
+2. Run `/implement-phase ai_plans/{task-slug}/0N-phase.md`
+3. Complete verification, tick Done When, clear context, move to the next frontier phase
 
-Do NOT skip ahead - each phase assumes the previous one is in place.
+Do NOT start a phase whose blockers are unfinished.
 
 ## Out of Scope
 
@@ -240,8 +220,8 @@ Do NOT skip ahead - each phase assumes the previous one is in place.
 
 ## Generated
 
-Created by `/p-plan-to-docs` on [YYYY-MM-DD].
-````
+Created by `/plan-to-docs` on [YYYY-MM-DD].
+```
 
 ### Phase 8: Write Files
 
@@ -261,30 +241,31 @@ Generated: [date]
 
 ### Files Created
 
-| File          | Description            |
-| ------------- | ---------------------- |
-| README.md     | Overview and decisions |
-| 01-{phase}.md | [goal summary]         |
-| 02-{phase}.md | [goal summary]         |
+| File | Description |
+|------|-------------|
+| README.md | Overview and decisions |
+| 01-{phase}.md | [goal summary] |
+| 02-{phase}.md | [goal summary] |
 
 ### Summary
 
-| Metric             | Value |
-| ------------------ | ----- |
-| Phases             | [N]   |
-| Questions Answered | [N]   |
-| Decisions Locked   | [N]   |
+| Metric | Value |
+|--------|-------|
+| Phases | [N] |
+| Questions Answered | [N] |
+| Decisions Locked | [N] |
 
 ### Next Steps
 
 1. Review ai_plans/{task-slug}/README.md
-2. Run `/p-implement-phase ai_plans/{task-slug}/01-{first-phase}.md`
+2. Run `/implement-phase ai_plans/{task-slug}/01-{first-phase}.md`
 ```
 
 ## Design Principles
 
-- Each phase is testable and encapsulated
-- Forward/backward dependency references
-- Verification commands in each phase
-- Done When checklist for observable outcomes
-- Grill interview forces precision before implementation
+- Every phase is a vertical slice: narrow but complete through every layer it touches, demoable on its own
+- Blocking edges, not just sequence. A phase declares what gates it, so the frontier is always visible
+- One phase fits one fresh context window. Clear context between phases
+- Tests only at seams agreed during the grill
+- Verification commands and a Done When checklist in every phase
+- Prefactor first: make the change easy, then make the easy change

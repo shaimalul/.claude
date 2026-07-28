@@ -2,6 +2,7 @@
 name: react-component
 description: React component patterns, hooks, state management, and Context usage for clean architecture. Use when writing or reviewing React components, custom hooks, or state management code in .tsx files.
 globs: "**/*.tsx"
+user-invocable: false
 ---
 
 # React Component Conventions
@@ -118,6 +119,24 @@ const { data, isLoading } = useQuery({
   queryFn: () => dataService.getAll(filters)
 });
 ```
+
+### React Query: Guard Falsy Keys with `enabled`
+
+When a query key parameter comes from route params or optional state, always add `enabled: !!id` to prevent malformed requests when the value is empty/undefined.
+
+```typescript
+// Bad - fires request to /api/initiatives/ when id is ''
+const id = router.params?.id ?? '';
+const { data } = useQuery([QueryKeys.INITIATIVE, id], () => api.getById(id));
+
+// Good - query is disabled until id is truthy
+const id = router.params?.id ?? '';
+const { data } = useQuery([QueryKeys.INITIATIVE, id], () => api.getById(id), {
+  enabled: !!id,
+});
+```
+
+**When to apply:** Any `useQuery` where the query key contains a value that can be empty string, undefined, or null (route params, optional props, derived IDs).
 
 ### Context: Provider + Custom Hook
 
@@ -436,7 +455,7 @@ import { Link } from 'react-router-dom';
 - No direct localStorage (use storageService)
 - No fetch() in components (use React Query)
 - No business logic in TSX
-- Use design system components when available
+- Use design system components over native HTML where an equivalent exists
 - Constants declared outside component function
 - String literals in constants, not inline
 - `handle` prefix for internal handlers, `on` prefix for callback props

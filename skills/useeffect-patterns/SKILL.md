@@ -2,6 +2,7 @@
 name: useeffect-patterns
 description: useEffect best practices, common mistakes, and when to use alternative approaches like React Query. Use when writing or reviewing useEffect hooks, diagnosing infinite loops, or deciding between useEffect and React Query.
 globs: "**/*.tsx,**/*.ts"
+user-invocable: false
 ---
 
 # useEffect Best Practices

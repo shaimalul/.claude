@@ -2,6 +2,7 @@
 name: no-comments
 description: Guidelines for writing self-documenting code without excessive comments. Use when reviewing code for unnecessary comments, or writing self-documenting code with clear naming and structure.
 globs: "**/*.ts,**/*.tsx,**/*.js,**/*.jsx"
+user-invocable: false
 ---
 
 # No Comments Conventions
@@ -37,6 +38,11 @@ Use comments sparingly and only in these specific cases:
 2. **Outdated comments**: Comments that aren't maintained become misleading
 3. **Commented-out code**: Delete unused code instead of commenting it out
 4. **TODO comments**: Use the issue tracker instead
+5. **Change narration**: Don't describe the diff or contrast with the previous version (`previously…`, `instead of…`, `we used to…`, `changed to…`). Comment the code as it stands, not how it got there.
+
+## Comment the Solution, Not the Change
+
+A comment must read as standalone documentation of why the code is shaped this way — understandable to someone who never saw the diff. Explain the overall solution, the reasoning, and the invariants. NEVER narrate the specific change being made or contrast with the previous version; that belongs in the commit message, not the code. Before/after framing goes stale the moment the next change lands.
 
 ## Better Alternatives to Comments
 
@@ -108,6 +114,28 @@ This explains the "why" - preventing rate limiting - which isn't obvious from th
 
 ---
 
+### Change-Narrating Comment (Bad)
+
+```typescript
+// Resolve the user once per request instead of rebuilding it per anomaly, which previously
+// meant an uncached getUserById round trip for every anomaly (N+1).
+const baseCriteria = await generateQuery({ user, filterClientFacingProjects: true });
+```
+
+This narrates the diff (`instead of`, `previously`, `N+1`). It only makes sense to someone comparing against the old code, and goes stale once the next change lands.
+
+### Solution-Documenting Comment (Good)
+
+```typescript
+// Permission criteria are user-scoped, so they are resolved once and shared across all anomalies
+// (each resolution is an uncached getUserById round trip).
+const baseCriteria = await generateQuery({ user, filterClientFacingProjects: true });
+```
+
+This explains the invariant (criteria are user-scoped) and the cost being avoided (the round trip), with no reference to the previous version.
+
+---
+
 ### JSX Section Comments (Bad)
 
 ```tsx
@@ -126,7 +154,7 @@ This explains the "why" - preventing rate limiting - which isn't obvious from th
   {/* Error Message */}
   {error && (
     <Card>
-      <Typography variant="t-body" color="error">
+      <Typography variant="t-body" color="red-30">
         {error}
       </Typography>
     </Card>
@@ -135,7 +163,7 @@ This explains the "why" - preventing rate limiting - which isn't obvious from th
   {/* No Published Version Message */}
   {!publishedVersion && (
     <Card>
-      <Typography variant="t-body" color="muted">
+      <Typography variant="t-body" color="gray-80">
         No published version available
       </Typography>
     </Card>
@@ -189,7 +217,7 @@ Extract sections into well-named components. If extraction isn't warranted, the 
 
   {error && (
     <Card>
-      <Typography variant="t-body" color="error">
+      <Typography variant="t-body" color="red-30">
         {error}
       </Typography>
     </Card>
@@ -197,7 +225,7 @@ Extract sections into well-named components. If extraction isn't warranted, the 
 
   {!publishedVersion && (
     <Card>
-      <Typography variant="t-body" color="muted">
+      <Typography variant="t-body" color="gray-80">
         No published version available
       </Typography>
     </Card>
@@ -224,3 +252,4 @@ The conditional rendering (`{error && ...}`, `{!publishedVersion && ...}`) and c
 | `{/* Section Name */}` in JSX | Delete - use component names |
 | `// HACK: workaround for bug #123` | Keep - explains intent |
 | JSDoc on public API | Keep - API documentation |
+| `// previously did X / instead of Y / we used to…` | Rewrite as timeless intent (or move to commit message) |
