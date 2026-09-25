@@ -19,6 +19,12 @@ Extends: `plan-base`
 
 Task description via `$ARGUMENTS`. If empty, prompt user.
 
+If `$ARGUMENTS` is a cleared `wayfinder` map (an issue URL or an `ai_plans/<effort>/map.md` path):
+
+- The map's Destination is the task, and its Decisions so far are already locked. Zoom into a ticket only when a phase needs its detail
+- The grill covers only what the map left open. Do not reopen a closed ticket's decision unless the code contradicts it
+- For a local map, write the phase docs into the map's own folder. Do not treat its existence as a name clash
+
 ## Output
 
 ```

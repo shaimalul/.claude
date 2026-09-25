@@ -42,5 +42,6 @@ Consuming skills declare their own question categories. This file owns only the 
 | `plan-base` | Domain docs, seams under test, and phase decisions |
 | `plan-test` | Contract, boundary, edge case, failure mode, library swap |
 | `domain-modeling` | Terminology challenges and ADR candidates |
+| `wayfinder` | The destination, a breadth-first frontier grill, and `grilling` tickets |
 
 A consumer references this section by name. It MUST NOT restate the protocol.

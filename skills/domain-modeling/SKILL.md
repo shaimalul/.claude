@@ -112,3 +112,4 @@ When maintaining the model interactively, use the `grilling` protocol. Do not re
 | `tdd` | Consumer rules, so test names match the domain language |
 | `review-base` | Consumer rules, so findings cite the project's terms |
 | `find-bug` | Consumer rules, to build an accurate mental model |
+| `wayfinder` | Active discipline while naming the destination and resolving `grilling` tickets |

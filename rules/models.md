@@ -61,6 +61,7 @@ Skills without a `model:` field inherit the session model. Only skills that need
 | ----------------- | ------ | ----------------------------------------------- |
 | plan-task         | opus   | Feature decomposition, domain grounding, and the grill |
 | plan-to-docs      | opus   | Vertical slice decomposition across many sessions |
+| wayfinder         | opus   | Destination, fog, and frontier decisions across many sessions |
 | implement-phase   | opus   | Cascading changes across future phases          |
 | plan-test         | opus   | Edge case and failure mode design               |
 | review-test       | opus   | Test quality auditing                           |

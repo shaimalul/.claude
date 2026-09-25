@@ -245,6 +245,7 @@ Fix ALL errors before marking complete.
 | ----------------------------------------------------- | ------------------- |
 | Small task you can hold in your head | No skill. Just do it |
 | Bigger task: needs research, agents, an interview | `/plan-task` |
+| Too big for one session, route still foggy: open decisions | `/wayfinder`, then `/plan-to-docs` once the map clears |
 | Too big for one session: needs phased execution | `/plan-to-docs`, then `/implement-phase` per phase |
 | Designing the tests for something already built | `/plan-test` |
 | Something is broken, flaky, or slow | `/find-bug` |
