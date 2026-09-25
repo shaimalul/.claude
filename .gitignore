@@ -26,6 +26,7 @@ shell-snapshots/
 statsig/
 telemetry/
 backups/
+state/
 
 # Sessions & session bookkeeping
 sessions/
@@ -34,6 +35,9 @@ last-git-pull.json
 .last-cleanup
 .last-update-check
 .update.lock
+
+# Skills synced from claude.ai (managed by Claude, not this repo)
+skills/synced/
 
 # Planning, plugins, projects, tasks
 plans/
