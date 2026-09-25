@@ -168,7 +168,7 @@ The setup follows a three-tier architecture where Skills orchestrate Agents, whi
 CLAUDE.md (Code Standards)
     |
     v
-SKILLS (49) -------> AGENTS (11) -------> PATTERN LIBRARIES (29)
+SKILLS (54) -------> AGENTS (11) -------> PATTERN LIBRARIES (29)
 /review              mastermind-agent      react-component
 /plan-task           frontend-agent        js-backend-patterns
 /plan-to-docs        backend-agent         security-patterns
@@ -241,7 +241,7 @@ writes to protected files before the lock is removed.
 
 These are slash commands developers invoke manually via the `/` menu. Type `/` in Claude Code to see them.
 
-20 user-invocable skills.
+23 user-invocable skills.
 
 | Skill                            | Description                                         | Spawns Agents                                                           |
 | -------------------------------- | --------------------------------------------------- | ----------------------------------------------------------------------- |
@@ -252,7 +252,10 @@ These are slash commands developers invoke manually via the `/` menu. Type `/` i
 | `/resolve-pr <url>`              | Analyze PR review threads, plan responses, fix code | pr-resolver-agent                                                       |
 | **Planning & Development**       |                                                     |                                                                         |
 | `/plan-task [description]`       | Plan a task: domain docs, agents, grill, seams      | mastermind-agent                                                        |
+| `/wayfinder [idea \| map]`       | Chart a foggy multi-session effort as a map of decision tickets, then resolve one per session | research subagents (worktree-isolated) |
 | `/plan-to-docs [description]`    | Plan as vertical-slice phase docs in `ai_plans/`    | mastermind-agent                                                        |
+| `/research [question]`           | Read primary sources in a background agent, write cited findings | general-purpose (background)                                   |
+| `/prototype [question]`          | Throwaway logic demo or UI variants to answer one design question | None                                                          |
 | `/implement-phase <phase.md>`    | Build one phase test-first, cascade to later phases | mastermind-agent -> specialists                                         |
 | `/plan-test [path]`              | Design edge cases and failure modes before testing  | None                                                                    |
 | `/build-feature`                 | Execute planned feature                             | mastermind-agent -> specialists                                         |
@@ -437,7 +440,7 @@ macOS only: `Submarine.aiff` for `done`, `Glass.aiff` for `notify` (both under `
 |     |- package-manager.js
 |
 |- agents/                    # 11 specialist agents
-|- skills/                    # 49 skills (invocable workflows + pattern libraries)
+|- skills/                    # 54 skills (invocable workflows + pattern libraries)
 |- rules/                     # 8 always-loaded rule files
 ```
 
