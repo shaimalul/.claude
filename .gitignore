@@ -6,7 +6,6 @@ node_modules/
 
 # Secrets & credentials
 .secrets
-.secrets.example
 .credentials.json
 .env
 policy-limits.json
@@ -34,6 +33,7 @@ iterate-sessions/
 last-git-pull.json
 .last-cleanup
 .last-update-check
+.settings-template-keys.json
 .update.lock
 
 # Skills synced from claude.ai (managed by Claude, not this repo)

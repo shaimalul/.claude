@@ -11,8 +11,6 @@
 EVENT="${1:-done}"
 cat >/dev/null
 
-echo "$(date '+%Y-%m-%d %H:%M:%S') EVENT=$EVENT" >> /tmp/play-sound-debug.log
-
 if [[ "$EVENT" == "notify" ]]; then
     afplay /System/Library/Sounds/Glass.aiff 2>/dev/null &
 else
