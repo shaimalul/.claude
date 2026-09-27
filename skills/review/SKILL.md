@@ -31,7 +31,7 @@ This command runs **without any user prompts**. It will:
 
 ### Phase 0: Mode Detection
 
-Run **Shared Machinery Step A** from `review-base`. It sets `MODE`, `PR_URL`, and `CONTEXT`.
+Run Step A of `review-base`'s [MACHINERY.md](../review-base/MACHINERY.md). It sets `MODE`, `PR_URL`, and `CONTEXT`.
 
 ---
 
@@ -39,7 +39,7 @@ Run **Shared Machinery Step A** from `review-base`. It sets `MODE`, `PR_URL`, an
 
 Run **Fixed Point** from `review-base` FIRST. A ref that does not resolve, or an empty diff, stops the review here rather than inside seven parallel sub-agents.
 
-Then run **Shared Machinery Step B** from `review-base`.
+Then run Step B of `review-base`'s [MACHINERY.md](../review-base/MACHINERY.md).
 
 Local mode produces `CHANGED_FILES_LIST`, `DIFF_CONTENT`, and `ASSETS_DIR`. GitHub mode additionally produces per-file diffs, file contents at head, `FINDINGS_FILE`, and the existing-discussions summary that Phase 3 feeds to agents.
 
@@ -71,72 +71,9 @@ Apply the **Agent Routing Table** from `review-base` to `CHANGED_FILES_LIST` to 
 
 Use the **Task tool** to spawn multiple agents simultaneously based on changed files.
 
-### Shared Agent Output Format
+### Agent Output Format
 
-**IMPORTANT:** When constructing each agent prompt below, always append this full output format section to the prompt text sent to the agent.
-
-```
-OUTPUT FORMAT - Return findings as JSON array:
-[
-  {
-    "type": "inline",
-    "prefix": "[Blocker]",
-    "file_path": "src/path/to/file.ts",
-    "code_pattern": "exact code snippet from a + line (5-50 chars)",
-    "comment": "Single-paragraph concise feedback. No multi-section format."
-  },
-  {
-    "type": "general",
-    "prefix": "[Nice to have]",
-    "file_path": "src/path/to/file.ts",
-    "comment": "File-level or architectural concern."
-  }
-]
-
-RULES:
-- type: "inline" for comments on specific changed lines, "general" ONLY for cross-cutting patterns with no specific file to pin to
-  - If a comment mentions a specific file path or code pattern, it MUST be "inline" with a code_pattern - NEVER put file-specific feedback in general
-  - "general" is ONLY for observations that span the entire codebase and can't be pinned to any single file (e.g., "consider standardizing error handling across all services")
-  - Test file comments (missing coverage, test improvements) MUST be inline on the test file, not general
-- prefix: Use [Blocker], [Nice to have], [Suggestion], [Need to check], or [Question]
-- code_pattern (inline only): Copy EXACT code from a PLUS LINE (+ prefix) in the diff (5-50 chars)
-  - CRITICAL: ONLY from + lines (added/modified). NEVER from context/unchanged lines
-  - Use a unique snippet that appears only once in the file
-  - Omit code_pattern entirely for "general" type findings
-- comment: Keep it short and direct:
-  - Max 2 sentences for simple findings
-  - For multiple related points on the same file: one short intro sentence + bullet list (one bullet per point)
-  - NO introductory context about what changed (never "Behavioral change:", "The old code...", "This code...")
-  - Jump straight to the concern or question
-  - Code examples ONLY for complex fixes where words alone are unclear
-  - NO code examples for simple changes (moving, renaming, extracting)
-  - NO multi-section format (no "Why:", "Suggestion:" subsections)
-- Write as if YOU are the reviewer - natural, human, professional tone
-- DO NOT post positive/complimentary comments - only actionable feedback
-
-FORBIDDEN COMMENT TYPES (do NOT flag these):
-- Lint-style: file length, function length, naming conventions, missing semicolons, import ordering
-- Style preferences: export default vs named exports, barrel files, formatting
-- Obvious observations: restating what the diff shows without adding insight
-- These are enforced by linters, not code review
-- External service/package assertions: flagging model names, API versions, SDK features, library names, package versions, or third-party identifiers as invalid WITHOUT first verifying via WebSearch. Training data may be outdated.
-
-TEST COVERAGE RULE:
-- Flag critical paths (business logic, error handling, edge cases) that lack test coverage
-- Not demanding 100% coverage - focus on core logic that could break silently
-- Use an "inline" finding on the untested code, not a general comment
-
-UNCHANGED CODE RULE:
-- NEVER create inline findings for unchanged/context lines in the diff
-- For architectural concerns about existing code spanning 3+ files, create ONE "general" type finding summarizing all observations
-- Example: "Several services duplicate validation logic (UserService, OrderService). Consider extracting to shared validators/"
-
-EXTERNAL FACT VERIFICATION RULE:
-- NEVER assert that an external identifier (model name, API version, SDK method, pricing tier, library/package name, package version) is invalid based solely on training data
-- Before flagging any external identifier as non-existent, incorrect, or deprecated, verify via WebSearch
-- This includes: model names, npm/pip package names and versions, API endpoints, SDK features, pricing tiers
-- If verification is not possible, use [Need to check] instead of [Blocker] and note that online verification is needed
-```
+Append the Agent Output Format block from `review-base` to every agent prompt below, in full. Sub-agents have no other access to it.
 
 ### Comment Style
 
@@ -206,7 +143,7 @@ prompt: |
   repo standard overrides the baseline, and every smell is a judgement call
   mapped to [Nice to have] or [Suggestion], NEVER [Blocker].]
 
-  [Append Shared Agent Output Format]
+  [Append review-base Agent Output Format block]
 ```
 
 Always spawn: security-agent, architect-agent, bug-finder-agent.
@@ -246,7 +183,7 @@ prompt: |
 
   Under 400 words.
 
-  [Append Shared Agent Output Format]
+  [Append review-base Agent Output Format block]
 ```
 
 ---
@@ -277,7 +214,7 @@ Group findings by prefix in this order, WITHIN each axis:
 
 ### Phase 5: Post to GitHub (GITHUB MODE ONLY)
 
-Run **Shared Machinery Step C** from `review-base` with `PREFIX_MODE=prefixed`.
+Run Step C of `review-base`'s [MACHINERY.md](../review-base/MACHINERY.md) with `PREFIX_MODE=prefixed`.
 
 It resolves line numbers from `code_pattern`, deduplicates same-line findings, filters against existing PR discussions, and creates a single pending review. Skip entirely if `MODE=local`.
 
@@ -293,13 +230,7 @@ Save location:
 
 Use the **Write** tool to create the report file.
 
-This template's skeleton (Review Details, Files Reviewed, Agents Used, Summary) is the same
-shape as `review-base`'s Report Template - reproduced here in full because this is a literal
-output artifact, not an instruction, so it must stay self-contained. This skill's actual
-addition over the base is the prefix-grouped finding sections (`[Blocker]`, `[Nice to have]`,
-`[Suggestion]`, `[Need to check]`, `[Question]`) in place of the base's severity tiers, plus
-the Verdict section and the follow-up TODO pass. If the Files Reviewed / Agents Used shape
-changes, update `review-base`'s Report Template first and mirror the change here.
+This skill owns the review report: the only report template in the review family.
 
 The report MUST use this format:
 
@@ -456,51 +387,7 @@ Click "Submit review" in GitHub to publish all comments.
 
 ### Phase 7: Learning Feedback Loop
 
-After generating the review report, execute the learning feedback loop.
-
-#### Step 1: Extract Learnable Patterns
-
-From your review findings, identify all findings with these prefixes:
-- `[Blocker]` - Critical issues (MUST learn from these)
-- `[Nice to have]` - Important improvements (SHOULD learn from these)
-- `[Suggestion]` - Best practices to adopt (SHOULD learn from these)
-
-Skip `[Need to check]`, `[Question]`, and project-specific bugs.
-
-#### Step 2: For Each Learnable Pattern, Invoke improve-claude
-
-For each `[Blocker]`, `[Nice to have]`, or `[Suggestion]` finding:
-
-1. **Determine the category** based on the finding content:
-   - Keywords `any`, `casting`, `type`, `TypeScript` -> category: `typescript-types`
-   - Keywords `useEffect`, `useState`, `hook`, `React`, `component` -> category: `react-component`
-   - Keywords `controller`, `service`, `repository`, `layer` -> category: `js-backend-patterns`
-   - Keywords `injection`, `XSS`, `secret`, `auth`, `security` -> category: `security-patterns`
-   - Other patterns -> category: `general`
-
-2. **Check if the rule already exists** by searching CLAUDE.md for similar rules. Skip if already covered.
-
-3. **Invoke the Skill tool** with:
-   - skill: `improve-claude`
-   - args: `[category]: [concise rule description] --save-skill`
-
-The `/improve-claude` command will automatically:
-- Update relevant config files (CLAUDE.md, agents, skills)
-- Integrate the pattern into the appropriate existing domain skill (styling-rtl, react-component, etc.)
-
-#### Step 3: Report Learning Results
-
-Include in your final output to the user:
-
-```
-## Learning Feedback Loop
-
-**Patterns Found:** [count]
-**Rules Applied:** [list of rules added via improve-claude]
-**Skills Updated:** [list of domain skills updated]
-```
-
-If no patterns were learned, report: "No learnable patterns identified in this review (no Blocker, Nice-to-have, or Suggestion findings)."
+Run the Learning Feedback Loop from `review-base`. It proposes rules for you to apply with `/improve-claude`; the review itself edits no configuration.
 
 ---
 
@@ -520,7 +407,7 @@ From the review findings, identify:
 Use TodoWrite to track each actionable item with:
 - Clear description of the fix needed
 - File and line reference
-- Priority based on severity tier (in_progress for blockers, pending for others)
+- Status from the prefix: in_progress for `[Blocker]`, pending for the rest
 
 #### Step 3: Report TODOs Created
 
