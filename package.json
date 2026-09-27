@@ -14,5 +14,8 @@
   },
   "devDependencies": {
     "promptfoo": "^0.121.19"
+  },
+  "engines": {
+    "node": ">=20.20.0"
   }
 }
