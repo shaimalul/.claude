@@ -18,7 +18,12 @@ Follow the `domain-modeling` consumer rules while exploring, so your mental mode
 
 ## Redact
 
-This skill has you show commands, outputs, and captured artifacts. REDACT every secret first: write `<REDACTED>` in its place. Build loops that read credentials from environment variables, so the secret stays in the environment rather than in what you show: `curl -H "Authorization: Bearer $API_TOKEN" ...`, never the literal token. When the user pastes a live secret, tell them to rotate it. Captured artifacts carry auth headers and cookies: quote only the lines that carry the signal.
+This skill has you show commands, outputs, and captured artifacts. Every secret you show is `<REDACTED>`, in every sentence of your reply, the warnings included:
+
+- Build loops that read credentials from environment variables: `curl -H "Authorization: Bearer $API_TOKEN" ...`
+- A secret the user pasted is named by where it appeared, never by its value: "Rotate the key from your curl command now; it is exposed in this conversation."
+- HARD GUARDRAIL: the characters of a secret never appear in your reply, and a rotation warning is where this slips most. Write `Rotate the key from your curl command`, not `Rotate <the key itself>`
+- Captured artifacts carry auth headers and cookies: quote only the lines that carry the signal
 
 If the redacted output is not enough to diagnose the bug, say so and ask the user.
 
