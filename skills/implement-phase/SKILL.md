@@ -135,6 +135,16 @@ Compare actual state against each Done When criterion:
 
 If any fail, either complete the work or report as blocker.
 
+### Phase 5.5: Review Against the Phase Document
+
+Run `/review` on the branch. Its Spec axis picks this phase document up from `ai_plans/` and judges the diff against it; its Standards axis applies the repo's standards and the smell baseline.
+
+- Fix every `[Blocker]` test-first via `tdd`, then re-run Phase 4 verification
+- Carry `[Nice to have]` and `[Suggestion]` findings into the Completion Report rather than fixing them silently
+- A Spec finding of scope creep or a missing requirement is resolved here, not deferred to the next phase
+
+Done when the review reports no `[Blocker]` on either axis.
+
 ### Phase 6: Cascade Update to Future Phases
 
 After implementation, check if changes invalidate future phases.
@@ -219,6 +229,10 @@ Status: Complete
 - [x] TypeScript: PASS
 - [x] Lint: PASS
 - [x] Build: PASS
+- [x] Review: no [Blocker] on Standards or Spec
+
+### Review Findings Carried Forward
+[Nice to have] and [Suggestion] findings left for later, or "None"
 
 ### Done When
 - [x] [Criterion 1]
