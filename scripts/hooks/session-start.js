@@ -8,12 +8,9 @@
  * files and notifies Claude of available context to load.
  */
 
-const {
-  getSessionsDir,
-  findFiles,
-  ensureDir,
-  log
-} = require('../lib/utils');
+const { getSessionsDir } = require('../lib/paths');
+const { findFiles, ensureDir } = require('../lib/files');
+const { log } = require('../lib/hook-io');
 const { getPackageManager, getSelectionPrompt } = require('../lib/package-manager');
 const { run: runAutoUpdate } = require('./auto-update');
 const { run: ensureMcpServers } = require('./ensure-mcp-servers');

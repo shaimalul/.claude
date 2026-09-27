@@ -10,7 +10,8 @@
 
 const fs = require('fs');
 const path = require('path');
-const { getHomeDir, log } = require('../lib/utils');
+const { getHomeDir } = require('../lib/paths');
+const { log } = require('../lib/hook-io');
 
 const LOG_PREFIX = '[EnsureMCP]';
 

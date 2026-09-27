@@ -10,18 +10,10 @@
 
 const path = require('path');
 const fs = require('fs');
-const {
-  getSessionsDir,
-  getDateString,
-  getTimeString,
-  getSessionIdShort,
-  ensureDir,
-  readFile,
-  writeFile,
-  replaceInFile,
-  readStdinJson,
-  log
-} = require('../lib/utils');
+const { getSessionsDir } = require('../lib/paths');
+const { getDateString, getTimeString, getSessionIdShort } = require('../lib/stamps');
+const { ensureDir, readFile, writeFile, replaceInFile } = require('../lib/files');
+const { readStdinJson, log } = require('../lib/hook-io');
 
 async function main() {
   const hookInput = await readStdinJson();

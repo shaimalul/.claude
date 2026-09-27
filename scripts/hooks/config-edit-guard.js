@@ -12,7 +12,8 @@
 
 const path = require('path');
 const fs = require('fs');
-const { readStdinJson, log, getClaudeDir } = require('../lib/utils');
+const { readStdinJson, log } = require('../lib/hook-io');
+const { getClaudeDir } = require('../lib/paths');
 
 const CLAUDE_DIR = getClaudeDir();
 const LOCK_FILE = path.join(CLAUDE_DIR, '.config-edit-unlocked');

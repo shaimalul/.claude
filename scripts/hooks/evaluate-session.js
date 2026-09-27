@@ -10,12 +10,8 @@
 
 const path = require('path');
 const fs = require('fs');
-const {
-  readFile,
-  countInFile,
-  readStdinJson,
-  log
-} = require('../lib/utils');
+const { readFile, countInFile } = require('../lib/files');
+const { readStdinJson, log } = require('../lib/hook-io');
 
 // Patterns indicating extractable knowledge (debugging, discoveries, workarounds)
 const EXTRACTION_TRIGGERS = [
@@ -59,100 +55,67 @@ const EXCLUSION_PATTERNS = [
  * Count pattern matches in text
  */
 function countPatternMatches(text, patterns) {
-  let count = 0;
-  const matches = [];
+  const matches = patterns.map(pattern => text.match(pattern)).filter(Boolean).map(m => m[0].substring(0, 40));
+  return { count: matches.length, matches };
+}
 
-  for (const pattern of patterns) {
-    if (pattern.test(text)) {
-      count++;
-      // Get a snippet of the pattern for logging
-      const match = text.match(pattern);
-      if (match) {
-        matches.push(match[0].substring(0, 40));
-      }
-    }
+const DEFAULTS = { minSessionLength: 10, qualityThreshold: 2 };
+const PREFIX = '[ContinuousLearning]';
+
+/** Thresholds from config/continuous-learning.json, falling back to defaults */
+function loadThresholds() {
+  const configFile = path.join(__dirname, '..', '..', 'config', 'continuous-learning.json');
+  try {
+    const config = JSON.parse(readFile(configFile) || '');
+    return {
+      minSessionLength: config.min_session_length || DEFAULTS.minSessionLength,
+      qualityThreshold: config.extract_learning?.quality_threshold || DEFAULTS.qualityThreshold,
+    };
+  } catch {
+    return DEFAULTS;
   }
+}
 
-  return { count, matches };
+function recommend(triggers, score, qualityThreshold) {
+  if (score >= qualityThreshold) {
+    log(`${PREFIX} ================================================`);
+    log(`${PREFIX} RECOMMENDED: Run /extract-learning`);
+    log(`${PREFIX} ================================================`);
+    log(`${PREFIX} Detected patterns: ${triggers.matches.slice(0, 3).join(', ')}`);
+    log(`${PREFIX} This session likely contains extractable knowledge.`);
+  } else if (triggers.count > 0) {
+    log(`${PREFIX} Consider /extract-learning if significant discoveries were made`);
+    log(`${PREFIX} Score: ${score} (threshold: ${qualityThreshold})`);
+  } else {
+    log(`${PREFIX} Session appears routine, no extraction recommended`);
+  }
 }
 
 async function main() {
-  // Get script directory to find config
-  const scriptDir = __dirname;
-  const configFile = path.join(scriptDir, '..', '..', 'config', 'continuous-learning.json');
-
-  // Default configuration
-  let minSessionLength = 10;
-  let qualityThreshold = 2;
-
-  // Load config if exists
-  const configContent = readFile(configFile);
-  if (configContent) {
-    try {
-      const config = JSON.parse(configContent);
-      minSessionLength = config.min_session_length || 10;
-      qualityThreshold = config.extract_learning?.quality_threshold || 2;
-    } catch {
-      // Invalid config, use defaults
-    }
-  }
+  const { minSessionLength, qualityThreshold } = loadThresholds();
 
   // transcript_path arrives on the hook's stdin payload, not the environment.
   // See https://code.claude.com/docs/en/hooks
-  const hookInput = await readStdinJson();
-  const transcriptPath = hookInput?.transcript_path;
+  const transcriptPath = (await readStdinJson())?.transcript_path;
+  const transcript = transcriptPath && fs.existsSync(transcriptPath) ? readFile(transcriptPath) : null;
+  if (!transcript) process.exit(0);
 
-  if (!transcriptPath || !fs.existsSync(transcriptPath)) {
-    process.exit(0);
-  }
-
-  // Read transcript content
-  const transcriptContent = readFile(transcriptPath);
-  if (!transcriptContent) {
-    process.exit(0);
-  }
-
-  // Count user messages in session
   const messageCount = countInFile(transcriptPath, /"type":"user"/g);
-
-  // Skip short sessions
   if (messageCount < minSessionLength) {
-    log(`[ContinuousLearning] Session too short (${messageCount} messages), skipping evaluation`);
+    log(`${PREFIX} Session too short (${messageCount} messages), skipping evaluation`);
     process.exit(0);
   }
 
-  // Analyze transcript for extraction triggers
-  const triggers = countPatternMatches(transcriptContent, EXTRACTION_TRIGGERS);
-  const exclusions = countPatternMatches(transcriptContent, EXCLUSION_PATTERNS);
+  const triggers = countPatternMatches(transcript, EXTRACTION_TRIGGERS);
+  const exclusions = countPatternMatches(transcript, EXCLUSION_PATTERNS);
+  log(`${PREFIX} Session analysis: ${messageCount} messages, ${triggers.count} triggers, ${exclusions.count} exclusions`);
 
-  // Calculate extraction score
-  const extractionScore = triggers.count - exclusions.count;
-
-  // Log analysis results
-  log(`[ContinuousLearning] Session analysis: ${messageCount} messages, ${triggers.count} triggers, ${exclusions.count} exclusions`);
-
-  if (extractionScore >= qualityThreshold) {
-    // Strong recommendation
-    log(`[ContinuousLearning] ================================================`);
-    log(`[ContinuousLearning] RECOMMENDED: Run /extract-learning`);
-    log(`[ContinuousLearning] ================================================`);
-    log(`[ContinuousLearning] Detected patterns: ${triggers.matches.slice(0, 3).join(', ')}`);
-    log(`[ContinuousLearning] This session likely contains extractable knowledge.`);
-  } else if (triggers.count > 0) {
-    // Weak suggestion
-    log(`[ContinuousLearning] Consider /extract-learning if significant discoveries were made`);
-    log(`[ContinuousLearning] Score: ${extractionScore} (threshold: ${qualityThreshold})`);
-  } else {
-    // No recommendation
-    log(`[ContinuousLearning] Session appears routine, no extraction recommended`);
-  }
-
-  log(`[ContinuousLearning] Run /extract-learning to integrate patterns into existing domain skills`);
-
+  recommend(triggers, triggers.count - exclusions.count, qualityThreshold);
+  log(`${PREFIX} Run /extract-learning to integrate patterns into existing domain skills`);
   process.exit(0);
 }
 
 main().catch(err => {
-  console.error('[ContinuousLearning] Error:', err.message);
+  console.error(`${PREFIX} Error:`, err.message);
   process.exit(0);
 });
