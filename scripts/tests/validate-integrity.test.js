@@ -50,6 +50,9 @@ const EXTERNAL_COMMANDS = new Set([
 
 const readText = filePath => (fs.existsSync(filePath) ? fs.readFileSync(filePath, 'utf8') : '');
 
+// settings.json is generated per machine and gitignored, so a clean checkout (CI) has only the template
+const settingsFiles = () => [SETTINGS, TEMPLATE].filter(fs.existsSync);
+
 /** Markdown files whose prose is scanned for references */
 function proseFiles() {
   return [
@@ -81,7 +84,7 @@ describe('INT configuration integrity', () => {
   });
 
   test('INT-03 every configured hook event is a documented event name', () => {
-    [SETTINGS, TEMPLATE].forEach(file => {
+    settingsFiles().forEach(file => {
       const events = Object.keys(JSON.parse(readText(file)).hooks || {});
       events.forEach(event =>
         assert.ok(HOOK_EVENTS.has(event), `${path.basename(file)}: unknown hook event "${event}"`)
@@ -90,7 +93,7 @@ describe('INT configuration integrity', () => {
   });
 
   test('INT-04 both settings files declare the official schema', () => {
-    [SETTINGS, TEMPLATE].forEach(file => {
+    settingsFiles().forEach(file => {
       const settings = JSON.parse(readText(file));
       assert.equal(settings.$schema, 'https://json.schemastore.org/claude-code-settings.json');
     });
