@@ -100,7 +100,7 @@ Every ticket is either HITL (human in the loop, worked WITH a human who speaks f
 | `grilling` | HITL | Load `grilling` and `domain-modeling` | The default: a conversation settles it |
 | `task` | HITL or AFK | Doing the work, or handing the human a precise checklist | Manual work must happen before a decision can be made |
 
-A `task` is the one type that DOES rather than decides: signing up for a service so its API can be judged, provisioning access, moving data so its shape can be seen. It earns its place by unblocking a decision, not by delivering the destination. Its answer records what was done and any facts later tickets depend on (credentials location, new URLs, row counts).
+A `task` is the one type that DOES rather than decides: signing up for a service so its API can be judged, provisioning access, moving data so its shape can be seen. It earns its place by unblocking a decision, not by delivering the destination: a ticket that builds part of the destination ("Build the schema migration") is never a `task`. Rule it out of scope as downstream work for `/plan-to-docs`. Its answer records what was done and any facts later tickets depend on (credentials location, new URLs, row counts).
 
 ## Fog Of War
 
@@ -143,7 +143,7 @@ A ticket argument is optional. Without one, you pick the next decision, not the 
 3. Resolve it by its type (see Ticket Types). Zoom as needed: fetch the full body of any related or closed ticket on demand, and load whichever skills the map's Notes name. If in doubt, load `grilling` and `domain-modeling`
 4. Record the resolution: post the answer as a resolution comment, close the ticket, and append a context pointer to the map's Decisions so far
 5. Advance the frontier. Create newly surfaced tickets (create, then wire). Graduate any fog the answer made specifiable, clearing each graduated patch from Not yet specified so it lives only as its new ticket. Rule out of scope any ticket the answer shows sits past the destination. Update or close any ticket the decision invalidated
-6. If the frontier is now empty and Not yet specified is empty, the map is CLEARED: tell the user and recommend `/plan-to-docs <map>` as the handoff
+6. STOP. This session's one ticket is resolved; the next ticket belongs to a fresh session. Report the resolution and name the next frontier ticket. If the frontier and Not yet specified are both empty, the map is CLEARED: say so and recommend `/plan-to-docs <map>` as the handoff
 
 Other sessions may be working unblocked tickets in parallel, so re-read the map right before editing it and expect concurrent changes.
 
