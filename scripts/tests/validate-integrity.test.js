@@ -233,12 +233,6 @@ describe('INT configuration integrity', () => {
     assert.deepEqual(dangling, []);
   });
 
-  // review's Report Template is a literal output artifact Claude writes verbatim into
-  // review-report.md, not an instruction - it must stay self-contained, so its Files
-  // Reviewed / Agents Used skeleton intentionally repeats review-base's Report Template.
-  // Both files carry a cross-reference note explaining the exception (see D-10).
-  const ACCEPTED_DUPLICATES = new Set(['review']);
-
   test('INT-12 no Extends: consumer duplicates a block from its base', () => {
     const skills = listSkills();
     const byName = new Map(skills.map(skill => [skill.dirName, skill]));
@@ -257,7 +251,6 @@ describe('INT configuration integrity', () => {
     const duplicates = [];
     skills
       .filter(skill => skill.extends && byName.has(skill.extends))
-      .filter(skill => !ACCEPTED_DUPLICATES.has(skill.dirName))
       .forEach(skill => {
         const baseBlocks = blocks(byName.get(skill.extends).path);
         blocks(skill.path).forEach(block => {
@@ -287,7 +280,7 @@ describe('INT configuration integrity', () => {
     assert.deepEqual(wrong, [], 'D-13: a stale census misroutes new rules');
   });
 
-  test('INT-15 hook scripts stay within the file size limit', { todo: 'D-20 pending refactor' }, () => {
+  test('INT-15 hook scripts stay within the file size limit', () => {
     const oversized = listHookScripts()
       .concat(listNamedScripts())
       .filter(script => readText(script.path).split('\n').length > 150)
