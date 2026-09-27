@@ -65,7 +65,8 @@ function resolveHookCommand(command) {
   const parts = command.trim().split(/\s+/);
   const candidate = RUNNERS.includes(parts[0]) ? parts[1] : parts[0];
   if (!candidate) return null;
-  const expanded = candidate.replace('__HOME__', path.dirname(CLAUDE_DIR));
+  const home = path.dirname(CLAUDE_DIR);
+  const expanded = candidate.replace('__HOME__', home).replace(/^~(?=\/)/, home);
   return expanded.includes('/') ? expanded : null;
 }
 

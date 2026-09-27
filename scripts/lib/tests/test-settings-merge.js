@@ -9,13 +9,14 @@ import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import fs from 'node:fs';
+import os from 'node:os';
 
 const require = createRequire(import.meta.url);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const { mergeSettings, getHookIdentity, getEntryIdentity } = require(
-  path.join(__dirname, '..', 'settings-merge.js')
-);
+const { mergeSettings } = require(path.join(__dirname, '..', 'settings-merge.js'));
+const { getHookIdentity, getEntryIdentity } = require(path.join(__dirname, '..', 'hook-identity.js'));
 
 const HOME = '/home/testuser';
 
@@ -485,5 +486,54 @@ describe('mergeSettings', () => {
     const existingCopy = JSON.parse(JSON.stringify(existing));
     mergeSettings(template, existing, HOME);
     assert.deepStrictEqual(existing, existingCopy);
+  });
+});
+
+// ── dead repo hooks ────────────────────────────────────────
+
+describe('mergeSettings drops hooks whose repo script no longer exists', () => {
+  const makeHome = () => {
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), 'merge-home-'));
+    fs.mkdirSync(path.join(home, '.claude', 'scripts', 'hooks'), { recursive: true });
+    fs.writeFileSync(path.join(home, '.claude', 'scripts', 'hooks', 'alive.js'), '');
+    return home;
+  };
+
+  it('removes a ~/.claude hook pointing at a deleted script', () => {
+    const home = makeHome();
+    const existing = {
+      hooks: {
+        PreToolUse: [
+          { matcher: 'Edit|Write', hooks: [{ command: 'node ~/.claude/scripts/hooks/deleted.js' }] },
+          { matcher: 'Bash', hooks: [{ command: 'node ~/.claude/scripts/hooks/alive.js' }] }
+        ]
+      }
+    };
+    const result = mergeSettings({ hooks: {} }, existing, home);
+    const commands = result.hooks.PreToolUse.map(e => e.hooks[0].command);
+    assert.deepStrictEqual(commands, ['node ~/.claude/scripts/hooks/alive.js']);
+  });
+
+  it('removes an absolute-path hook pointing at a deleted script and drops the emptied event', () => {
+    const home = makeHome();
+    const existing = {
+      hooks: { Stop: [{ hooks: [{ command: `node ${home}/.claude/scripts/hooks/deleted.js` }] }] }
+    };
+    const result = mergeSettings({ hooks: {} }, existing, home);
+    assert.strictEqual(result.hooks.Stop, undefined);
+  });
+
+  it('keeps hooks outside the repo and external binaries', () => {
+    const home = makeHome();
+    const existing = {
+      hooks: {
+        Stop: [
+          { hooks: [{ command: 'afplay /System/Library/Sounds/Submarine.aiff' }] },
+          { hooks: [{ command: 'node ~/bin/my-own-hook.js' }] }
+        ]
+      }
+    };
+    const result = mergeSettings({ hooks: {} }, existing, home);
+    assert.strictEqual(result.hooks.Stop.length, 2);
   });
 });

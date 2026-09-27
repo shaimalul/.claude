@@ -6,47 +6,8 @@
  * existing user values are preserved.
  */
 
-// Legacy notification hooks -> the play-sound.sh invocation that replaced them.
-// Without this a settings.json written before the sounds were bundled keeps its
-// old hook AND gains the new one, so every event fires twice.
-const WRAPPER_MAP = {
-  'scripts/hooks/notify-wrapper.sh': 'scripts/hooks/play-sound.sh notify',
-  'plugins/claude-notifier-plugin/scripts/notify.sh': 'scripts/hooks/play-sound.sh notify',
-  'scripts/hooks/play-sound.sh': 'scripts/hooks/play-sound.sh done',
-  'afplay /System/Library/Sounds/Submarine.aiff': 'scripts/hooks/play-sound.sh done'
-};
-
-/**
- * Extract canonical identity from a hook command string.
- * Strips runner prefix and home dir prefix.
- */
-function getHookIdentity(command, homeDir) {
-  let cleaned = command.replace(/^(?:node|bash|sh|python3?)\s+/, '');
-
-  const prefixes = [
-    '__HOME__/.claude/',
-    `${homeDir}/.claude/`,
-    '~/.claude/'
-  ];
-  for (const prefix of prefixes) {
-    if (cleaned.startsWith(prefix)) {
-      cleaned = cleaned.slice(prefix.length);
-      break;
-    }
-  }
-
-  return WRAPPER_MAP[cleaned] || cleaned;
-}
-
-/**
- * Get identity for a hook entry (uses first hook's command).
- */
-function getEntryIdentity(hookEntry, homeDir) {
-  if (!hookEntry.hooks || hookEntry.hooks.length === 0) return null;
-  const command = hookEntry.hooks[0].command;
-  if (!command) return null;
-  return getHookIdentity(command, homeDir);
-}
+const fs = require('fs');
+const { getEntryIdentity, repoScriptPath, templateIdentities } = require('./hook-identity');
 
 /**
  * Merge permissions.allow (union) and preserve user's defaultMode.
@@ -111,6 +72,14 @@ function mergeHooks(result, templateObj, homeDir) {
   }
 }
 
+/** Keep only the hooks `keep(eventType, entry)` accepts, dropping emptied event types */
+function filterHooks(result, keep) {
+  for (const eventType of Object.keys(result.hooks || {})) {
+    result.hooks[eventType] = result.hooks[eventType].filter(entry => keep(eventType, entry));
+    if (result.hooks[eventType].length === 0) delete result.hooks[eventType];
+  }
+}
+
 /**
  * Drop existing hooks sitting under an event type the template no longer
  * uses, when their identity already exists somewhere in the template (under
@@ -118,27 +87,24 @@ function mergeHooks(result, templateObj, homeDir) {
  * PermissionRequest -> Notification) leaves the old hook firing forever
  * alongside its replacement.
  */
-function pruneOrphanedLegacyHooks(result, templateObj, homeDir) {
-  if (!templateObj.hooks || !result.hooks) return;
+function pruneOrphanedLegacyHooks(result, templateObj, templateIds, homeDir) {
+  if (!templateObj.hooks) return;
+  filterHooks(result, (eventType, entry) =>
+    eventType in templateObj.hooks || !templateIds.has(getEntryIdentity(entry, homeDir))
+  );
+}
 
-  const templateIds = new Set();
-  for (const entries of Object.values(templateObj.hooks)) {
-    for (const entry of entries) {
-      const id = getEntryIdentity(entry, homeDir);
-      if (id) templateIds.add(id);
-    }
-  }
-
-  for (const eventType of Object.keys(result.hooks)) {
-    if (eventType in templateObj.hooks) continue; // handled by mergeHooks
-
-    result.hooks[eventType] = result.hooks[eventType].filter(entry => {
-      const id = getEntryIdentity(entry, homeDir);
-      return !(id && templateIds.has(id));
-    });
-
-    if (result.hooks[eventType].length === 0) delete result.hooks[eventType];
-  }
+/**
+ * Drop user-kept hooks whose repo script was deleted. Such a hook errors on
+ * every trigger, and no template change can ever replace it. Hooks the
+ * template registers are the template's to keep.
+ */
+function pruneMissingScriptHooks(result, templateIds, homeDir) {
+  filterHooks(result, (eventType, entry) => {
+    if (templateIds.has(getEntryIdentity(entry, homeDir))) return true;
+    const script = repoScriptPath(entry.hooks?.[0]?.command || '', homeDir);
+    return !script || fs.existsSync(script);
+  });
 }
 
 /**
@@ -151,20 +117,23 @@ function pruneOrphanedLegacyHooks(result, templateObj, homeDir) {
  * - hooks: add new by script identity, keep user versions
  * - Orphaned hooks under a renamed/removed event type are dropped once the
  *   template's replacement is present
+ * - Hooks whose repo script was deleted are dropped
  * - $schema: always from template
- * - New template keys: added if missing
+ * - New template keys: added if missing and never offered before (options.offeredKeys)
  */
-function mergeSettings(templateObj, existingObj, homeDir) {
+function mergeSettings(templateObj, existingObj, homeDir, { offeredKeys = [] } = {}) {
   const result = JSON.parse(JSON.stringify(existingObj));
 
   mergePermissions(result, templateObj);
   mergeHooks(result, templateObj, homeDir);
-  pruneOrphanedLegacyHooks(result, templateObj, homeDir);
+  const templateIds = templateIdentities(templateObj, homeDir);
+  pruneOrphanedLegacyHooks(result, templateObj, templateIds, homeDir);
+  pruneMissingScriptHooks(result, templateIds, homeDir);
 
-  // Add new top-level keys from template (don't override existing)
+  // Add top-level template keys the user has never been offered; one they deleted stays deleted
   for (const key of Object.keys(templateObj)) {
     if (key === 'permissions' || key === 'hooks' || key === '$schema') continue;
-    if (!(key in result)) {
+    if (!(key in result) && !offeredKeys.includes(key)) {
       result[key] = templateObj[key];
     }
   }
@@ -177,4 +146,4 @@ function mergeSettings(templateObj, existingObj, homeDir) {
   return result;
 }
 
-module.exports = { mergeSettings, getHookIdentity, getEntryIdentity };
+module.exports = { mergeSettings };

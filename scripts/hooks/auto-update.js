@@ -1,203 +1,120 @@
 /**
  * Auto-Update - Pull config updates on session start
  *
- * Cross-platform (Windows, macOS, Linux)
- *
- * Called by session-start.js to check for and pull updates from
- * the config repository. Uses fetch + fast-forward merge with
- * stash/pop to safely update even with local changes.
- *
- * Exported as run() so it can be called from existing hooks
- * without needing a new settings.json entry.
+ * Called by session-start.js to check for and pull updates from the config
+ * repository. Uses fetch + fast-forward merge with stash/pop to safely update
+ * even with local changes. Exported as run() so it needs no settings.json entry.
  */
 
 const fs = require('fs');
 const path = require('path');
-const {
-  getClaudeDir,
-  getHomeDir,
-  runCommand,
-  readFile,
-  writeFile,
-  log
-} = require('../lib/utils');
+const { getClaudeDir, getHomeDir } = require('../lib/paths');
+const { runCommand } = require('../lib/system');
+const { renderSettings } = require('../lib/render-settings');
+const { log } = require('../lib/hook-io');
 
 const THROTTLE_MINUTES = 720;
 const FETCH_TIMEOUT_MS = 5000;
 const LOG_PREFIX = '[AutoUpdate]';
 
-function getThrottleFile() {
-  return path.join(getClaudeDir(), '.last-update-check');
-}
+// Top-level directory -> label used in the update summary
+const CATEGORIES = [['skills/', 'skill'], ['agents/', 'agent'], ['rules/', 'rule'], ['scripts/', 'script']];
 
-function shouldThrottle() {
+const gitIn = cwd => (cmd, options = {}) => runCommand(cmd, { cwd, ...options });
+
+function isThrottled(throttleFile) {
   try {
-    const stat = fs.statSync(getThrottleFile());
-    const ageMinutes = (Date.now() - stat.mtimeMs) / (1000 * 60);
-    return ageMinutes < THROTTLE_MINUTES;
+    return (Date.now() - fs.statSync(throttleFile).mtimeMs) / 60000 < THROTTLE_MINUTES;
   } catch {
     return false;
   }
 }
 
-function touchThrottleFile() {
-  fs.writeFileSync(getThrottleFile(), new Date().toISOString(), 'utf8');
-}
-
-function isWorkingTreeDirty(cwd) {
-  const result = runCommand('git status --porcelain', { cwd });
-  return result.success && result.output.length > 0;
-}
-
+/** "2 skill(s), 1 other file(s)" for the changed paths */
 function categorizeChanges(files) {
-  const counts = { skills: 0, agents: 0, rules: 0, scripts: 0, other: 0 };
-
+  const counts = new Map();
   for (const file of files) {
-    if (file.startsWith('skills/')) counts.skills++;
-    else if (file.startsWith('agents/')) counts.agents++;
-    else if (file.startsWith('rules/')) counts.rules++;
-    else if (file.startsWith('scripts/')) counts.scripts++;
-    else counts.other++;
+    const match = CATEGORIES.find(([prefix]) => file.startsWith(prefix));
+    const label = match ? match[1] : 'other file';
+    counts.set(label, (counts.get(label) || 0) + 1);
   }
-
-  const parts = [];
-  if (counts.skills > 0) parts.push(`${counts.skills} skill(s)`);
-  if (counts.agents > 0) parts.push(`${counts.agents} agent(s)`);
-  if (counts.rules > 0) parts.push(`${counts.rules} rule(s)`);
-  if (counts.scripts > 0) parts.push(`${counts.scripts} script(s)`);
-  if (counts.other > 0) parts.push(`${counts.other} other file(s)`);
-  return parts;
+  const order = [...CATEGORIES.map(([, label]) => label), 'other file'];
+  return order.filter(label => counts.has(label)).map(label => `${counts.get(label)} ${label}(s)`);
 }
 
-function regenerateSettings(claudeDir) {
-  const { mergeSettings } = require('../lib/settings-merge');
+/** Commits origin/main is ahead by, or 0 when this checkout should not update */
+function commitsToPull(git, claudeDir) {
+  if (!git('git rev-parse --git-dir').success) return 0;
 
-  const templatePath = path.join(claudeDir, 'settings.template.json');
-  const outputPath = path.join(claudeDir, 'settings.json');
-  const homeDir = getHomeDir();
+  const branch = git('git symbolic-ref --short HEAD');
+  if (!branch.success || branch.output !== 'main') return 0;
 
-  const templateRaw = readFile(templatePath);
-  if (!templateRaw) return;
+  const throttleFile = path.join(claudeDir, '.last-update-check');
+  if (isThrottled(throttleFile)) return 0;
+  fs.writeFileSync(throttleFile, new Date().toISOString(), 'utf8');
 
-  const resolvedTemplate = templateRaw.replace(/__HOME__/g, homeDir);
-
-  let templateObj;
-  try {
-    templateObj = JSON.parse(resolvedTemplate);
-  } catch (err) {
-    log(`${LOG_PREFIX} Error parsing settings.template.json: ${err.message}`);
-    return;
-  }
-
-  const existingRaw = readFile(outputPath);
-  if (!existingRaw) {
-    writeFile(outputPath, resolvedTemplate);
-    log(`${LOG_PREFIX} settings.json generated (first run). Restart Claude Code to apply.`);
-    return;
-  }
-
-  let existingObj;
-  try {
-    existingObj = JSON.parse(existingRaw);
-  } catch (err) {
-    log(`${LOG_PREFIX} settings.json corrupt, regenerating from template: ${err.message}`);
-    writeFile(outputPath, resolvedTemplate);
-    return;
-  }
-
-  const merged = mergeSettings(templateObj, existingObj, homeDir);
-  writeFile(outputPath, JSON.stringify(merged, null, 2) + '\n');
-  log(`${LOG_PREFIX} settings.json smart-merged. Restart Claude Code to apply hook changes.`);
-}
-
-function main() {
-  const claudeDir = getClaudeDir();
-
-  // Guard: is this a git repo?
-  const gitCheck = runCommand('git rev-parse --git-dir', { cwd: claudeDir });
-  if (!gitCheck.success) {
-    return;
-  }
-
-  // Guard: on main branch only
-  const branchResult = runCommand('git symbolic-ref --short HEAD', { cwd: claudeDir });
-  if (!branchResult.success || branchResult.output !== 'main') {
-    return;
-  }
-
-  // Throttle: skip if checked recently
-  if (shouldThrottle()) {
-    return;
-  }
-  touchThrottleFile();
-
-  // Fetch with timeout
-  const fetchResult = runCommand('git fetch origin main --quiet', {
-    cwd: claudeDir,
-    timeout: FETCH_TIMEOUT_MS
-  });
-  if (!fetchResult.success) {
+  if (!git('git fetch origin main --quiet', { timeout: FETCH_TIMEOUT_MS }).success) {
     log(`${LOG_PREFIX} Fetch failed (network issue?), continuing without update`);
-    return;
+    return 0;
   }
 
-  // Check if behind
-  const behindResult = runCommand('git rev-list --count HEAD..origin/main', { cwd: claudeDir });
-  if (!behindResult.success) return;
+  const behind = git('git rev-list --count HEAD..origin/main');
+  return behind.success ? parseInt(behind.output, 10) : 0;
+}
 
-  const commitsBehind = parseInt(behindResult.output, 10);
-  if (commitsBehind === 0) return;
+/** Fast-forward to origin/main, carrying local changes across. Returns success */
+function fastForward(git) {
+  const status = git('git status --porcelain');
+  const isDirty = status.success && status.output.length > 0;
 
-  // Stash local changes if working tree is dirty
-  const isDirty = isWorkingTreeDirty(claudeDir);
   if (isDirty) {
-    const stashResult = runCommand('git stash push -m "auto-update-stash"', { cwd: claudeDir });
-    if (!stashResult.success) {
+    if (!git('git stash push -m "auto-update-stash"').success) {
       log(`${LOG_PREFIX} Could not stash local changes, skipping update`);
-      return;
+      return false;
     }
     log(`${LOG_PREFIX} Stashed local changes before update`);
   }
 
-  // Fast-forward merge
-  const mergeResult = runCommand('git merge --ff-only origin/main', { cwd: claudeDir });
-  if (!mergeResult.success) {
-    log(`${LOG_PREFIX} Cannot fast-forward merge. Run manually: cd ~/.claude && git pull`);
-    if (isDirty) {
-      runCommand('git stash pop', { cwd: claudeDir });
-    }
-    return;
+  const merged = git('git merge --ff-only origin/main').success;
+  if (!merged) log(`${LOG_PREFIX} Cannot fast-forward merge. Run manually: cd ~/.claude && git pull`);
+
+  if (isDirty) restoreStash(git, merged);
+  return merged;
+}
+
+function restoreStash(git, afterMerge) {
+  const popped = git('git stash pop').success;
+  if (!afterMerge) return;
+  if (popped) {
+    log(`${LOG_PREFIX} Restored local changes after update`);
+  } else {
+    log(`${LOG_PREFIX} WARNING: Stash pop failed (conflict?). Your changes are in 'git stash list'.`);
+    log(`${LOG_PREFIX} Run: cd ~/.claude && git stash pop`);
+  }
+}
+
+function reportUpdate(git, claudeDir, commits) {
+  const diff = git(`git diff --name-only HEAD~${commits}..HEAD`);
+  const changed = diff.success ? diff.output.split('\n').filter(Boolean) : [];
+
+  if (changed.includes('settings.template.json')) {
+    const { message } = renderSettings(claudeDir, getHomeDir());
+    log(`${LOG_PREFIX} ${message}. Restart Claude Code to apply hook changes.`);
   }
 
-  // Pop stash if we stashed
-  if (isDirty) {
-    const popResult = runCommand('git stash pop', { cwd: claudeDir });
-    if (!popResult.success) {
-      log(`${LOG_PREFIX} WARNING: Stash pop failed (conflict?). Your changes are in 'git stash list'.`);
-      log(`${LOG_PREFIX} Run: cd ~/.claude && git stash pop`);
-    } else {
-      log(`${LOG_PREFIX} Restored local changes after update`);
-    }
-  }
-
-  // Post-pull: check if settings.template.json changed
-  const diffResult = runCommand(
-    `git diff --name-only HEAD~${commitsBehind}..HEAD`,
-    { cwd: claudeDir }
-  );
-
-  if (diffResult.success && diffResult.output.includes('settings.template.json')) {
-    regenerateSettings(claudeDir);
-  }
-
-  // Report summary
-  const changedFiles = diffResult.success
-    ? diffResult.output.split('\n').filter(Boolean)
-    : [];
-  const categories = categorizeChanges(changedFiles);
+  const categories = categorizeChanges(changed);
   const summary = categories.length > 0 ? `: ${categories.join(', ')}` : '';
+  log(`${LOG_PREFIX} Updated config (${commits} commit${commits > 1 ? 's' : ''}${summary})`);
+}
 
-  log(`${LOG_PREFIX} Updated config (${commitsBehind} commit${commitsBehind > 1 ? 's' : ''}${summary})`);
+function main() {
+  const claudeDir = getClaudeDir();
+  const git = gitIn(claudeDir);
+
+  const commits = commitsToPull(git, claudeDir);
+  if (commits === 0) return;
+
+  if (fastForward(git)) reportUpdate(git, claudeDir, commits);
 }
 
 function run() {
