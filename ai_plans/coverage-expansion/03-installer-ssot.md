@@ -97,14 +97,17 @@ grep -n "__HOME__" scripts/merge-settings.js scripts/setup.sh
 
 The `grep` for `sed` must find nothing in the generation path. The `__HOME__` grep should show the placeholder only where the template defines it, never in two rendering implementations.
 
+<!-- Updated during the 2026-09 config audit -->
+<!-- Change: scripts/lib/render-settings.js (renderSettings) is now the single renderer, used by setup.sh via merge-settings.js and by auto-update; setup.sh has no sed. Remaining: CLAUDE_DIR override, INT-03/04 over render output, the interactive spawn test. -->
+
 ## Done When
 
 - [ ] `renderTemplate` exists in one module and is the only implementation of the substitution
-- [ ] `setup.sh` contains zero `sed` in the generation path
+- [x] `setup.sh` contains zero `sed` in the generation path
 - [ ] `setup.sh` honours a `CLAUDE_DIR` override
 - [ ] INT-03 and INT-04 are predicates applied to live settings, template and render output
 - [ ] The spawn test covers all three interactive answers without touching the real `$HOME`
-- [ ] `npm test` is green
+- [x] `npm test` is green
 
 ## Notes for Next Phase
 

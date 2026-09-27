@@ -66,11 +66,9 @@ Skills without a `model:` field inherit the session model. Only skills that need
 | plan-test         | opus   | Edge case and failure mode design               |
 | review-test       | opus   | Test quality auditing                           |
 | find-bug          | opus   | Feedback loop construction and root cause analysis |
-| cleanup           | opus   | Code debt detection across the codebase         |
 | consult           | opus   | Routes to specialist agents for expert guidance |
 | split-changes     | opus   | Domain boundary analysis across a branch        |
 | build-feature     | sonnet | Executes an already-approved plan               |
-| micro-iterate     | sonnet | Tight implement-and-validate loop               |
 
 Bases and primitives (`plan-base`, `review-base`, `grilling`, `domain-modeling`, `codebase-design`, `tdd`) declare no `model:`. They are loaded into whichever skill or agent cites them and run at that caller's tier.
 

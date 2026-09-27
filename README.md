@@ -46,10 +46,10 @@ git checkout -t origin/main -f
 #### Then run setup (all scenarios)
 
 ```bash
-# 1. Run the setup script (generates settings.json, creates .secrets)
+# 1. Run the setup script (generates settings.json)
 bash ~/.claude/scripts/setup.sh
 
-# 2. Run `gh auth login` (or edit ~/.claude/.secrets with a GH_TOKEN)
+# 2. Run `gh auth login` (stores a GitHub token in your OS keychain)
 
 # 3. Verify
 cd ~/your-project && claude
@@ -57,13 +57,9 @@ cd ~/your-project && claude
 
 The setup script generates `settings.json` from `settings.template.json`, replacing path placeholders with your home directory. Both `settings.json` and `settings.local.json` are gitignored so your personal settings never conflict with the repo.
 
-### Secrets Setup
+### GitHub Access
 
-Copy `.secrets.example` to `.secrets` and fill in your tokens. Each token has instructions in the file:
-
-| Token      | Required For                                                  | How to Get                                                                                                  |
-| ---------- | ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `GH_TOKEN` | `/review`, `/resolve-pr`, `/pr-description`, `/split-changes` | Optional - prefer `gh auth login`. Otherwise GitHub > Settings > Developer settings > Tokens (`repo` scope) |
+No token file is needed. `/review`, `/resolve-pr`, `/pr-description`, `/split-changes`, and `/wayfinder` all go through the `gh` CLI, which uses the token `gh auth login` stores in your OS keychain. Grant it the `repo` scope. Never put a token in a file in this repo or pass one as a command-line argument.
 
 ---
 
@@ -168,7 +164,7 @@ The setup follows a three-tier architecture where Skills orchestrate Agents, whi
 CLAUDE.md (Code Standards)
     |
     v
-SKILLS (54) -------> AGENTS (11) -------> PATTERN LIBRARIES (29)
+SKILLS (55) -------> AGENTS (11) -------> PATTERN LIBRARIES (29)
 /review              mastermind-agent      react-component
 /plan-task           frontend-agent        js-backend-patterns
 /plan-to-docs        backend-agent         security-patterns
@@ -199,7 +195,7 @@ Reviews -> Learn -> Update configs
 
 These are two distinct mechanisms, not variations of the same thing:
 
-- **Invoking a skill** (`Skill` tool, or typing `/name`) loads the SKILL.md body as plain text
+- **Invoking a skill** (`Skill` tool, or typing `/<skill-name>`) loads the SKILL.md body as plain text
   into the *current* conversation - no new context, no new model. When a skill like `/review`
   appears to "spin up specialist agents," that's not the skill mechanism forking; it's prose
   inside the skill body instructing Claude to call the `Agent`/`Task` tool per specialist.
@@ -213,7 +209,7 @@ Two frontmatter switches control skill visibility:
 
 | Frontmatter | Effect |
 | --- | --- |
-| `disable-model-invocation: true` | Only a human-typed `/name` can invoke it - the `Skill` tool itself refuses the call. Used by skills with real side effects (`commit-all`, `plan-task`, `refactor`, etc.) |
+| `disable-model-invocation: true` | Only a human-typed `/<skill-name>` can invoke it - the `Skill` tool itself refuses the call. Used by skills with real side effects (`commit-all`, `plan-task`, `refactor`, etc.) |
 | `user-invocable: false` | Hidden from the `/` menu, but Claude can still load it via the `Skill` tool. Used by pure pattern-library skills meant to be loaded silently when relevant. |
 
 ### Hooks
@@ -333,10 +329,11 @@ A **base** owns the shared content of a skill family; consumers declare `Extends
 | ----------------- | --------- | ------------------------------------------------------------- |
 | `review-base` | base | Prefixes, severity, agent routing, the fixed point, the two axes, the Fowler smell baseline, review machinery |
 | `plan-base` | base | Domain discovery, mastermind invocation, plan format, seams under test, the planning grill |
-| `grilling` | primitive | The decision-tree interview: one question at a time, recommended answer, the stop option |
+| `grilling` | primitive | The decision-tree interview: rounds over the frontier, recommended answer, facts looked up not asked, the stop option |
 | `domain-modeling` | primitive | `CONTEXT.md` glossary format, ADR format and the 3-of-3 gate, lazy creation, consumer rules |
 | `codebase-design` | primitive | Deep modules: module, interface, depth, seam, adapter, leverage, locality |
 | `tdd` | primitive | The red-green-refactor loop, what a good test is, seams, test anti-patterns |
+| `writing-for-agents` | primitive | How to write any agent-read document: pointers, the two loads, hierarchy, completion criteria, leading words, pruning |
 
 ---
 
@@ -423,8 +420,6 @@ macOS only: `Submarine.aiff` for `done`, `Glass.aiff` for `notify` (both under `
 |- README.md                  # This documentation
 |- settings.template.json     # Hook config template (tracked in git)
 |- settings.json              # Generated by setup.sh (gitignored)
-|- .secrets                   # Personal tokens (gitignored)
-|- .secrets.example           # Token template with instructions
 |
 |- scripts/                   # Hook automation scripts
 |  |- setup.sh                # First-time setup (generates settings.json)
@@ -435,12 +430,14 @@ macOS only: `Submarine.aiff` for `done`, `Glass.aiff` for `notify` (both under `
 |  |  |- evaluate-session.js
 |  |  |- git-guardrails.js
 |  |  |- play-sound.sh        # Plays a macOS system sound (done | notify)
-|  |- lib/                    # Shared utilities
-|     |- utils.js
-|     |- package-manager.js
+|  |- lib/                    # Shared modules, one concern each
+|  |  |- paths.js, files.js, hook-io.js, system.js, stamps.js
+|  |  |- settings-merge.js, hook-identity.js, render-settings.js
+|  |  |- package-manager.js, config-inventory.js
+|  |- tests/                  # Static integrity suite (npm test)
 |
 |- agents/                    # 11 specialist agents
-|- skills/                    # 54 skills (invocable workflows + pattern libraries)
+|- skills/                    # 55 skills (invocable workflows + pattern libraries)
 |- rules/                     # 8 always-loaded rule files
 ```
 

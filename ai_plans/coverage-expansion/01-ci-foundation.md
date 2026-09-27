@@ -91,13 +91,13 @@ node -e "const y=require('fs').readFileSync('.github/workflows/ci.yml','utf8'); 
 
 ## Done When
 
-- [ ] `npm test` exits 0 with no unexplained failures
-- [ ] `ci.yml` runs the static job on every push with no paths filter
-- [ ] The eval job declares `needs: static` and is report-only
-- [ ] The cache key varies with `hashFiles('evals/**')`
-- [ ] Both jobs resolve Node from `.nvmrc`, not a floating major
-- [ ] A fork PR touching `skills/**` skips the eval job with a visible note rather than failing red
-- [ ] `evals.yml` no longer exists
+- [x] `npm test` exits 0 with no unexplained failures
+- [x] `ci.yml` runs the static job on every push with no paths filter
+- [x] The eval job declares `needs: static` and is report-only
+- [x] The cache key varies with `hashFiles('evals/**')`
+- [x] Both jobs resolve Node from `.nvmrc`, not a floating major
+- [x] A fork PR touching `skills/**` skips the eval job with a visible note rather than failing red
+- [x] `evals.yml` no longer exists
 
 ## Notes for Next Phase
 
