@@ -9,7 +9,7 @@
  * Exit code 0 = allow the command
  */
 
-const { readStdinJson, log } = require('../lib/utils');
+const { readStdinJson, log } = require('../lib/hook-io');
 
 const DANGEROUS_PATTERNS = [
   { pattern: /\bgit\s+push\b/, description: 'git push' },
@@ -38,6 +38,23 @@ const DANGEROUS_PATTERNS = [
   { pattern: /\baws\b.*\bterminate\b/, description: 'aws * terminate' },
 ];
 
+// A shell that evaluates its string argument turns quoted text back into a command.
+const EVALUATES_QUOTED_TEXT = /\b(?:(?:ba|z|da|k)?sh\s+(?:-\w+\s+)*-\w*c\b|eval\b|ssh\b|su\b.*\s-c\b)/;
+const SINGLE_QUOTED = /'[^']*'/g;
+const DOUBLE_QUOTED = /"(?:[^"\\]|\\.)*"/g;
+const SUBSTITUTION = /\$\(|`/;
+
+/**
+ * The part of a command the shell will run. Quoted arguments are data and are
+ * dropped, except when a shell re-evaluates them or they hold a substitution.
+ */
+function executableText(command) {
+  if (EVALUATES_QUOTED_TEXT.test(command)) return command;
+  return command
+    .replace(SINGLE_QUOTED, "''")
+    .replace(DOUBLE_QUOTED, quoted => (SUBSTITUTION.test(quoted) ? quoted : '""'));
+}
+
 async function main() {
   const input = await readStdinJson();
   const command = input?.tool_input?.command;
@@ -46,8 +63,10 @@ async function main() {
     process.exit(0);
   }
 
+  const executable = executableText(command);
+
   for (const { pattern, description } of DANGEROUS_PATTERNS) {
-    if (pattern.test(command)) {
+    if (pattern.test(executable)) {
       log(`BLOCKED: '${command}' matches dangerous pattern '${description}'. The user has prevented you from doing this.`);
       process.exit(2);
     }
