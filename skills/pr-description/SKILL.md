@@ -193,6 +193,17 @@ When the change is a bug fix, include a structured breakdown. Reviewers lose far
 
 Omit when the change is a refactor, new feature, or chore.
 
+### Evidence
+
+Show that the change works, as a before/after pair of the smallest observable proof: a failing then passing test run, command output, or a screenshot the author already has. Never invent output; if no evidence was captured, omit the block and say what the reviewer should run.
+
+### Merge Danger
+
+Two calls every reviewer wants before reading the diff:
+
+- Door: ONE-WAY (hard to reverse: data migrations, deleted data, published APIs, external side effects) or TWO-WAY (a revert fully undoes it)
+- Blast radius: one word for what breaks if it is wrong (e.g. none, tests, module, service, users, data), plus one line on the ramification when it is not `none`
+
 ### Pre-empting Reviewer False Positives
 
 Reviewers scan a diff in minutes without the author's context. Intentional choices that *look* wrong will get flagged — costing a review round-trip for every one. Pre-empting them in the description is a durable win: low author cost, high reviewer-friction reduction.
@@ -239,6 +250,14 @@ Bug fix details (include only when the change is a fix):
 - Root Cause: [actual defect]
 - Fix: [what this PR changes and why it resolves the root cause]
 - Regression: [how recurrence is prevented]
+
+Evidence (include only when evidence was captured):
+- Before: [failing test run, output, or screenshot]
+- After: [passing test run, output, or screenshot]
+
+Merge danger:
+- Door: [one-way | two-way]
+- Blast radius: [one word] - [ramification, omitted when none]
 
 Notes for reviewers (include only when the diff contains intentional choices that look wrong):
 - **[claim]** — [one-line justification]

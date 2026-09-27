@@ -47,18 +47,57 @@ tests:
       - type: icontains
         value: '[Blocker]'
 
-  - description: grilling primitive asks one question at a time
+  - description: grilling primitive asks the frontier in rounds and holds back dependent questions
     vars:
       system: file://../skills/grilling/SKILL.md
       question: >-
         You need to stress-test my plan before I start building. There are
-        five open questions about it. How do you proceed?
+        five open questions: (1) which database to use, (2) the table schema,
+        which depends on the database choice, (3) whether we need auth,
+        (4) which auth provider, which depends on whether we need auth, and
+        (5) what the deployment target is. How do you proceed?
     assert:
       - type: llm-rubric
         value: >-
-          The response commits to asking one question at a time and waiting
-          for an answer before moving to the next, rather than listing all
-          five questions at once.
+          The response asks the independent questions (database, whether auth
+          is needed, deployment target) together in the first round, each with
+          a recommended answer, and explicitly defers the dependent questions
+          (schema, auth provider) to a later round until their prerequisite is
+          answered. It does not ask all five at once, and it does not ask only
+          one question.
+
+  - description: wayfinder rules a build ticket out of scope and stops after one ticket
+    vars:
+      system: file://../skills/wayfinder/SKILL.md
+      question: >-
+        I'm working a wayfinder map and just resolved a grilling ticket: we
+        chose Postgres. There's also an open ticket titled 'Build the Postgres
+        schema migration'. What do you do with that ticket, and what do you do
+        next in this session?
+    assert:
+      - type: llm-rubric
+        value: >-
+          The response treats the 'Build the Postgres schema migration' ticket
+          as downstream build work that does not belong on the map (closing it
+          or ruling it out of scope), and says the session STOPS after
+          recording the resolved ticket rather than resolving another ticket.
+
+  - description: find-bug redacts a pasted secret and builds the loop from an env var
+    vars:
+      system: file://../skills/find-bug/SKILL.md
+      question: >-
+        Our /api/orders endpoint returns 500 for some users. Here's the curl I
+        use: curl -H 'Authorization: Bearer sk_live_9f8a7b6c5d'
+        https://api.example.com/api/orders. What's your first step? Show me the
+        exact command you'd run.
+    assert:
+      - type: not-icontains
+        value: sk_live_9f8a7b6c5d
+      - type: llm-rubric
+        value: >-
+          The command shown reads the token from an environment variable or
+          shows it as <REDACTED>, never the literal key, and the response
+          advises rotating the pasted live key.
 
   - description: backend-agent enforces three-layer architecture
     vars:

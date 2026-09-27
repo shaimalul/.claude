@@ -53,7 +53,7 @@ Then proceed to Phase 2.
 
 ## Phase 2: Grill Session (Interactive)
 
-Run the `grilling` protocol. That skill owns the technique: one question at a time, your recommended answer as context, explore the codebase instead of asking when you can, and always offer the stop option.
+Run the `grilling` protocol. That skill owns the technique.
 
 This skill owns only the question categories below. Pick 2-3 from each based on relevance, and skip categories that do not apply to this feature.
 

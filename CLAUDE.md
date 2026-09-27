@@ -18,7 +18,7 @@ Allowed direct edits (no redirect needed):
 
 - Files with `p-` prefix (personal/gitignored)
 - `scripts/`, `settings.template.json` (code/infrastructure)
-- `README.md`, `.gitignore`, `.secrets.example` (repo docs/config)
+- `README.md`, `.gitignore` (repo docs/config)
 
 ---
 
@@ -100,10 +100,11 @@ BASES own the shared content of a family. Consumers declare `Extends: <base>` an
 
 PRIMITIVES own ONE concept outright, cited by name from anywhere:
 
-- `grilling` - the decision-tree interview: one question at a time, recommended answer, the stop option
+- `grilling` - the decision-tree interview: rounds over the frontier, recommended answer, facts looked up not asked, the stop option
 - `domain-modeling` - `CONTEXT.md` glossary, ADR format and the 3-of-3 gate, lazy creation, consumer rules
 - `codebase-design` - deep modules: module, interface, depth, SEAM, adapter, leverage, locality
 - `tdd` - the red-green-refactor loop, what a good test is, seams, test anti-patterns
+- `writing-for-agents` - how to write any agent-read document: context pointers, the two loads, information hierarchy, completion criteria, leading words, pruning
 
 Before creating or editing a skill:
 

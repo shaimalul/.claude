@@ -1,6 +1,6 @@
 ---
 name: grilling
-description: The relentless one-question-at-a-time interview that stress-tests a plan, design, or decision before work starts. Use when a plan has soft spots, when a skill needs to reach shared understanding with the user, or when implicit assumptions need forcing into the open.
+description: The relentless, round-by-round decision-tree interview that stress-tests a plan, design, or decision before work starts. Use when a plan has soft spots, when a skill needs to reach shared understanding with the user, or when implicit assumptions need forcing into the open.
 user-invocable: false
 ---
 
@@ -8,26 +8,25 @@ user-invocable: false
 
 The interview primitive. Every skill that needs to reach shared understanding with the user uses this one, and never writes its own.
 
-Grilling stress-tests a plan or design before code is written. It walks the decision tree branch by branch, resolving the dependencies between decisions one at a time, until you and the user share the same understanding.
+Grilling stress-tests a plan or design before code is written. It walks the decision tree round by round, settling each decision before the ones that depend on it, until you and the user share the same understanding.
 
 ## The Decision Tree
 
-Every plan branches into decisions, and decisions depend on each other. Descend that tree one node at a time: settle a parent decision before the choices that hang off it.
+Every plan branches into decisions, and decisions depend on each other. The FRONTIER is every decision whose prerequisites are already settled: the questions you can ask now without guessing at answers you have not heard yet.
 
-An early answer reshapes which questions come next. That is why questions arrive singly and in dependency order. A firehose of parallel questions loses the structure that makes the interview converge.
+Work the tree in ROUNDS. Each round asks the whole frontier, then waits. The answers push the frontier outward and unblock the questions that hung on them. A question whose answer depends on another question still open in this round belongs to a LATER round.
 
 ## Protocol
 
-- Use AskUserQuestion for EACH question
-- Ask ONE question at a time, wait for the answer, then move to the next branch
-- Do NOT batch multiple questions. A bulk list is bewildering and destroys the dependency order
-- If a question can be answered by exploring the codebase, explore the codebase instead of asking
-- For each question, provide your recommended answer as context. The user reacts to a proposal, never to a blank prompt
-- ALWAYS include a final option: "I'm good with the plan - stop asking questions"
+- One AskUserQuestion call per round, holding the frontier as separate questions. It takes up to 4, so a wider frontier sends the 4 where a wrong assumption is most expensive and carries the rest to the next round
+- Every question leads with your recommended answer as its first option. The user reacts to a proposal, never to a blank prompt
+- The first question of every round also offers "I'm good with the plan - stop asking questions"
+- Finding FACTS is your job, never the user's. When a frontier question needs a fact from the codebase or environment, dispatch an Explore subagent for it and ask the rest of the frontier meanwhile. Only the questions downstream of that fact wait for it
+- DECISIONS are the user's. Put each one to them and wait
 
 If the user selects the stop option, end the interview immediately and produce the output from the answers collected so far.
 
-Do not start enacting the plan until shared understanding is confirmed.
+The interview is done when the frontier is empty: every branch visited, nothing left silently assumed. Do not start enacting the plan until the user confirms shared understanding.
 
 ## What to Grill On
 

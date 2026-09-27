@@ -16,6 +16,12 @@ Follow the `domain-modeling` consumer rules while exploring, so your mental mode
 
 ## Bug Context: $ARGUMENTS
 
+## Redact
+
+This skill has you show commands, outputs, and captured artifacts. REDACT every secret first: write `<REDACTED>` in its place. Build loops that read credentials from environment variables, so the secret stays in the environment rather than in what you show: `curl -H "Authorization: Bearer $API_TOKEN" ...`, never the literal token. When the user pastes a live secret, tell them to rotate it. Captured artifacts carry auth headers and cookies: quote only the lines that carry the signal.
+
+If the redacted output is not enough to diagnose the bug, say so and ask the user.
+
 ## Phase 1: Build a Feedback Loop
 
 THIS IS THE SKILL. Everything else is mechanical.
@@ -35,7 +41,7 @@ Spend disproportionate effort here. Be aggressive. Be creative. Refuse to give u
 7. PROPERTY OR FUZZ LOOP. For "sometimes wrong output", run 1000 random inputs and look for the failure mode
 8. BISECTION HARNESS. If the bug appeared between two known states (commit, dataset, version), automate "boot at state X, check, repeat" so `git bisect run` can drive it
 9. DIFFERENTIAL LOOP. Run the same input through old versus new, or two configs, and diff the outputs
-10. HUMAN-IN-THE-LOOP SCRIPT. Last resort. If a human must click, drive THEM with a scripted checklist so the loop stays structured, and feed the captured output back
+10. HUMAN-IN-THE-LOOP SCRIPT. Last resort. If a human must click, drive THEM: copy [scripts/hitl-loop.template.sh](scripts/hitl-loop.template.sh), replace its example steps, and run it. Its `KEY=VALUE` output feeds back to you
 
 ### Tighten the loop
 
@@ -56,19 +62,19 @@ The goal is not a clean repro, it is a HIGHER REPRODUCTION RATE. Loop the trigge
 Stop and say so explicitly. List what you tried. Ask the user for one of:
 
 - Access to an environment that reproduces it
-- A captured artifact (HAR file, log dump, core dump, screen recording with timestamps)
+- A redacted captured artifact (HAR file, log dump, core dump, screen recording with timestamps)
 - Permission to add temporary production instrumentation
 
 Do NOT proceed to hypothesise without a loop.
 
 ### Completion criterion
 
-Phase 1 is done when you can name ONE COMMAND, a script path, a test invocation, a curl, that you have ALREADY RUN AT LEAST ONCE. Paste the invocation and its output. It must be:
+Phase 1 is done when you can name ONE COMMAND, a script path, a test invocation, a curl, that you have ALREADY RUN AT LEAST ONCE. Paste the invocation and its redacted output. It must be:
 
 - [ ] RED-CAPABLE. It drives the actual bug code path and asserts the USER'S EXACT SYMPTOM, so it goes red on this bug and green once fixed. Not "runs without erroring"
 - [ ] DETERMINISTIC. Same verdict every run. For flaky bugs, a pinned high reproduction rate
 - [ ] FAST. Seconds, not minutes
-- [ ] AGENT-RUNNABLE. You can run it unattended
+- [ ] AGENT-RUNNABLE. You can run it unattended, or a human drives it only through the HITL script
 
 If you catch yourself reading code to build a theory before this command exists, STOP. Jumping straight to a hypothesis is the exact failure this skill prevents. No red-capable command, no Phase 2.
 
@@ -146,7 +152,7 @@ Required before declaring done:
 
 Then ask: WHAT WOULD HAVE PREVENTED THIS BUG?
 
-If the answer is architectural (no good test seam, tangled callers, hidden coupling), hand off to `/refactor` or `/cleanup` with the specifics, and reference `codebase-design` for the seam vocabulary. Make that recommendation AFTER the fix is in, not before. You have more information now than when you started.
+If the answer is architectural (no good test seam, tangled callers, hidden coupling), hand off to `/refactor` with the specifics, and reference `codebase-design` for the seam vocabulary. Make that recommendation AFTER the fix is in, not before. You have more information now than when you started.
 
 ## Delegation
 

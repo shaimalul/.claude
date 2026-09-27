@@ -1,233 +1,103 @@
 ---
 name: extract-learning
 description: |
-  Autonomous knowledge extraction from sessions. Triggers on:
+  Extract reusable knowledge from the current session and integrate it into the existing skill, rule, or check that owns it. Triggers on:
   (1) /extract-learning command
   (2) "save this as a skill" or "extract what we learned"
-  (3) After debugging with non-obvious solutions
-  Integrates learnings into existing domain skill files.
+  (3) After debugging with a non-obvious solution
 allowed-tools: Read, Write, Edit, Grep, Glob, Bash
 ---
 
-# Extract Learning: Session Knowledge Extraction
+# Extract Learning
 
-Extract reusable knowledge from your current session and integrate it into the appropriate skill files.
+Turn what this session learned into a durable improvement to the configuration, placed where it will actually change the next run.
 
-**Arguments:** `$ARGUMENTS` - Optional: specific topic to extract (e.g., "the prisma pooling fix")
+Arguments: `$ARGUMENTS` - optional topic to extract (e.g. "the prisma pooling fix"). Without one, review the whole session.
 
-## Core Principle
-
-Extract reusable knowledge and **integrate it into existing skill files** rather than creating separate files. This maintains single source of truth and keeps related patterns together.
+Write every change to the `writing-for-agents` primitive. Route and format through `improve-claude`: its [ROUTING.md](../improve-claude/ROUTING.md) owns which file a topic lands in, and its [FORMATS.md](../improve-claude/FORMATS.md) owns the pattern format. Neither is restated here.
 
 ## Quality Gates
 
-Before saving, verify:
-- [ ] Description contains specific trigger conditions (error messages, symptoms)
-- [ ] Solution was verified to work
-- [ ] Content is actionable and reusable
-- [ ] No sensitive information included
-- [ ] Doesn't duplicate existing documentation
-- [ ] Not just a documentation lookup (link to docs instead)
-- [ ] Would help someone hitting this problem in 6 months
+A candidate is extracted only when every gate passes:
 
-## Extraction Triggers
+- [ ] The trigger is specific: an error message, a symptom, a situation someone will hit again
+- [ ] The solution was verified to work in this session
+- [ ] It is reusable beyond this one fix, and would help someone hitting it in 6 months
+- [ ] It is not common knowledge or a documentation lookup (link the docs instead)
+- [ ] It contains no secrets, tokens, or personal data
 
-Extract when you:
-1. Completed debugging with a **non-obvious solution**
-2. Found a workaround through **trial-and-error**
-3. Resolved an error where **root cause wasn't immediately apparent**
-4. Learned **project-specific patterns** through investigation
-5. User says "save this as a skill" or "extract this learning"
+## Process
 
-## What NOT to Extract
+### Step 1: Identify Candidates
 
-Skip extraction for:
-- Documentation lookups (just link to docs)
-- One-time project-specific fixes
-- Unverified or partial solutions
-- Trivial implementations
-- Common knowledge available in tutorials
+For each candidate, write down the problem, what made it non-obvious, the exact symptom that led there, and what would have found it faster. Drop any candidate that fails a quality gate, with the reason.
 
-## Extraction Process
+### Step 2: Classify Mechanical vs Judgement
 
-### Step 1: Check for Existing Skills
+- MECHANICAL: a fixed pattern a machine can detect (a banned API, an import shape, a file-location rule, a command that must never run). It becomes a DETERMINISTIC CHECK: a lint rule in the project's linter, a PreToolUse hook in `scripts/hooks/` with its test first, or a CI job, whichever the repo already has the cheapest place for. A prose rule for a mechanical violation is the fallback only when no check can express it
+- JUDGEMENT: needs a human-style call (consistency across files, matching surrounding style, domain trade-offs). It becomes prose in the owning skill or rule, and a review-worthy judgement goes to the Standards axis of `review-base`
 
-Search domain skill files for similar patterns:
+Also look for the opposite: an existing prose rule in `CLAUDE.md` or `rules/` that a check could now enforce. Propose the check and deleting the prose.
 
-| Domain | Target Skill File |
-|--------|-------------------|
-| RTL, CSS, styling | `~/.claude/skills/styling-rtl/SKILL.md` |
-| React, hooks, components | `~/.claude/skills/react-component/SKILL.md` |
-| TypeScript, types | `~/.claude/skills/typescript-types/SKILL.md` |
-| Backend, APIs | `~/.claude/skills/js-backend-patterns/SKILL.md` |
-| Security, auth | `~/.claude/skills/security-patterns/SKILL.md` |
-| Testing, mocks | `~/.claude/skills/testing-patterns/SKILL.md` |
-| Design system, tokens | `~/.claude/skills/design-system-patterns/SKILL.md` |
-| useEffect | `~/.claude/skills/useeffect-patterns/SKILL.md` |
-| Accessibility | `~/.claude/skills/accessibility-patterns/SKILL.md` |
+### Step 3: Route
 
-If similar pattern exists: **UPDATE** it, don't duplicate.
+Find the owning file with the Category Detection table in [ROUTING.md](../improve-claude/ROUTING.md), then search it and its neighbours for the concept. An existing pattern gets UPDATED, never duplicated.
 
-### Step 2: Identify the Knowledge
+### Step 4: Propose And Confirm
 
-Analyze:
-- What specific problem was solved?
-- What made it non-obvious?
-- What would help someone solve this faster next time?
-- What exact error message or symptom led here?
-
-### Step 3: Categorize and Route
-
-Match the learning to the appropriate skill by keywords:
-
-| Keywords | Target Skill |
-|----------|--------------|
-| css, scss, rtl, left, right, start, end, padding, margin | `styling-rtl` |
-| hook, useState, useEffect, component, prop, jsx | `react-component` |
-| type, interface, enum, generic, as, any | `typescript-types` |
-| express, nestjs, controller, service, api | `js-backend-patterns` |
-| auth, jwt, xss, injection, owasp | `security-patterns` |
-| test, mock, spec, coverage, vitest | `testing-patterns` |
-| design system, tokens, components | `design-system-patterns` |
-
-### Step 4: Present Proposed Changes and Get Confirmation
-
-CRITICAL: NEVER write directly to skill files. Present the proposed changes to the user first and wait for explicit approval.
-
-Format your proposal as:
+Never write before the user approves. Present:
 
 ```markdown
 ## Proposed Learnings
 
-**Learning 1:** [title]
-- Target: `~/.claude/skills/[skill-name]/SKILL.md`
-- Section to add/update: [section name]
-- Content summary: [brief description]
+Learning 1: [title]
+- Kind: check | prose
+- Target: [owning file, section]
+- Change: [one-line summary]
 
-**Learning 2:** [title]
-- ...
-
-Shall I apply these changes?
+Shall I apply these?
 ```
 
-Use AskUserQuestion if available, otherwise present in text and wait for confirmation. Do NOT proceed to Step 5 without explicit user approval.
+### Step 5: Apply
 
-### Step 5: Unlock Config Editing and Apply
+After approval, create the lock the config-edit guard checks, then write each change in the target file's existing format:
 
-Only after user approves, create the bypass lock file:
 ```bash
 echo $(date +%s) > ~/.claude/.config-edit-unlocked
 ```
 
-Then integrate into the target SKILL.md using this format:
+A check goes in through `tdd`: its failing test first, then the check. Prose goes into the owning section using the pattern format in [FORMATS.md](../improve-claude/FORMATS.md).
 
-```markdown
-## [Pattern Name]
+### Step 6: Verify And Report
 
-[Problem description with specific triggers]
-
-```[language]
-// Bad - [what causes the problem]
-[problematic code]
-
-// Good - [the fix]
-[correct code]
-```
-
-**When to apply:** [Trigger conditions]
-```
-
-Also consider updating (with the same user-approved scope):
-- `CLAUDE.md` - If it's a core coding standard
-- `rules/*.md` - If it's an enforcement rule
-- `agents/*.md` - If it affects an agent's domain
-
-### Step 6: Clean Up and Report Results
-
-Clean up the lock file:
 ```bash
+npm test
 rm -f ~/.claude/.config-edit-unlocked
 ```
 
-Then report results:
 ```markdown
 ## Learning Extracted
 
-**Problem:** [Specific problem description]
-**Solution:** [What worked]
-**Integrated into:**
-- `~/.claude/skills/[skill-name]/SKILL.md` - Added [section name]
-- `~/.claude/[other-file]` - Updated [section name]
-
-**Why this location:** [Brief routing explanation]
+Problem: [specific problem]
+Solution: [what worked]
+Integrated into:
+- [file] - [check added | section added or updated]
 ```
 
-If nothing extracted:
-```markdown
-## No Learnings Extracted
-
-**Reason:** [Why nothing qualified - failed quality gates or no extractable patterns]
-**Tip:** Run this command after solving non-obvious problems
-```
-
-## Categories Reference
-
-| Category | Keywords | Primary Skill |
-|----------|----------|---------------|
-| `styling` | css, scss, rtl, left, right, start, end, padding, margin | `styling-rtl` |
-| `react` | hook, useState, useEffect, component, prop, jsx | `react-component` |
-| `typescript` | type, interface, enum, generic, as, any | `typescript-types` |
-| `backend` | express, nestjs, controller, service, api | `js-backend-patterns` |
-| `security` | auth, jwt, xss, injection, owasp | `security-patterns` |
-| `testing` | test, mock, spec, coverage, vitest | `testing-patterns` |
-| `devops` | docker, kubernetes, terraform, pipeline | devops skills |
-| `design-system` | design system, tokens, components | `design-system-patterns` |
+If nothing qualified, report which gate each candidate failed.
 
 ## Examples
 
 ```bash
-# Extract RTL naming convention
 /extract-learning "use start/end instead of left/right in prop names"
-
-# Extract useEffect pattern
 /extract-learning "why useEffect was running twice"
-
-# Extract backend pattern
-/extract-learning "the prisma connection pooling fix"
-
-# Review full session
 /extract-learning
 ```
 
-## Anti-Patterns to Avoid
+## Checklist
 
-| Anti-Pattern | Why It's Bad |
-|--------------|--------------|
-| Separate learned/ folder | Fragments knowledge, breaks single source of truth |
-| Over-extraction | Not every task needs a skill |
-| Vague descriptions | "Helps with React" is useless for retrieval |
-| Unverified solutions | Only extract what actually worked |
-| Documentation duplication | Link to docs, add what's missing |
-| Sensitive data | Never include API keys, passwords, etc. |
-
-## Important: No Separate Learned Folder
-
-**DO NOT** create files in `~/.claude/skills/learned/`. All learnings should be integrated into existing domain skill files. This maintains single source of truth and keeps related patterns together.
-
-If a learning truly doesn't fit any existing skill, consider:
-1. Is it specific enough to be reusable?
-2. Should a new skill be created in `skills/[domain-name]/SKILL.md`?
-3. Or should it go in `rules/*.md` or `CLAUDE.md`?
-
-## Retrospective Mode
-
-When `/extract-learning` is called without a specific topic:
-
-1. Review the session conversation for extraction candidates
-2. Look for patterns: debugging, workarounds, discoveries
-3. For each candidate:
-   - Check quality gates
-   - Route to appropriate skill
-   - If passes: integrate into skill
-   - If fails: skip with reason
-4. Report summary of what was/wasn't extracted
+- [ ] Every extracted item passed all quality gates
+- [ ] Mechanical violations became checks, not prose
+- [ ] Each learning lives in exactly one owning file
+- [ ] The user approved before any write
+- [ ] `npm test` passes and the lock file is removed
